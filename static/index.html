@@ -72,8 +72,9 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:1
 .btn-relogin:hover{color:var(--warn);border-color:var(--warn);}
 
 /* TABS */
-.tabs{display:flex;gap:2px;padding:0 24px;border-bottom:1px solid var(--border);background:var(--surface);overflow-x:auto;flex-shrink:0;}
-.tab{padding:12px 18px;border:none;background:transparent;color:var(--muted);font-family:var(--mono);font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .2s,border-color .2s;letter-spacing:.5px;text-transform:uppercase;}
+.tabs{display:flex;gap:0;padding:0 20px;border-bottom:1px solid var(--border);background:var(--surface);overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{padding:10px 14px;border:none;background:transparent;color:var(--muted);font-family:var(--mono);font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .2s,border-color .2s;letter-spacing:.3px;text-transform:uppercase;}
 .tab:hover{color:var(--text);}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
 
@@ -238,11 +239,21 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
   </header>
 
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('download',this)">📈 Equity & ETF</button>
-    <button class="tab" onclick="switchTab('options',this)">🎯 Options</button>
-    <button class="tab" onclick="switchTab('expired',this)">📦 Expired Options</button>
-    <button class="tab" onclick="switchTab('futures',this)">📈 Futures</button>
-    <button class="tab" onclick="switchTab('chain',this)">🔗 Options Chain</button>
+    <button class="tab active" id="tab-download" onclick="switchTab('download',this)">
+      <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#00d4aa;margin-right:6px;vertical-align:middle;"></span>Equity
+    </button>
+    <button class="tab" id="tab-options" onclick="switchTab('options',this)">
+      <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#0091ff;margin-right:6px;vertical-align:middle;"></span>Options
+    </button>
+    <button class="tab" id="tab-expired" onclick="switchTab('expired',this)">
+      <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#ffb347;margin-right:6px;vertical-align:middle;"></span>Exp. Options
+    </button>
+    <button class="tab" id="tab-futures" onclick="switchTab('futures',this)">
+      <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#ff4d6d;margin-right:6px;vertical-align:middle;"></span>Futures
+    </button>
+    <button class="tab" id="tab-chain" onclick="switchTab('chain',this)">
+      <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#c084fc;margin-right:6px;vertical-align:middle;"></span>Chain Download
+    </button>
   </div>
 
   <main>
