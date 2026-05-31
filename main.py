@@ -521,9 +521,8 @@ async def download_options_chain(req: ChainRequest):
             df["option_type"]   = "CALL" if otype == "CE" else "PUT"
             df["expiry_date"]   = req.expiry_date
             df["expiry_number"] = req.expiry_number
-            # Normalise expiry_type label
-    expiry_label = {"weekly": "WEEK", "monthly": "MONTHLY", "quarterly": "QUARTERLY"}.get(req.expiry_type.lower(), req.expiry_type.upper())
-    df["expiry_type"]   = expiry_label
+            expiry_label = {"weekly": "WEEK", "monthly": "MONTHLY", "quarterly": "QUARTERLY"}.get(req.expiry_type.lower(), req.expiry_type.upper())
+            df["expiry_type"]   = expiry_label
             df["interval_min"]  = interval_min
             df["index"]         = index
 
