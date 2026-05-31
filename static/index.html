@@ -266,15 +266,15 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
           </div>
         </div>
         <div style="display:flex;gap:20px;flex-wrap:wrap;">
-          <div class="trow"><input type="checkbox" id="includeOI" checked/><label for="includeOI">Include OI</label></div>
-          <div class="trow"><input type="checkbox" id="continuous"/><label for="continuous">Continuous</label></div>
+          <div class="trow"><input type="checkbox" id="includeOI"/><label for="includeOI">Include OI <span style="color:var(--muted);font-size:11px;">(F&amp;O only)</span></label></div>
+          <div class="trow"><input type="checkbox" id="continuous"/><label for="continuous">Continuous <span style="color:var(--muted);font-size:11px;">(Futures only)</span></label></div>
         </div>
       </div>
       <div class="card">
         <div class="section-head">Step 2 — Select Instrument</div>
         <div class="row">
           <div class="field"><label>Exchange</label>
-            <select id="exchange" onchange="clearSel()">
+            <select id="exchange" onchange="onExchangeChange()">
               <option value="NFO">NFO (F&amp;O)</option><option value="BFO">BFO (BSE F&amp;O)</option>
               <option value="NSE">NSE (Equity)</option><option value="BSE">BSE (Equity)</option>
               <option value="MCX">MCX</option>
@@ -295,10 +295,9 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
       <div class="card">
         <div class="section-head">Step 3 — Preview & Download</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="btn btn-ghost" onclick="previewData()">Preview 5 rows</button>
           <button class="btn btn-primary" onclick="downloadData()">⬇ Download</button>
         </div>
-        <div id="previewDiv"></div><div id="dlStatus"></div>
+        <div id="dlStatus"></div>
       </div>
     </div>
 
@@ -324,17 +323,55 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
       </div>
       <div class="card">
         <div class="section-head">Step 2 — Select Option Contract</div>
-        <div class="row">
-          <div class="field"><label>Exchange</label>
-            <select id="opt_ex"><option value="NFO">NFO</option><option value="BFO">BFO</option></select>
+
+        <!-- Index vs Stock toggle -->
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+          <div id="optmode-index" onclick="opt_setMode('index')"
+               style="flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:rgba(0,212,170,.12);border:1px solid var(--accent);color:var(--accent);">
+            📊 Index Options
           </div>
-          <div class="field"><label>Underlying</label>
-            <select id="opt_ul" onchange="opt_loadExpiries()">
-              <option value="">— Select —</option>
-              <option value="NIFTY">NIFTY</option><option value="BANKNIFTY">BANKNIFTY</option>
-              <option value="FINNIFTY">FINNIFTY</option><option value="MIDCPNIFTY">MIDCPNIFTY</option>
-              <option value="SENSEX">SENSEX</option><option value="BANKEX">BANKEX</option>
-            </select>
+          <div id="optmode-stock" onclick="opt_setMode('stock')"
+               style="flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--muted);">
+            🏢 Stock Options
+          </div>
+        </div>
+
+        <!-- Index mode -->
+        <div id="opt_index_row">
+          <div class="row">
+            <div class="field"><label>Exchange</label>
+              <select id="opt_ex"><option value="NFO">NFO</option><option value="BFO">BFO</option></select>
+            </div>
+            <div class="field"><label>Underlying Index</label>
+              <select id="opt_ul" onchange="opt_loadExpiries()">
+                <option value="">— Select —</option>
+                <option value="NIFTY">NIFTY</option><option value="BANKNIFTY">BANKNIFTY</option>
+                <option value="FINNIFTY">FINNIFTY</option><option value="MIDCPNIFTY">MIDCPNIFTY</option>
+                <option value="SENSEX">SENSEX</option><option value="BANKEX">BANKEX</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock mode -->
+        <div id="opt_stock_row" style="display:none;">
+          <div class="row">
+            <div class="field"><label>Search Stock Symbol</label>
+              <div class="search-wrap">
+                <input type="text" id="opt_stock_search" placeholder="Type stock e.g. RELIANCE, TCS, INFY..."
+                       oninput="opt_searchStock()" autocomplete="off"/>
+                <div class="search-results" id="opt_stock_results"></div>
+              </div>
+            </div>
+          </div>
+          <div id="opt_stock_chip" style="display:none;margin-bottom:12px;">
+            <div class="sel-chip">
+              <span id="opt_stock_sym"></span>
+              <span class="clr" onclick="opt_clearStock()">✕</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-bottom:4px;">
+            <button class="btn btn-ghost" style="font-size:11px;" onclick="opt_loadStockExpiries()">Load Expiries →</button>
           </div>
         </div>
         <div class="row">
@@ -360,10 +397,9 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
       <div class="card">
         <div class="section-head">Step 3 — Preview & Download</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="btn btn-ghost" onclick="opt_preview()">Preview 5 rows</button>
           <button class="btn btn-primary" onclick="opt_dl()">⬇ Download</button>
         </div>
-        <div id="opt_prev"></div><div id="opt_status"></div>
+        <div id="opt_status"></div>
       </div>
     </div>
 
@@ -411,10 +447,9 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
       <div class="card">
         <div class="section-head">Step 3 — Preview & Download</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="btn btn-ghost" onclick="fut_preview()">Preview 5 rows</button>
           <button class="btn btn-primary" onclick="fut_dl()">⬇ Download</button>
         </div>
-        <div id="fut_prev"></div><div id="fut_status"></div>
+        <div id="fut_status"></div>
       </div>
     </div>
 
@@ -607,6 +642,17 @@ function pickInst(tok,sym,name){
   document.getElementById('symbolSearch').value=sym;
 }
 
+function onExchangeChange() {
+  const ex = document.getElementById('exchange').value;
+  const isEquity = ex === 'NSE' || ex === 'BSE';
+  // Auto-uncheck OI and Continuous for equity — they don't apply
+  document.getElementById('includeOI').checked = !isEquity;
+  document.getElementById('continuous').checked = false;
+  // Grey out continuous for non-futures
+  document.getElementById('continuous').disabled = isEquity;
+  clearSel();
+}
+
 function clearSel(){
   selTok='';selSym='';
   document.getElementById('selInstDiv').style.display='none';
@@ -617,6 +663,8 @@ function clearSel(){
 document.addEventListener('click',e=>{
   if(!e.target.closest('#symbolSearch')&&!e.target.closest('#searchResults'))
     document.getElementById('searchResults').style.display='none';
+  if(!e.target.closest('#opt_stock_search')&&!e.target.closest('#opt_stock_results'))
+    document.getElementById('opt_stock_results').style.display='none';
 });
 
 // ══════════════════════════════════════
@@ -650,6 +698,95 @@ async function downloadData(){
 }
 
 // ══════════════════════════════════════
+// OPTIONS — mode toggle (index / stock)
+// ══════════════════════════════════════
+let optMode = 'index';
+let optStockName = '';
+let optStockTimer = null;
+
+function opt_setMode(mode) {
+  optMode = mode;
+  // Style the toggle buttons
+  const idx = document.getElementById('optmode-index');
+  const stk = document.getElementById('optmode-stock');
+  if (mode === 'index') {
+    idx.style.cssText = 'flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:rgba(0,212,170,.12);border:1px solid var(--accent);color:var(--accent);';
+    stk.style.cssText = 'flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--muted);';
+    document.getElementById('opt_index_row').style.display = '';
+    document.getElementById('opt_stock_row').style.display = 'none';
+  } else {
+    stk.style.cssText = 'flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:rgba(0,145,255,.12);border:1px solid var(--accent2);color:var(--accent2);';
+    idx.style.cssText = 'flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--muted);';
+    document.getElementById('opt_index_row').style.display = 'none';
+    document.getElementById('opt_stock_row').style.display = '';
+  }
+  // Reset expiry/strike
+  document.getElementById('opt_expiry').innerHTML = '<option>— select underlying first —</option>';
+  document.getElementById('opt_expiry').disabled = true;
+  document.getElementById('opt_strike').innerHTML = '<option>— select expiry first —</option>';
+  document.getElementById('opt_strike').disabled = true;
+  document.getElementById('opt_info').textContent = '';
+}
+
+function opt_searchStock() {
+  clearTimeout(optStockTimer);
+  const q = document.getElementById('opt_stock_search').value.trim();
+  if (q.length < 2) { document.getElementById('opt_stock_results').style.display = 'none'; return; }
+  optStockTimer = setTimeout(() => opt_doStockSearch(q), 300);
+}
+
+async function opt_doStockSearch(q) {
+  const box = document.getElementById('opt_stock_results');
+  box.style.display = 'block';
+  box.innerHTML = '<div style="padding:10px;color:var(--muted);font-family:var(--mono);font-size:12px;">Searching NFO...</div>';
+  try {
+    // Search NFO for stocks — filter to only show FUT/CE/PE type (F&O eligible stocks)
+    const res = await fetch(`/api/instruments?api_key=${apiKey}&access_token=${accessToken}&exchange=NFO&search=${encodeURIComponent(q)}`);
+    let data; try { data = await res.json(); } catch(e) { box.innerHTML = '<div style="padding:10px;color:var(--danger);font-family:var(--mono);font-size:12px;">Error</div>'; return; }
+    // Extract unique underlying names (the 'name' field)
+    const names = [...new Set(data.map(r => r.name).filter(n => n && n !== ''))];
+    if (!names.length) { box.innerHTML = '<div style="padding:10px;color:var(--muted);font-family:var(--mono);font-size:12px;">No F&O stocks found for "'+q+'"</div>'; return; }
+    box.innerHTML = names.slice(0,20).map(n =>
+      `<div class="sri" onclick="opt_pickStock('${n}')"><span class="sym">${n}</span><span class="meta">NFO</span></div>`
+    ).join('');
+  } catch(e) { box.innerHTML = '<div style="padding:10px;color:var(--danger);font-family:var(--mono);font-size:12px;">'+e.message+'</div>'; }
+}
+
+function opt_pickStock(name) {
+  optStockName = name;
+  document.getElementById('opt_stock_search').value = name;
+  document.getElementById('opt_stock_sym').textContent = name;
+  document.getElementById('opt_stock_chip').style.display = 'block';
+  document.getElementById('opt_stock_results').style.display = 'none';
+}
+
+function opt_clearStock() {
+  optStockName = '';
+  document.getElementById('opt_stock_search').value = '';
+  document.getElementById('opt_stock_chip').style.display = 'none';
+  document.getElementById('opt_expiry').innerHTML = '<option>— select underlying first —</option>';
+  document.getElementById('opt_expiry').disabled = true;
+  document.getElementById('opt_strike').innerHTML = '<option>— select expiry first —</option>';
+  document.getElementById('opt_strike').disabled = true;
+}
+
+async function opt_loadStockExpiries() {
+  if (!optStockName) { alert('Search and select a stock first'); return; }
+  // Temporarily set opt_ul concept via direct API call
+  const sel = document.getElementById('opt_expiry');
+  sel.innerHTML = '<option>Loading...</option>'; sel.disabled = true;
+  document.getElementById('opt_strike').innerHTML = '<option>—</option>'; document.getElementById('opt_strike').disabled = true;
+  try {
+    const res = await fetch(`/api/options/expiries?api_key=${apiKey}&access_token=${accessToken}&underlying=${encodeURIComponent(optStockName)}&exchange=NFO`);
+    const d = await res.json();
+    if (!d.expiries.length) { sel.innerHTML = '<option>No expiries found</option>'; return; }
+    sel.innerHTML = d.expiries.map(e => `<option value="${e}">${e}</option>`).join('');
+    sel.disabled = false;
+    opt_loadStrikes();
+  } catch(e) { sel.innerHTML = '<option>Error</option>'; }
+}
+
+// ══════════════════════════════════════
 // OPTIONS
 // ══════════════════════════════════════
 async function opt_loadExpiries(){
@@ -667,9 +804,10 @@ async function opt_loadExpiries(){
 }
 
 async function opt_loadStrikes(){
-  const u=document.getElementById('opt_ul').value,ex_d=document.getElementById('opt_expiry').value;
+  const u = optMode==='stock' ? optStockName : document.getElementById('opt_ul').value;
+  const ex_d=document.getElementById('opt_expiry').value;
   if(!u||!ex_d)return;
-  const ex=document.getElementById('opt_ex').value;
+  const ex = optMode==='stock' ? 'NFO' : document.getElementById('opt_ex').value;
   const sel=document.getElementById('opt_strike');
   sel.innerHTML='<option>Loading...</option>';sel.disabled=true;
   try{
@@ -687,14 +825,15 @@ function opt_type(t){
 }
 
 async function optGetTok(u,exp,str,ot){
-  const ex=document.getElementById('opt_ex').value;
+  const ex = optMode==='stock' ? 'NFO' : document.getElementById('opt_ex').value;
   const r=await fetch(`/api/options/token?api_key=${apiKey}&access_token=${accessToken}&underlying=${u}&expiry=${exp}&strike=${str}&option_type=${ot}&exchange=${ex}`);
   if(!r.ok){const d=await r.json();throw new Error(d.detail);}
   return r.json();
 }
 
 function optValidate(){
-  if(!document.getElementById('opt_ul').value){alert('Select underlying');return false;}
+  const u = optMode==='stock' ? optStockName : document.getElementById('opt_ul').value;
+  if(!u){alert(optMode==='stock'?'Search and select a stock first':'Select underlying index');return false;}
   if(!document.getElementById('opt_expiry').value){alert('Select expiry');return false;}
   if(!document.getElementById('opt_strike').value){alert('Select strike');return false;}
   if(!document.getElementById('opt_from').value||!document.getElementById('opt_to').value){alert('Select date range');return false;}
@@ -719,7 +858,8 @@ async function opt_preview(){
 
 async function opt_dl(){
   if(!optValidate())return;
-  const u=document.getElementById('opt_ul').value,exp=document.getElementById('opt_expiry').value,str=document.getElementById('opt_strike').value,fmt=document.getElementById('opt_fmt').value;
+  const u = optMode==='stock' ? optStockName : document.getElementById('opt_ul').value;
+  const exp=document.getElementById('opt_expiry').value,str=document.getElementById('opt_strike').value,fmt=document.getElementById('opt_fmt').value;
   const types=optType==='BOTH'?['CE','PE']:[optType];
   showAlert('opt_status','⏳ Downloading...','info');
   let done=0;
