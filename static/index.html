@@ -239,7 +239,8 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
 
   <div class="tabs">
     <button class="tab active" onclick="switchTab('download',this)">📈 Equity & ETF</button>
-    <button class="tab" onclick="switchTab('options',this)">🎯 Options</button>
+    <button class="tab" onclick="switchTab('options',this)">🎯 Options (Active)</button>
+    <button class="tab" onclick="switchTab('expired',this)">📦 Expired Options</button>
     <button class="tab" onclick="switchTab('futures',this)">📈 Futures</button>
   </div>
 
@@ -452,6 +453,140 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
         </div>
         <div id="fut_status"></div>
       </div>
+    </div>
+
+    <!-- EXPIRED OPTIONS TAB -->
+    <div class="panel" id="panel-expired">
+
+      <div style="background:rgba(255,179,71,.08);border:1px solid rgba(255,179,71,.3);border-radius:6px;padding:12px 16px;font-family:var(--mono);font-size:12px;color:var(--warn);margin-bottom:16px;">
+        ⚡ Downloads historical data for <strong>all expired option contracts</strong> in your selected date range — weekly or monthly expiries, any strike range.
+      </div>
+
+      <div class="card">
+        <div class="section-head">Step 1 — What to Download</div>
+        <div class="row">
+          <div class="field">
+            <label>Index</label>
+            <select id="exp_index">
+              <option value="NIFTY">NIFTY (NFO)</option>
+              <option value="BANKNIFTY">BANKNIFTY (NFO)</option>
+              <option value="FINNIFTY">FINNIFTY (NFO)</option>
+              <option value="MIDCPNIFTY">MIDCPNIFTY (NFO)</option>
+              <option value="SENSEX">SENSEX (BFO)</option>
+              <option value="BANKEX">BANKEX (BFO)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Expiry Type</label>
+            <select id="exp_type">
+              <option value="weekly">Weekly</option>
+              <option value="monthly" selected>Monthly</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Option Type</label>
+            <select id="exp_otype">
+              <option value="CE">CE (Call)</option>
+              <option value="PE">PE (Put)</option>
+              <option value="BOTH" selected>Both (CE + PE)</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field"><label>From Date</label><input type="date" id="exp_from"/></div>
+          <div class="field"><label>To Date</label><input type="date" id="exp_to"/></div>
+          <div class="field">
+            <label>Interval</label>
+            <select id="exp_interval">
+              <option value="minute">1 min</option>
+              <option value="3minute">3 min</option>
+              <option value="5minute">5 min</option>
+              <option value="15minute">15 min</option>
+              <option value="30minute">30 min</option>
+              <option value="60minute">60 min</option>
+              <option value="day" selected>Day</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Format</label>
+            <select id="exp_fmt">
+              <option value="csv">CSV</option>
+              <option value="json">JSON</option>
+              <option value="parquet">Parquet</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-head">Step 2 — Strike Selection</div>
+
+        <!-- Mode toggle -->
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+          <div id="emode-atm" onclick="exp_setStrikeMode('atm')"
+            style="flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:rgba(0,212,170,.12);border:1px solid var(--accent);color:var(--accent);">
+            ATM Range
+          </div>
+          <div id="emode-specific" onclick="exp_setStrikeMode('specific')"
+            style="flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--muted);">
+            Specific Strike
+          </div>
+        </div>
+
+        <!-- ATM mode -->
+        <div id="exp_atm_row">
+          <div class="row">
+            <div class="field">
+              <label>Spot Price at time of each expiry (approximate ATM)</label>
+              <input type="number" id="exp_atm" placeholder="e.g. 24500 — used to centre the strike range" step="50"/>
+            </div>
+            <div class="field">
+              <label>Strike Step Size</label>
+              <select id="exp_step">
+                <option value="50">50 (NIFTY, FINNIFTY)</option>
+                <option value="100">100 (BANKNIFTY, MIDCPNIFTY)</option>
+                <option value="500">500 (SENSEX, BANKEX)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Range (ATM ± N strikes)</label>
+              <select id="exp_range">
+                <option value="3">ATM ± 3 (7 strikes)</option>
+                <option value="5" selected>ATM ± 5 (11 strikes)</option>
+                <option value="10">ATM ± 10 (21 strikes)</option>
+                <option value="15">ATM ± 15 (31 strikes)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Specific strike mode -->
+        <div id="exp_specific_row" style="display:none;">
+          <div class="row">
+            <div class="field">
+              <label>Strike Price</label>
+              <input type="number" id="exp_strike" placeholder="e.g. 24000" step="50"/>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:rgba(0,145,255,.08);border:1px solid rgba(0,145,255,.2);border-radius:5px;padding:10px 14px;font-family:var(--mono);font-size:11px;color:var(--accent2);margin-top:8px;" id="exp_estimate">
+          Select options above to see estimate of files to download.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-head">Step 3 — Download Expired Options</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <button class="btn btn-primary" onclick="exp_download()" id="exp_dlbtn">⬇ Download All</button>
+          <button class="btn btn-ghost" onclick="exp_stop()" id="exp_stopbtn" style="display:none;">■ Stop</button>
+        </div>
+        <div class="progress-bar" style="margin-top:12px;"><div class="progress-bar-fill" id="exp_prog" style="width:0%"></div></div>
+        <div id="exp_count" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;"></div>
+        <div id="exp_status" style="margin-top:8px;"></div>
+        <div class="bulk-log" id="exp_log" style="margin-top:10px;display:none;"></div>
+      </div>
+
     </div>
 
 
@@ -1053,6 +1188,265 @@ async function opt_dl_range(u, exp, fmt) {
   showAlert('opt_status', `✓ Done! ${done} files downloaded. ${failed} strikes not found (normal for far OTM).`, 'ok');
 }
 
+
+// ══════════════════════════════════════════════════════════════
+// EXPIRED OPTIONS
+// ══════════════════════════════════════════════════════════════
+let expStrikeMode = 'atm';
+let expStopped = false;
+
+function exp_setStrikeMode(mode) {
+  expStrikeMode = mode;
+  const a = document.getElementById('emode-atm');
+  const s = document.getElementById('emode-specific');
+  if (mode === 'atm') {
+    a.style.cssText = 'flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:rgba(0,212,170,.12);border:1px solid var(--accent);color:var(--accent);';
+    s.style.cssText = 'flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--muted);';
+    document.getElementById('exp_atm_row').style.display = '';
+    document.getElementById('exp_specific_row').style.display = 'none';
+  } else {
+    s.style.cssText = 'flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:rgba(0,145,255,.12);border:1px solid var(--accent2);color:var(--accent2);';
+    a.style.cssText = 'flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--muted);';
+    document.getElementById('exp_atm_row').style.display = 'none';
+    document.getElementById('exp_specific_row').style.display = '';
+  }
+  exp_updateEstimate();
+}
+
+// Generate all expiry dates between from/to based on weekly/monthly
+function exp_getExpiries(from, to, type, index) {
+  const expiries = [];
+  const start = new Date(from);
+  const end = new Date(to);
+
+  if (type === 'monthly') {
+    // Monthly: last Thursday of each month
+    let d = new Date(start.getFullYear(), start.getMonth(), 1);
+    while (d <= end) {
+      const lastThursday = getLastThursdayOfMonth(d.getFullYear(), d.getMonth());
+      if (lastThursday >= start && lastThursday <= end) {
+        expiries.push(lastThursday);
+      }
+      d.setMonth(d.getMonth() + 1);
+    }
+  } else {
+    // Weekly: every Thursday (NIFTY has weekly expiries)
+    // BANKNIFTY: Wednesday, FINNIFTY: Tuesday, SENSEX: Friday, BANKEX: Monday
+    const dayMap = {
+      'NIFTY': 4,       // Thursday
+      'BANKNIFTY': 3,   // Wednesday  
+      'FINNIFTY': 2,    // Tuesday
+      'MIDCPNIFTY': 1,  // Monday
+      'SENSEX': 5,      // Friday
+      'BANKEX': 1,      // Monday
+    };
+    const targetDay = dayMap[index] || 4;
+    let d = new Date(start);
+    // Move to first target day
+    while (d.getDay() !== targetDay) d.setDate(d.getDate() + 1);
+    while (d <= end) {
+      if (d >= start) expiries.push(new Date(d));
+      d.setDate(d.getDate() + 7);
+    }
+  }
+  return expiries;
+}
+
+function getLastThursdayOfMonth(year, month) {
+  // Get last day of month, walk back to Thursday (4)
+  let d = new Date(year, month + 1, 0); // last day
+  while (d.getDay() !== 4) d.setDate(d.getDate() - 1);
+  return new Date(d);
+}
+
+function exp_fmtDate(d) {
+  // Format as YYYY-MM-DD for API
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
+
+function exp_fmtSymbolDate(d) {
+  // Format as DDMMMYY for Zerodha tradingsymbol e.g. 29MAY26
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mmm = months[d.getMonth()];
+  const yy = String(d.getFullYear()).slice(-2);
+  return `${dd}${mmm}${yy}`;
+}
+
+function exp_fmtWeeklyDate(d) {
+  // Weekly format: D{day}{month_num} e.g. for NIFTY weekly = N{day}{month}{year}
+  // Zerodha weekly format: NIFTY26JUN4CE (for 4th June 2026 weekly)
+  // Actually Zerodha format is: NIFTY{YY}{MON_SHORT}{DD}{STRIKE}{TYPE}
+  // e.g. NIFTY26JUN0424000CE
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const yy = String(d.getFullYear()).slice(-2);
+  const mmm = months[d.getMonth()];
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${yy}${mmm}${dd}`;
+}
+
+function exp_updateEstimate() {
+  const from = document.getElementById('exp_from').value;
+  const to = document.getElementById('exp_to').value;
+  const type = document.getElementById('exp_type').value;
+  const index = document.getElementById('exp_index').value;
+  const otype = document.getElementById('exp_otype').value;
+  const el = document.getElementById('exp_estimate');
+  if (!from || !to) { el.textContent = 'Select date range to see estimate.'; return; }
+  const expiries = exp_getExpiries(from, to, type, index);
+  let strikes = 1;
+  if (expStrikeMode === 'atm') {
+    const range = parseInt(document.getElementById('exp_range')?.value || 5);
+    strikes = range * 2 + 1;
+  }
+  const types = otype === 'BOTH' ? 2 : 1;
+  const total = expiries.length * strikes * types;
+  el.textContent = `📊 ${expiries.length} expiries × ${strikes} strikes × ${types} type(s) = ${total} files to download`;
+}
+
+// Add listeners for live estimate update
+setTimeout(() => {
+  ['exp_from','exp_to','exp_type','exp_index','exp_otype','exp_range','exp_atm','exp_step'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', exp_updateEstimate);
+  });
+}, 500);
+
+function exp_stop() { expStopped = true; }
+
+async function exp_download() {
+  const from = document.getElementById('exp_from').value;
+  const to = document.getElementById('exp_to').value;
+  const index = document.getElementById('exp_index').value;
+  const type = document.getElementById('exp_type').value;
+  const otype = document.getElementById('exp_otype').value;
+  const interval = document.getElementById('exp_interval').value;
+  const fmt = document.getElementById('exp_fmt').value;
+
+  if (!from || !to) { alert('Select date range'); return; }
+  if (!apiKey || !accessToken) { alert('Connect token first'); return; }
+
+  // Get strikes list
+  let strikes = [];
+  if (expStrikeMode === 'atm') {
+    const atm = parseFloat(document.getElementById('exp_atm').value);
+    const step = parseFloat(document.getElementById('exp_step').value) || 50;
+    const range = parseInt(document.getElementById('exp_range').value) || 5;
+    if (!atm) { alert('Enter ATM/Spot price'); return; }
+    const rounded = Math.round(atm / step) * step;
+    for (let i = -range; i <= range; i++) strikes.push(rounded + i * step);
+  } else {
+    const s = parseFloat(document.getElementById('exp_strike').value);
+    if (!s) { alert('Enter strike price'); return; }
+    strikes = [s];
+  }
+
+  const types = otype === 'BOTH' ? ['CE','PE'] : [otype];
+  const expiries = exp_getExpiries(from, to, type, index);
+  const exchange = ['SENSEX','BANKEX'].includes(index) ? 'BFO' : 'NFO';
+
+  const log = document.getElementById('exp_log');
+  log.style.display = 'block';
+  log.innerHTML = '';
+  expStopped = false;
+  document.getElementById('exp_stopbtn').style.display = '';
+  document.getElementById('exp_dlbtn').disabled = true;
+
+  let done = 0, failed = 0;
+  const total = expiries.length * strikes.length * types.length;
+  document.getElementById('exp_count').textContent = `0 / ${total} files`;
+
+  for (const expDate of expiries) {
+    if (expStopped) { logLine(log, '■ Stopped by user.', 'info'); break; }
+
+    const expStr = exp_fmtDate(expDate);
+
+    for (const strike of strikes) {
+      for (const ot of types) {
+        if (expStopped) break;
+
+        // Try to get instrument token from API (works for active contracts)
+        // For expired: construct tradingsymbol and try direct lookup
+        let instrToken = null;
+        let tradingSym = '';
+
+        try {
+          const r = await fetch(`/api/options/token?api_key=${apiKey}&access_token=${accessToken}&underlying=${index}&expiry=${expStr}&strike=${strike}&option_type=${ot}&exchange=${exchange}`);
+          if (r.ok) {
+            const d = await r.json();
+            instrToken = d.instrument_token;
+            tradingSym = d.tradingsymbol;
+          }
+        } catch(e) {}
+
+        if (!instrToken) {
+          // Expired contract — construct symbol and try via tradingsymbol search
+          // Try monthly format: NIFTY24MAY24000CE
+          const symDate = exp_fmtSymbolDate(expDate);
+          const strikeStr = String(parseInt(strike));
+          tradingSym = `${index}${symDate}${strikeStr}${ot}`;
+          logLine(log, `🔍 Searching expired: ${tradingSym}`, 'info');
+
+          // Search for this symbol in instruments
+          try {
+            const sr = await fetch(`/api/instruments?api_key=${apiKey}&access_token=${accessToken}&exchange=${exchange}&search=${encodeURIComponent(tradingSym)}`);
+            if (sr.ok) {
+              const sd = await sr.json();
+              if (sd.length > 0) {
+                instrToken = sd[0].instrument_token;
+                tradingSym = sd[0].tradingsymbol;
+              }
+            }
+          } catch(e) {}
+        }
+
+        if (!instrToken) {
+          // Last resort: try historical API directly with tradingsymbol
+          // Kite sometimes allows this for recent expired contracts
+          logLine(log, `⚠ ${tradingSym} — token not found, skipping`, 'info');
+          failed++;
+        } else {
+          try {
+            const body = {
+              api_key: apiKey, access_token: accessToken,
+              instrument_token: instrToken,
+              from_date: from, to_date: expStr, // data up to expiry date
+              interval, oi: true, continuous: false, file_format: fmt
+            };
+            const r = await fetch('/api/historical', {
+              method:'POST', headers:{'Content-Type':'application/json'},
+              body: JSON.stringify(body)
+            });
+            if (!r.ok) {
+              const ed = await r.json();
+              logLine(log, `✗ ${tradingSym}: ${ed.detail||'No data'}`, 'err');
+              failed++;
+            } else {
+              dlBlob(await r.blob(), `${tradingSym}_${interval}_${from}_${expStr}.${fmt}`);
+              logLine(log, `✓ ${tradingSym}`, 'ok');
+              done++;
+            }
+          } catch(e) {
+            logLine(log, `✗ ${tradingSym}: ${e.message}`, 'err');
+            failed++;
+          }
+        }
+
+        done + failed > 0 && (document.getElementById('exp_prog').style.width = Math.round((done+failed)/total*100)+'%');
+        document.getElementById('exp_count').textContent = `${done} downloaded, ${failed} not found — ${done+failed}/${total}`;
+        await sleep(150);
+      }
+    }
+  }
+
+  document.getElementById('exp_stopbtn').style.display = 'none';
+  document.getElementById('exp_dlbtn').disabled = false;
+  showAlert('exp_status', `✓ Done! ${done} files downloaded. ${failed} not found (expired contracts not in Kite dump).`, done > 0 ? 'ok' : 'err');
+}
+
 function showAlert(id,msg,type){
   const el=document.getElementById(id);if(!el)return;
   const c=type==='ok'?'alert-ok':type==='err'?'alert-err':'alert-info';
@@ -1079,8 +1473,8 @@ function setDates(){
   const td=`${t.getFullYear()}-${p(t.getMonth()+1)}-${p(t.getDate())}`;
   const a=new Date(t);a.setMonth(a.getMonth()-1);
   const fd=`${a.getFullYear()}-${p(a.getMonth()+1)}-${p(a.getDate())}`;
-  ['fromDate','opt_from','fut_from'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=fd;});
-  ['toDate','opt_to','fut_to'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=td;});
+  ['fromDate','opt_from','fut_from','exp_from'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=fd;});
+  ['toDate','opt_to','fut_to','exp_to'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=td;});
 }
 </script>
 </body>
