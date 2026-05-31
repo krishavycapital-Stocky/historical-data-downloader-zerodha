@@ -74,9 +74,9 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:1
 /* TABS */
 .tabs{display:flex;gap:0;padding:0 20px;border-bottom:1px solid var(--border);background:var(--surface);overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
 .tabs::-webkit-scrollbar{display:none;}
-.tab{padding:10px 14px;border:none;background:transparent;color:var(--muted);font-family:var(--mono);font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .2s,border-color .2s;letter-spacing:.3px;text-transform:uppercase;}
+.tab{padding:10px 16px;border:none;background:transparent;color:#5a7a9a;font-family:var(--mono);font-size:11px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .2s,border-color .2s;letter-spacing:.5px;text-transform:uppercase;line-height:1.4;}
 .tab:hover{color:var(--text);}
-.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab.active{color:#00d4aa !important;border-bottom-color:#00d4aa;}
 
 /* MAIN */
 main{padding:24px;max-width:900px;flex:1;}
@@ -1252,7 +1252,7 @@ async function opt_dl_range(u, exp, fmt) {
   const atmPrice = parseFloat(document.getElementById('atm_price').value);
   const step = parseFloat(document.getElementById('atm_step').value) || 50;
   const range = parseInt(document.getElementById('atm_range').value) || 10;
-  if (!atmPrice || atmPrice <= 0) { alert('Enter a valid Spot/ATM price'); return; }
+  if (!atmPrice || atmPrice <= 0) { showAlert('opt_status','✗ Enter a valid Spot/ATM price','err'); return; }
 
   // Round ATM price to nearest step
   const atm = Math.round(atmPrice / step) * step;
@@ -1449,8 +1449,8 @@ async function exp_download() {
   const interval = document.getElementById('exp_interval').value;
   const fmt = document.getElementById('exp_fmt').value;
 
-  if (!from || !to) { alert('Select date range'); return; }
-  if (!apiKey || !accessToken) { alert('Connect token first'); return; }
+  if (!from || !to) { showAlert('exp_status','✗ Select a date range first','err'); return; }
+  if (!apiKey || !accessToken) { showAlert('exp_status','✗ Connect your token first (Login tab)','err'); return; }
 
   // Get strikes list
   let strikes = [];
@@ -1458,12 +1458,12 @@ async function exp_download() {
     const atm = parseFloat(document.getElementById('exp_atm').value);
     const step = parseFloat(document.getElementById('exp_step').value) || 50;
     const range = parseInt(document.getElementById('exp_range').value) || 5;
-    if (!atm) { alert('Enter ATM/Spot price'); return; }
+    if (!atm) { showAlert('exp_status','✗ Enter ATM/Spot price in the Spot Price field above','err'); return; }
     const rounded = Math.round(atm / step) * step;
     for (let i = -range; i <= range; i++) strikes.push(rounded + i * step);
   } else {
     const s = parseFloat(document.getElementById('exp_strike').value);
-    if (!s) { alert('Enter strike price'); return; }
+    if (!s) { showAlert('exp_status','✗ Enter a strike price in the field above','err'); return; }
     strikes = [s];
   }
 
@@ -1692,8 +1692,8 @@ async function ch_download() {
   const interval = document.getElementById('ch_interval').value;
   const fmt      = document.getElementById('ch_fmt').value;
 
-  if (!from || !to)            { alert('Select expiry date range'); return; }
-  if (!apiKey || !accessToken) { alert('Connect token first'); return; }
+  if (!from || !to)            { showAlert('ch_status','✗ Select expiry date range first','err'); return; }
+  if (!apiKey || !accessToken) { showAlert('ch_status','✗ Connect your token first','err'); return; }
 
   const expiries = ch_getAllExpiries(from, to, type);
   if (!expiries.length) { showAlert('ch_status', 'No expiries found in this date range', 'err'); return; }
