@@ -239,21 +239,11 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
   </header>
 
   <div class="tabs">
-    <button class="tab active" id="tab-download" onclick="switchTab('download',this)">
-      <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#00d4aa;margin-right:6px;vertical-align:middle;"></span>Equity
-    </button>
-    <button class="tab" id="tab-options" onclick="switchTab('options',this)">
-      <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#0091ff;margin-right:6px;vertical-align:middle;"></span>Options
-    </button>
-    <button class="tab" id="tab-expired" onclick="switchTab('expired',this)">
-      <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#ffb347;margin-right:6px;vertical-align:middle;"></span>Exp. Options
-    </button>
-    <button class="tab" id="tab-futures" onclick="switchTab('futures',this)">
-      <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#ff4d6d;margin-right:6px;vertical-align:middle;"></span>Futures
-    </button>
-    <button class="tab" id="tab-chain" onclick="switchTab('chain',this)">
-      <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#c084fc;margin-right:6px;vertical-align:middle;"></span>Chain Download
-    </button>
+    <button class="tab active" onclick="switchTab('download',this)">Equity</button>
+    <button class="tab" onclick="switchTab('options',this)">Options</button>
+    <button class="tab" onclick="switchTab('expired',this)">Exp. Options</button>
+    <button class="tab" onclick="switchTab('futures',this)">Futures</button>
+    <button class="tab" onclick="switchTab('chain',this)">Chain Download</button>
   </div>
 
   <main>
@@ -584,6 +574,11 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
 
         <div style="background:rgba(0,145,255,.08);border:1px solid rgba(0,145,255,.2);border-radius:5px;padding:10px 14px;font-family:var(--mono);font-size:11px;color:var(--accent2);margin-top:8px;" id="exp_estimate">
           Select options above to see estimate of files to download.
+        </div>
+
+        <div id="exp_expiry_list_wrap" style="display:none;margin-top:12px;">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">Expiries that will be downloaded:</div>
+          <div id="exp_expiry_list" style="display:flex;flex-wrap:wrap;gap:6px;max-height:160px;overflow-y:auto;padding:2px;"></div>
         </div>
       </div>
 
@@ -1402,7 +1397,11 @@ function exp_updateEstimate() {
   const index = document.getElementById('exp_index').value;
   const otype = document.getElementById('exp_otype').value;
   const el = document.getElementById('exp_estimate');
-  if (!from || !to) { el.textContent = 'Select date range to see estimate.'; return; }
+  if (!from || !to) {
+    el.textContent = 'Select date range to see estimate.';
+    document.getElementById('exp_expiry_list_wrap').style.display = 'none';
+    return;
+  }
   const expiries = exp_getExpiries(from, to, type, index);
   let strikes = 1;
   if (expStrikeMode === 'atm') {
@@ -1411,14 +1410,31 @@ function exp_updateEstimate() {
   }
   const types = otype === 'BOTH' ? 2 : 1;
   const total = expiries.length * strikes * types;
-  el.textContent = `📊 ${expiries.length} expiries × ${strikes} strikes × ${types} type(s) = ${total} files to download`;
+  el.innerHTML = `📊 <strong style="color:var(--accent)">${expiries.length}</strong> expiries × <strong style="color:var(--accent)">${strikes}</strong> strikes × <strong style="color:var(--accent)">${types}</strong> type(s) = <strong style="color:var(--accent)">${total}</strong> files to download`;
+
+  // Show expiry list
+  const wrap = document.getElementById('exp_expiry_list_wrap');
+  const list = document.getElementById('exp_expiry_list');
+  if (expiries.length > 0) {
+    wrap.style.display = 'block';
+    list.innerHTML = expiries.map(e => {
+      const dateStr = exp_fmtDate(e);
+      return \`<span style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-family:var(--mono);font-size:11px;color:var(--text);">\${dateStr}</span>\`;
+    }).join('');
+  } else {
+    wrap.style.display = 'none';
+    el.innerHTML = '⚠ No expiries found in this date range';
+  }
 }
 
 // Add listeners for live estimate update
 setTimeout(() => {
   ['exp_from','exp_to','exp_type','exp_index','exp_otype','exp_range','exp_atm','exp_step'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.addEventListener('change', exp_updateEstimate);
+    if (el) {
+      el.addEventListener('change', exp_updateEstimate);
+      el.addEventListener('input', exp_updateEstimate);
+    }
   });
 }, 500);
 
