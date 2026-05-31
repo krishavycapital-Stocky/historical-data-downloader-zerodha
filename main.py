@@ -78,17 +78,25 @@ async def _fetch_instruments(api_key: str, access_token: str, exchange: str) -> 
     cache_key = f"{api_key}:{exchange}"
     if cache_key in _instrument_cache:
         return _instrument_cache[cache_key]
-    async with httpx.AsyncClient(timeout=60) as client:
-        resp = await client.get(
-            f"{KITE_BASE}/instruments/{exchange}",
-            headers={
-                "X-Kite-Version": "3",
-                "Authorization": f"token {api_key}:{access_token}",
-            },
-        )
+    try:
+        async with httpx.AsyncClient(timeout=120) as client:
+            resp = await client.get(
+                f"{KITE_BASE}/instruments/{exchange}",
+                headers={
+                    "X-Kite-Version": "3",
+                    "Authorization": f"token {api_key}:{access_token}",
+                },
+            )
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail=f"Timeout fetching {exchange} instruments. Try again.")
     if resp.status_code != 200:
-        raise HTTPException(status_code=resp.status_code, detail=resp.text)
-    df = pd.read_csv(io.StringIO(resp.text))
+        raise HTTPException(status_code=resp.status_code, detail=f"Kite API error {resp.status_code}: {resp.text[:200]}")
+    try:
+        df = pd.read_csv(io.StringIO(resp.text))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to parse instruments CSV: {str(e)}")
+    if df.empty:
+        raise HTTPException(status_code=404, detail=f"No instruments found for {exchange}")
     _instrument_cache[cache_key] = df
     return df
 
@@ -100,7 +108,12 @@ async def get_instruments(
     exchange: str = "NFO",
     search: str = "",
 ):
-    df = await _fetch_instruments(api_key, access_token, exchange)
+    try:
+        df = await _fetch_instruments(api_key, access_token, exchange)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     if search:
         mask = df["tradingsymbol"].str.contains(search.upper(), na=False)
         df = df[mask].head(50)
@@ -109,7 +122,7 @@ async def get_instruments(
     cols = ["instrument_token", "tradingsymbol", "name", "expiry",
             "strike", "instrument_type", "exchange", "lot_size"]
     existing = [c for c in cols if c in df.columns]
-    return df[existing].to_dict(orient="records")
+    return JSONResponse(content=df[existing].to_dict(orient="records"))
 
 
 # ── Options helpers ───────────────────────────────────────────────────────────

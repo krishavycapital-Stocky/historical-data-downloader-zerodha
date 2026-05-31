@@ -8,1157 +8,853 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
 :root {
-  --bg: #0a0e14;
-  --surface: #111720;
-  --surface2: #18202e;
-  --border: #1e2d44;
-  --accent: #00d4aa;
-  --accent2: #0091ff;
-  --danger: #ff4d6d;
-  --warn: #ffb347;
-  --text: #e0eaf8;
-  --muted: #5a7a9a;
-  --mono: 'IBM Plex Mono', monospace;
-  --sans: 'IBM Plex Sans', sans-serif;
+  --bg:#0a0e14;--surface:#111720;--surface2:#18202e;--border:#1e2d44;
+  --accent:#00d4aa;--accent2:#0091ff;--danger:#ff4d6d;--warn:#ffb347;
+  --text:#e0eaf8;--muted:#5a7a9a;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  font-size: 14px;
-  min-height: 100vh;
-}
-/* ── Header ── */
-header {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 14px 24px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-.logo {
-  font-family: var(--mono);
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--accent);
-  letter-spacing: -0.5px;
-}
-.logo span { color: var(--muted); font-weight: 400; }
-.conn-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--muted);
-  transition: background 0.3s;
-  flex-shrink: 0;
-}
-.conn-dot.live { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
-.conn-label { font-size: 12px; color: var(--muted); font-family: var(--mono); }
-.header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-/* ── Tabs ── */
-.tabs {
-  display: flex;
-  gap: 2px;
-  padding: 16px 24px 0;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-  overflow-x: auto;
-}
-.tab {
-  padding: 10px 18px;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  white-space: nowrap;
-  transition: color 0.2s, border-color 0.2s;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-.tab:hover { color: var(--text); }
-.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-/* ── Main ── */
-main { padding: 24px; max-width: 900px; }
-.panel { display: none; }
-.panel.active { display: block; }
-/* ── Cards ── */
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 16px;
-}
-.card-title {
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--muted);
-  margin-bottom: 16px;
-}
-/* ── Form ── */
-.row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
-.field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 160px; }
-.field label { font-size: 11px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.5px; }
-input, select, textarea {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 13px;
-  padding: 9px 12px;
-  width: 100%;
-  outline: none;
-  transition: border-color 0.2s;
-}
-input:focus, select:focus { border-color: var(--accent2); }
-select option { background: var(--surface2); }
-/* ── Buttons ── */
-.btn {
-  padding: 9px 18px;
-  border-radius: 5px;
-  border: none;
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  letter-spacing: 0.5px;
-  transition: opacity 0.2s, transform 0.1s;
-  white-space: nowrap;
-}
-.btn:active { transform: scale(0.97); }
-.btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.btn-primary { background: var(--accent); color: #000; }
-.btn-secondary { background: var(--accent2); color: #fff; }
-.btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-.btn-danger { background: var(--danger); color: #fff; }
-.btn-sm { padding: 6px 12px; font-size: 11px; }
-/* ── Status / alerts ── */
-.alert {
-  padding: 10px 14px;
-  border-radius: 5px;
-  font-family: var(--mono);
-  font-size: 12px;
-  margin-top: 12px;
-}
-.alert-ok { background: rgba(0,212,170,0.1); border: 1px solid rgba(0,212,170,0.3); color: var(--accent); }
-.alert-err { background: rgba(255,77,109,0.1); border: 1px solid rgba(255,77,109,0.3); color: var(--danger); }
-.alert-info { background: rgba(0,145,255,0.1); border: 1px solid rgba(0,145,255,0.3); color: var(--accent2); }
-/* ── Instrument search results ── */
-.search-results {
-  position: relative;
-  max-height: 220px;
-  overflow-y: auto;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-top: none;
-  border-radius: 0 0 5px 5px;
-  display: none;
-}
-.search-result-item {
-  padding: 9px 12px;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid var(--border);
-  font-family: var(--mono);
-  font-size: 12px;
-  transition: background 0.15s;
-}
-.search-result-item:hover { background: var(--border); }
-.search-result-item .sym { color: var(--accent); font-weight: 600; }
-.search-result-item .meta { color: var(--muted); font-size: 11px; }
-/* ── Selected instrument chip ── */
-.selected-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(0,212,170,0.1);
-  border: 1px solid rgba(0,212,170,0.4);
-  border-radius: 4px;
-  padding: 6px 12px;
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--accent);
-  margin-top: 8px;
-}
-.selected-chip .clear { cursor: pointer; color: var(--muted); }
-.selected-chip .clear:hover { color: var(--danger); }
-/* ── Preview table ── */
-.preview-table-wrap { overflow-x: auto; margin-top: 12px; }
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-family: var(--mono);
-  font-size: 12px;
-}
-th { background: var(--surface2); color: var(--muted); padding: 8px 10px; text-align: left; font-weight: 500; border-bottom: 1px solid var(--border); }
-td { padding: 7px 10px; border-bottom: 1px solid rgba(30,45,68,0.5); }
-tr:last-child td { border-bottom: none; }
-/* ── Progress ── */
-.progress-bar { background: var(--surface2); border-radius: 3px; height: 4px; overflow: hidden; margin-top: 8px; }
-.progress-bar-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s; }
-/* ── Bulk log ── */
-.bulk-log {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 12px;
-  font-family: var(--mono);
-  font-size: 11px;
-  max-height: 260px;
-  overflow-y: auto;
-  line-height: 1.8;
-}
-.log-ok { color: var(--accent); }
-.log-err { color: var(--danger); }
-.log-info { color: var(--muted); }
-/* ── Divider ── */
-.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
-/* ── Toggle ── */
-.toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.toggle-row label { font-size: 13px; cursor: pointer; }
-input[type=checkbox] { width: auto; cursor: pointer; accent-color: var(--accent); }
-/* ── Option type selector ── */
-.otype-group { display: flex; gap: 6px; }
-.otype-btn {
-  flex: 1;
-  padding: 8px;
-  border: 1px solid var(--border);
-  background: var(--surface2);
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-align: center;
-}
-.otype-btn.active-ce { border-color: var(--accent); color: var(--accent); background: rgba(0,212,170,0.08); }
-.otype-btn.active-pe { border-color: var(--danger); color: var(--danger); background: rgba(255,77,109,0.08); }
-.otype-btn.active-both { border-color: var(--warn); color: var(--warn); background: rgba(255,179,71,0.08); }
-/* ── Spinner ── */
-@keyframes spin { to { transform: rotate(360deg); } }
-.spin { display: inline-block; animation: spin 1s linear infinite; }
-/* ── Section heading ── */
-.section-head {
-  font-family: var(--mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--accent2);
-  margin-bottom: 12px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--border);
-}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;min-height:100vh;}
+
+/* PAGE SYSTEM */
+.page{display:none;min-height:100vh;}
+.page.active{display:flex;flex-direction:column;}
+
+/* ── LOGIN PAGE ── */
+#page-login{align-items:center;justify-content:center;padding:40px 20px;}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px;width:100%;max-width:480px;}
+.login-logo{font-family:var(--mono);font-size:28px;font-weight:600;color:var(--accent);margin-bottom:4px;}
+.login-logo span{color:var(--muted);font-weight:400;}
+.login-tagline{color:var(--muted);font-size:13px;margin-bottom:28px;}
+.login-label{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:6px;display:block;}
+.login-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:14px;padding:11px 14px;outline:none;margin-bottom:6px;transition:border-color .2s;}
+.login-input:focus{border-color:var(--accent2);}
+.login-hint{font-size:11px;color:var(--muted);margin-bottom:18px;font-family:var(--mono);}
+.login-hint a{color:var(--accent2);text-decoration:none;}
+.btn-login{width:100%;padding:13px;background:var(--accent);color:#000;border:none;border-radius:6px;font-family:var(--mono);font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;transition:opacity .2s;letter-spacing:.3px;}
+.btn-login:hover{opacity:.88;}
+.saved-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);border-radius:4px;padding:5px 10px;font-family:var(--mono);font-size:11px;color:var(--accent);margin-bottom:18px;}
+.divider-or{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--muted);font-size:12px;font-family:var(--mono);}
+.divider-or::before,.divider-or::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ── TOKEN PAGE ── */
+#page-token{align-items:center;justify-content:center;padding:40px 20px;}
+.token-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px;width:100%;max-width:520px;}
+.token-logo{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--accent);margin-bottom:4px;}
+.token-logo span{color:var(--muted);font-weight:400;}
+.token-step{display:flex;align-items:flex-start;gap:14px;margin-bottom:22px;}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);font-family:var(--mono);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);}
+.step-num.done{background:rgba(0,212,170,.15);border-color:var(--accent);color:var(--accent);}
+.step-num.active{background:rgba(0,145,255,.15);border-color:var(--accent2);color:var(--accent2);}
+.step-title{font-size:14px;font-weight:500;margin-bottom:4px;}
+.step-desc{font-size:12px;color:var(--muted);font-family:var(--mono);}
+.autofill-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);border-radius:20px;padding:3px 10px;font-family:var(--mono);font-size:10px;color:var(--accent);margin-left:8px;vertical-align:middle;}
+.token-display{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:10px;word-break:break-all;min-height:40px;}
+.token-display.filled{color:var(--accent);border-color:rgba(0,212,170,.4);}
+.btn-generate{width:100%;padding:13px;background:var(--accent);color:#000;border:none;border-radius:6px;font-family:var(--mono);font-size:14px;font-weight:600;cursor:pointer;margin-top:20px;transition:opacity .2s;}
+.btn-generate:hover{opacity:.88;}
+.btn-generate:disabled{opacity:.4;cursor:not-allowed;}
+.btn-outline{width:100%;padding:11px;background:transparent;color:var(--accent2);border:1px solid var(--accent2);border-radius:6px;font-family:var(--mono);font-size:13px;font-weight:600;cursor:pointer;margin-top:10px;transition:background .2s;}
+.btn-outline:hover{background:rgba(0,145,255,.08);}
+.back-link{font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;margin-top:16px;text-align:center;}
+.back-link:hover{color:var(--text);}
+
+/* ── APP PAGE ── */
+#page-app{flex-direction:column;}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;flex-shrink:0;}
+.logo{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--accent);}
+.logo span{color:var(--muted);font-weight:400;}
+.conn-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);flex-shrink:0;}
+.conn-label{font-size:12px;color:var(--accent);font-family:var(--mono);}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+.user-pill{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-family:var(--mono);font-size:11px;color:var(--muted);}
+.btn-relogin{font-family:var(--mono);font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:4px;padding:4px 10px;cursor:pointer;}
+.btn-relogin:hover{color:var(--warn);border-color:var(--warn);}
+
+/* TABS */
+.tabs{display:flex;gap:2px;padding:0 24px;border-bottom:1px solid var(--border);background:var(--surface);overflow-x:auto;flex-shrink:0;}
+.tab{padding:12px 18px;border:none;background:transparent;color:var(--muted);font-family:var(--mono);font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .2s,border-color .2s;letter-spacing:.5px;text-transform:uppercase;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* MAIN */
+main{padding:24px;max-width:900px;flex:1;}
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px;}
+.section-head{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--accent2);margin-bottom:14px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+
+/* FORM */
+.row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+.field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:160px;}
+.field label{font-size:11px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;}
+input,select{background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--mono);font-size:13px;padding:9px 12px;width:100%;outline:none;transition:border-color .2s;}
+input:focus,select:focus{border-color:var(--accent2);}
+select option{background:var(--surface2);}
+
+/* BUTTONS */
+.btn{padding:9px 18px;border-radius:5px;border:none;font-family:var(--mono);font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.5px;transition:opacity .2s,transform .1s;white-space:nowrap;}
+.btn:active{transform:scale(.97);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-primary{background:var(--accent);color:#000;}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-danger{background:var(--danger);color:#fff;}
+
+/* ALERTS */
+.alert{padding:10px 14px;border-radius:5px;font-family:var(--mono);font-size:12px;margin-top:12px;}
+.alert-ok{background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);color:var(--accent);}
+.alert-err{background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.3);color:var(--danger);}
+.alert-info{background:rgba(0,145,255,.1);border:1px solid rgba(0,145,255,.3);color:var(--accent2);}
+
+/* SEARCH */
+.search-wrap{position:relative;}
+.search-results{position:absolute;top:100%;left:0;right:0;max-height:220px;overflow-y:auto;background:var(--surface2);border:1px solid var(--border);border-top:none;border-radius:0 0 5px 5px;display:none;z-index:50;}
+.sri{padding:9px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12px;transition:background .15s;}
+.sri:hover{background:var(--border);}
+.sri .sym{color:var(--accent);font-weight:600;}
+.sri .meta{color:var(--muted);font-size:11px;}
+.sel-chip{display:inline-flex;align-items:center;gap:8px;background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.4);border-radius:4px;padding:6px 12px;font-family:var(--mono);font-size:12px;color:var(--accent);margin-top:8px;}
+.sel-chip .clr{cursor:pointer;color:var(--muted);}
+.sel-chip .clr:hover{color:var(--danger);}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;margin-top:12px;}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;}
+th{background:var(--surface2);color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);}
+td{padding:7px 10px;border-bottom:1px solid rgba(30,45,68,.5);}
+tr:last-child td{border-bottom:none;}
+
+/* BULK */
+.progress-bar{background:var(--surface2);border-radius:3px;height:4px;overflow:hidden;margin-top:8px;}
+.progress-bar-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .3s;}
+.bulk-log{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:12px;font-family:var(--mono);font-size:11px;max-height:260px;overflow-y:auto;line-height:1.8;margin-top:12px;}
+.log-ok{color:var(--accent);}.log-err{color:var(--danger);}.log-info{color:var(--muted);}
+
+/* TOGGLES */
+.trow{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.trow label{font-size:13px;cursor:pointer;}
+input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
+
+/* OPTION TYPE */
+.otype-group{display:flex;gap:6px;}
+.otype-btn{flex:1;padding:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-family:var(--mono);font-size:12px;font-weight:600;border-radius:4px;cursor:pointer;transition:all .2s;text-align:center;}
+.otype-btn.active-ce{border-color:var(--accent);color:var(--accent);background:rgba(0,212,170,.08);}
+.otype-btn.active-pe{border-color:var(--danger);color:var(--danger);background:rgba(255,77,109,.08);}
+.otype-btn.active-both{border-color:var(--warn);color:var(--warn);background:rgba(255,179,71,.08);}
 </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">Zeta<span>Pull</span></div>
-  <div class="conn-dot" id="connDot"></div>
-  <div class="conn-label" id="connLabel">Not connected</div>
-  <div class="header-right">
-    <span id="userLabel" style="font-family:var(--mono);font-size:12px;color:var(--muted)"></span>
-  </div>
-</header>
+<!-- ═══════════════════════════════════════
+     PAGE 1 — LOGIN
+═══════════════════════════════════════ -->
+<div class="page" id="page-login">
+  <div class="login-box">
+    <div class="login-logo">Zeta<span>Pull</span></div>
+    <div class="login-tagline">Zerodha Historical Data Downloader</div>
 
-<div class="tabs">
-  <button class="tab active" onclick="switchTab('login')">🔑 Login & Token</button>
-  <button class="tab" onclick="switchTab('download')">📥 Download Data</button>
-  <button class="tab" onclick="switchTab('options')">🎯 Options</button>
-  <button class="tab" onclick="switchTab('futures')">📈 Futures</button>
-  <button class="tab" onclick="switchTab('bulk')">📦 Bulk Download</button>
-</div>
+    <div id="savedBadge" style="display:none" class="saved-badge">✓ Credentials saved — just click Login</div>
 
-<main>
+    <label class="login-label">API Key</label>
+    <input class="login-input" type="text" id="apiKey" placeholder="Your Kite API Key"/>
+    <div class="login-hint">From <a href="https://developers.kite.trade/apps" target="_blank">developers.kite.trade/apps</a> → your app</div>
 
-<!-- ══════════════════════════════ LOGIN TAB ══════════════════════════════ -->
-<div class="panel active" id="panel-login">
-  <div class="card">
-    <div class="card-title">API Credentials</div>
-    <div class="row">
-      <div class="field">
-        <label>API Key</label>
-        <input type="text" id="apiKey" placeholder="your_api_key" oninput="saveCredentials()"/>
-      </div>
-      <div class="field">
-        <label>API Secret</label>
-        <input type="password" id="apiSecret" placeholder="your_api_secret" oninput="saveCredentials()"/>
-      </div>
-    </div>
-    <div class="row">
-      <div class="field">
-        <label>Access Token (paste directly if you have it)</label>
-        <input type="text" id="accessTokenDirect" placeholder="paste access_token here"/>
-      </div>
-    </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
-      <button class="btn btn-ghost" onclick="openKiteLogin()">Open Kite Login →</button>
-      <button class="btn btn-primary" onclick="useDirectToken()">Use This Token</button>
-    </div>
-  </div>
+    <label class="login-label">API Secret</label>
+    <input class="login-input" type="password" id="apiSecret" placeholder="Your Kite API Secret"/>
+    <div class="login-hint">Same page — never share this with anyone</div>
 
-  <div class="card">
-    <div class="card-title">Generate Token from Request Token</div>
-    <div class="row">
-      <div class="field">
-        <label>Request Token (from redirect URL)</label>
-        <input type="text" id="requestToken" placeholder="paste request_token from URL"/>
-      </div>
-    </div>
-    <button class="btn btn-secondary" onclick="generateToken()">Generate Access Token</button>
-    <div id="loginStatus"></div>
+    <button class="btn-login" onclick="goToKiteLogin()">🔐 Login with Zerodha Kite →</button>
+
+    <div class="divider-or">or paste today's token directly</div>
+
+    <label class="login-label">Access Token (if you already have it)</label>
+    <input class="login-input" type="text" id="directToken" placeholder="Paste access_token here"/>
+    <button class="btn-login" style="background:var(--accent2);color:#fff;" onclick="useDirectToken()">Use This Token</button>
+
+    <div id="loginMsg" style="margin-top:14px;"></div>
   </div>
 </div>
 
-<!-- ══════════════════════════════ DOWNLOAD TAB ══════════════════════════════ -->
-<div class="panel" id="panel-download">
+<!-- ═══════════════════════════════════════
+     PAGE 2 — TOKEN
+═══════════════════════════════════════ -->
+<div class="page" id="page-token">
+  <div class="token-box">
+    <div class="token-logo">Zeta<span>Pull</span></div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:28px;">Daily Token — do this once every morning</p>
 
-  <!-- Step 1: Date Range -->
-  <div class="card">
-    <div class="section-head">Step 1 — Date Range & Interval</div>
-    <div class="row">
-      <div class="field">
-        <label>From Date</label>
-        <input type="date" id="fromDate"/>
-      </div>
-      <div class="field">
-        <label>To Date</label>
-        <input type="date" id="toDate"/>
-      </div>
-      <div class="field">
-        <label>Interval</label>
-        <select id="interval">
-          <option value="minute">1 min</option>
-          <option value="3minute">3 min</option>
-          <option value="5minute">5 min</option>
-          <option value="10minute">10 min</option>
-          <option value="15minute">15 min</option>
-          <option value="30minute">30 min</option>
-          <option value="60minute">60 min</option>
-          <option value="day" selected>Day</option>
-        </select>
+    <div class="token-step">
+      <div class="step-num done">✓</div>
+      <div>
+        <div class="step-title">Logged in to Zerodha Kite</div>
+        <div class="step-desc" id="step1desc">Login successful</div>
       </div>
     </div>
-    <div class="row">
-      <div class="field">
-        <label>File Format</label>
-        <select id="fileFormat">
-          <option value="csv">CSV</option>
-          <option value="json">JSON</option>
-        </select>
-      </div>
-    </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <div class="toggle-row"><input type="checkbox" id="includeOI" checked/><label for="includeOI">Include OI (Open Interest)</label></div>
-      <div class="toggle-row"><input type="checkbox" id="continuous"/><label for="continuous">Continuous (for futures rollover)</label></div>
-    </div>
-  </div>
 
-  <!-- Step 2: Instrument -->
-  <div class="card">
-    <div class="section-head">Step 2 — Select Instrument</div>
-    <div class="row">
-      <div class="field">
-        <label>Exchange</label>
-        <select id="exchange" onchange="clearSelectedInstrument()">
-          <option value="NFO">NFO (F&O)</option>
-          <option value="BFO">BFO (BSE F&O)</option>
-          <option value="NSE">NSE (Equity)</option>
-          <option value="BSE">BSE (Equity)</option>
-          <option value="MCX">MCX (Commodity)</option>
-        </select>
-      </div>
-      <div class="field" style="flex:2">
-        <label>Search Symbol</label>
-        <input type="text" id="symbolSearch" placeholder="Type symbol, e.g. RELIANCE, NIFTY..." oninput="searchInstruments()" autocomplete="off"/>
-        <div class="search-results" id="searchResults"></div>
+    <div class="token-step">
+      <div class="step-num active">2</div>
+      <div style="flex:1">
+        <div class="step-title">
+          Request Token
+          <span class="autofill-badge" id="autofillBadge" style="display:none">⚡ Auto-filled</span>
+        </div>
+        <div class="step-desc">Zerodha sends this after you login</div>
+        <div class="token-display" id="reqTokenDisplay">Waiting...</div>
+        <input style="margin-top:8px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--mono);font-size:12px;padding:8px 12px;width:100%;outline:none;"
+               type="text" id="reqTokenManual" placeholder="Or paste request_token manually here"/>
       </div>
     </div>
-    <div id="selectedInstrumentDiv" style="display:none">
-      <div class="selected-chip">
-        <span id="selectedSymbol"></span>
-        <span class="clear" onclick="clearSelectedInstrument()">✕</span>
-      </div>
-      <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;">
-        Token: <span id="selectedToken"></span>
-      </div>
-    </div>
-  </div>
 
-  <!-- Actions -->
-  <div class="card">
-    <div class="section-head">Step 3 — Preview & Download</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <button class="btn btn-ghost" onclick="previewData()">Preview (5 rows)</button>
-      <button class="btn btn-primary" onclick="downloadData()">⬇ Download</button>
+    <div class="token-step">
+      <div class="step-num" id="step3num">3</div>
+      <div>
+        <div class="step-title">Access Token</div>
+        <div class="step-desc">Generated below — valid until midnight</div>
+        <div class="token-display" id="accessTokenDisplay">Will appear here after Generate</div>
+      </div>
     </div>
-    <div id="previewDiv" style="margin-top:12px;"></div>
-    <div id="downloadStatus"></div>
+
+    <button class="btn-generate" id="generateBtn" onclick="generateToken()">⚡ Generate Access Token</button>
+    <button class="btn-outline" onclick="retryKiteLogin()">↩ Go back to Kite Login</button>
+    <div id="tokenMsg" style="margin-top:14px;"></div>
+    <div class="back-link" onclick="showPage('login')">← Change API credentials</div>
   </div>
 </div>
 
-<!-- ══════════════════════════════ OPTIONS TAB ══════════════════════════════ -->
-<div class="panel" id="panel-options">
-
-  <!-- Step 1: Date Range -->
-  <div class="card">
-    <div class="section-head">Step 1 — Date Range & Interval</div>
-    <div class="row">
-      <div class="field">
-        <label>From Date</label>
-        <input type="date" id="opt_fromDate"/>
-      </div>
-      <div class="field">
-        <label>To Date</label>
-        <input type="date" id="opt_toDate"/>
-      </div>
-      <div class="field">
-        <label>Interval</label>
-        <select id="opt_interval">
-          <option value="minute">1 min</option>
-          <option value="3minute">3 min</option>
-          <option value="5minute">5 min</option>
-          <option value="10minute">10 min</option>
-          <option value="15minute">15 min</option>
-          <option value="30minute">30 min</option>
-          <option value="60minute">60 min</option>
-          <option value="day" selected>Day</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Format</label>
-        <select id="opt_format">
-          <option value="csv">CSV</option>
-          <option value="json">JSON</option>
-        </select>
-      </div>
+<!-- ═══════════════════════════════════════
+     PAGE 3 — MAIN APP
+═══════════════════════════════════════ -->
+<div class="page" id="page-app">
+  <header>
+    <div class="logo">Zeta<span>Pull</span></div>
+    <div class="conn-dot"></div>
+    <div class="conn-label">Connected</div>
+    <div class="header-right">
+      <div class="user-pill" id="userPill">—</div>
+      <button class="btn-relogin" onclick="doRelogin()">↻ New Token</button>
     </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('download',this)">📥 Download Data</button>
+    <button class="tab" onclick="switchTab('options',this)">🎯 Options</button>
+    <button class="tab" onclick="switchTab('futures',this)">📈 Futures</button>
+    <button class="tab" onclick="switchTab('bulk',this)">📦 Bulk Download</button>
   </div>
 
-  <!-- Step 2: Option Selector -->
-  <div class="card">
-    <div class="section-head">Step 2 — Select Option Contract</div>
-    <div class="row">
-      <div class="field">
-        <label>Exchange</label>
-        <select id="opt_exchange" onchange="opt_resetFromUnderlying()">
-          <option value="NFO">NFO (NIFTY / BANKNIFTY / etc.)</option>
-          <option value="BFO">BFO (SENSEX / BANKEX)</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Underlying</label>
-        <select id="opt_underlying" onchange="opt_loadExpiries()">
-          <option value="">— Select —</option>
-          <option value="NIFTY">NIFTY</option>
-          <option value="BANKNIFTY">BANKNIFTY</option>
-          <option value="FINNIFTY">FINNIFTY</option>
-          <option value="MIDCPNIFTY">MIDCPNIFTY</option>
-          <option value="SENSEX">SENSEX</option>
-          <option value="BANKEX">BANKEX</option>
-        </select>
-      </div>
-    </div>
-    <div class="row">
-      <div class="field">
-        <label>Expiry Date</label>
-        <select id="opt_expiry" onchange="opt_loadStrikes()" disabled>
-          <option value="">— Load expiries first —</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Strike Price</label>
-        <select id="opt_strike" disabled>
-          <option value="">— Load strikes first —</option>
-        </select>
-      </div>
-    </div>
-    <div class="row">
-      <div class="field">
-        <label>Option Type</label>
-        <div class="otype-group">
-          <div class="otype-btn active-ce" id="otype-CE" onclick="opt_selectType('CE')">CE</div>
-          <div class="otype-btn" id="otype-PE" onclick="opt_selectType('PE')">PE</div>
-          <div class="otype-btn" id="otype-BOTH" onclick="opt_selectType('BOTH')">CE + PE</div>
+  <main>
+
+    <!-- DOWNLOAD TAB -->
+    <div class="panel active" id="panel-download">
+      <div class="card">
+        <div class="section-head">Step 1 — Date Range & Interval</div>
+        <div class="row">
+          <div class="field"><label>From Date</label><input type="date" id="fromDate"/></div>
+          <div class="field"><label>To Date</label><input type="date" id="toDate"/></div>
+          <div class="field"><label>Interval</label>
+            <select id="interval">
+              <option value="minute">1 min</option><option value="3minute">3 min</option>
+              <option value="5minute">5 min</option><option value="10minute">10 min</option>
+              <option value="15minute">15 min</option><option value="30minute">30 min</option>
+              <option value="60minute">60 min</option><option value="day" selected>Day</option>
+            </select>
+          </div>
+          <div class="field"><label>Format</label>
+            <select id="fileFormat"><option value="csv">CSV</option><option value="json">JSON</option></select>
+          </div>
+        </div>
+        <div style="display:flex;gap:20px;flex-wrap:wrap;">
+          <div class="trow"><input type="checkbox" id="includeOI" checked/><label for="includeOI">Include OI</label></div>
+          <div class="trow"><input type="checkbox" id="continuous"/><label for="continuous">Continuous</label></div>
         </div>
       </div>
+      <div class="card">
+        <div class="section-head">Step 2 — Select Instrument</div>
+        <div class="row">
+          <div class="field"><label>Exchange</label>
+            <select id="exchange" onchange="clearSel()">
+              <option value="NFO">NFO (F&amp;O)</option><option value="BFO">BFO (BSE F&amp;O)</option>
+              <option value="NSE">NSE (Equity)</option><option value="BSE">BSE (Equity)</option>
+              <option value="MCX">MCX</option>
+            </select>
+          </div>
+          <div class="field" style="flex:2"><label>Search Symbol</label>
+            <div class="search-wrap">
+              <input type="text" id="symbolSearch" placeholder="Type e.g. RELIANCE, NIFTY..." oninput="searchInst()" autocomplete="off"/>
+              <div class="search-results" id="searchResults"></div>
+            </div>
+          </div>
+        </div>
+        <div id="selInstDiv" style="display:none">
+          <div class="sel-chip"><span id="selSym"></span><span class="clr" onclick="clearSel()">✕</span></div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;">Token: <span id="selTok"></span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-head">Step 3 — Preview & Download</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-ghost" onclick="previewData()">Preview 5 rows</button>
+          <button class="btn btn-primary" onclick="downloadData()">⬇ Download</button>
+        </div>
+        <div id="previewDiv"></div><div id="dlStatus"></div>
+      </div>
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
-      <div class="toggle-row"><input type="checkbox" id="opt_oi" checked/><label for="opt_oi">Include OI</label></div>
-    </div>
-    <div id="opt_contractInfo" style="margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--muted);"></div>
-  </div>
 
-  <!-- Step 3 -->
-  <div class="card">
-    <div class="section-head">Step 3 — Preview & Download</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <button class="btn btn-ghost" onclick="opt_preview()">Preview (5 rows)</button>
-      <button class="btn btn-primary" onclick="opt_download()">⬇ Download</button>
+    <!-- OPTIONS TAB -->
+    <div class="panel" id="panel-options">
+      <div class="card">
+        <div class="section-head">Step 1 — Date Range & Interval</div>
+        <div class="row">
+          <div class="field"><label>From Date</label><input type="date" id="opt_from"/></div>
+          <div class="field"><label>To Date</label><input type="date" id="opt_to"/></div>
+          <div class="field"><label>Interval</label>
+            <select id="opt_interval">
+              <option value="minute">1 min</option><option value="3minute">3 min</option>
+              <option value="5minute">5 min</option><option value="15minute">15 min</option>
+              <option value="30minute">30 min</option><option value="60minute">60 min</option>
+              <option value="day" selected>Day</option>
+            </select>
+          </div>
+          <div class="field"><label>Format</label>
+            <select id="opt_fmt"><option value="csv">CSV</option><option value="json">JSON</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-head">Step 2 — Select Option Contract</div>
+        <div class="row">
+          <div class="field"><label>Exchange</label>
+            <select id="opt_ex"><option value="NFO">NFO</option><option value="BFO">BFO</option></select>
+          </div>
+          <div class="field"><label>Underlying</label>
+            <select id="opt_ul" onchange="opt_loadExpiries()">
+              <option value="">— Select —</option>
+              <option value="NIFTY">NIFTY</option><option value="BANKNIFTY">BANKNIFTY</option>
+              <option value="FINNIFTY">FINNIFTY</option><option value="MIDCPNIFTY">MIDCPNIFTY</option>
+              <option value="SENSEX">SENSEX</option><option value="BANKEX">BANKEX</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field"><label>Expiry Date</label>
+            <select id="opt_expiry" onchange="opt_loadStrikes()" disabled><option>— select underlying first —</option></select>
+          </div>
+          <div class="field"><label>Strike Price</label>
+            <select id="opt_strike" disabled><option>— select expiry first —</option></select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field"><label>Option Type</label>
+            <div class="otype-group">
+              <div class="otype-btn active-ce" id="otype-CE" onclick="opt_type('CE')">CE</div>
+              <div class="otype-btn" id="otype-PE" onclick="opt_type('PE')">PE</div>
+              <div class="otype-btn" id="otype-BOTH" onclick="opt_type('BOTH')">CE + PE</div>
+            </div>
+          </div>
+        </div>
+        <div class="trow"><input type="checkbox" id="opt_oi" checked/><label for="opt_oi">Include OI</label></div>
+        <div id="opt_info" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;"></div>
+      </div>
+      <div class="card">
+        <div class="section-head">Step 3 — Preview & Download</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-ghost" onclick="opt_preview()">Preview 5 rows</button>
+          <button class="btn btn-primary" onclick="opt_dl()">⬇ Download</button>
+        </div>
+        <div id="opt_prev"></div><div id="opt_status"></div>
+      </div>
     </div>
-    <div id="opt_previewDiv" style="margin-top:12px;"></div>
-    <div id="opt_status"></div>
-  </div>
+
+    <!-- FUTURES TAB -->
+    <div class="panel" id="panel-futures">
+      <div class="card">
+        <div class="section-head">Step 1 — Date Range & Interval</div>
+        <div class="row">
+          <div class="field"><label>From Date</label><input type="date" id="fut_from"/></div>
+          <div class="field"><label>To Date</label><input type="date" id="fut_to"/></div>
+          <div class="field"><label>Interval</label>
+            <select id="fut_interval">
+              <option value="minute">1 min</option><option value="3minute">3 min</option>
+              <option value="5minute">5 min</option><option value="15minute">15 min</option>
+              <option value="30minute">30 min</option><option value="60minute">60 min</option>
+              <option value="day" selected>Day</option>
+            </select>
+          </div>
+          <div class="field"><label>Format</label>
+            <select id="fut_fmt"><option value="csv">CSV</option><option value="json">JSON</option></select>
+          </div>
+        </div>
+        <div class="trow"><input type="checkbox" id="fut_cont"/><label for="fut_cont">Continuous (rollover)</label></div>
+      </div>
+      <div class="card">
+        <div class="section-head">Step 2 — Select Futures Contract</div>
+        <div class="row">
+          <div class="field"><label>Exchange</label>
+            <select id="fut_ex"><option value="NFO">NFO</option><option value="BFO">BFO</option><option value="MCX">MCX</option></select>
+          </div>
+          <div class="field"><label>Underlying Symbol</label>
+            <input type="text" id="fut_ul" placeholder="e.g. NIFTY, BANKNIFTY, RELIANCE"/>
+          </div>
+          <div class="field" style="align-self:flex-end">
+            <button class="btn btn-ghost" onclick="fut_loadExpiries()" style="width:100%">Load Expiries</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field"><label>Expiry Date</label>
+            <select id="fut_expiry" disabled><option>— load expiries first —</option></select>
+          </div>
+        </div>
+        <div id="fut_info" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;"></div>
+      </div>
+      <div class="card">
+        <div class="section-head">Step 3 — Preview & Download</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-ghost" onclick="fut_preview()">Preview 5 rows</button>
+          <button class="btn btn-primary" onclick="fut_dl()">⬇ Download</button>
+        </div>
+        <div id="fut_prev"></div><div id="fut_status"></div>
+      </div>
+    </div>
+
+    <!-- BULK TAB -->
+    <div class="panel" id="panel-bulk">
+      <div class="card">
+        <div class="section-head">Bulk Download via CSV</div>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:14px;">CSV columns: <code style="color:var(--accent)">instrument_token, from_date, to_date, interval</code> (optionally file_format)</p>
+        <div class="row"><div class="field"><label>Upload CSV</label><input type="file" id="bulkFile" accept=".csv"/></div></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="startBulk()">▶ Start</button>
+          <button class="btn btn-ghost" onclick="pauseBulk()" id="pauseBtn">⏸ Pause</button>
+          <button class="btn btn-danger" onclick="stopBulk()">■ Stop</button>
+        </div>
+        <div class="progress-bar"><div class="progress-bar-fill" id="bulkProg" style="width:0%"></div></div>
+        <div id="bulkCount" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;"></div>
+        <div class="bulk-log" id="bulkLog"></div>
+      </div>
+    </div>
+
+  </main>
 </div>
-
-<!-- ══════════════════════════════ FUTURES TAB ══════════════════════════════ -->
-<div class="panel" id="panel-futures">
-
-  <div class="card">
-    <div class="section-head">Step 1 — Date Range & Interval</div>
-    <div class="row">
-      <div class="field">
-        <label>From Date</label>
-        <input type="date" id="fut_fromDate"/>
-      </div>
-      <div class="field">
-        <label>To Date</label>
-        <input type="date" id="fut_toDate"/>
-      </div>
-      <div class="field">
-        <label>Interval</label>
-        <select id="fut_interval">
-          <option value="minute">1 min</option>
-          <option value="3minute">3 min</option>
-          <option value="5minute">5 min</option>
-          <option value="15minute">15 min</option>
-          <option value="30minute">30 min</option>
-          <option value="60minute">60 min</option>
-          <option value="day" selected>Day</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Format</label>
-        <select id="fut_format">
-          <option value="csv">CSV</option>
-          <option value="json">JSON</option>
-        </select>
-      </div>
-    </div>
-    <div class="toggle-row"><input type="checkbox" id="fut_continuous"/><label for="fut_continuous">Continuous (rollover)</label></div>
-  </div>
-
-  <div class="card">
-    <div class="section-head">Step 2 — Select Futures Contract</div>
-    <div class="row">
-      <div class="field">
-        <label>Exchange</label>
-        <select id="fut_exchange" onchange="fut_resetFromUnderlying()">
-          <option value="NFO">NFO</option>
-          <option value="BFO">BFO</option>
-          <option value="MCX">MCX</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Underlying</label>
-        <input type="text" id="fut_underlying" placeholder="e.g. NIFTY, BANKNIFTY, RELIANCE"/>
-      </div>
-      <div class="field" style="align-self:flex-end">
-        <button class="btn btn-ghost" onclick="fut_loadExpiries()" style="width:100%">Load Expiries</button>
-      </div>
-    </div>
-    <div class="row">
-      <div class="field">
-        <label>Expiry Date</label>
-        <select id="fut_expiry" disabled>
-          <option value="">— Load expiries first —</option>
-        </select>
-      </div>
-    </div>
-    <div id="fut_contractInfo" style="margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--muted);"></div>
-  </div>
-
-  <div class="card">
-    <div class="section-head">Step 3 — Preview & Download</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <button class="btn btn-ghost" onclick="fut_preview()">Preview (5 rows)</button>
-      <button class="btn btn-primary" onclick="fut_download()">⬇ Download</button>
-    </div>
-    <div id="fut_previewDiv" style="margin-top:12px;"></div>
-    <div id="fut_status"></div>
-  </div>
-</div>
-
-<!-- ══════════════════════════════ BULK TAB ══════════════════════════════ -->
-<div class="panel" id="panel-bulk">
-  <div class="card">
-    <div class="card-title">Bulk Download via CSV</div>
-    <p style="color:var(--muted);font-size:13px;margin-bottom:14px;">Upload a CSV with columns: <code style="color:var(--accent)">instrument_token, from_date, to_date, interval</code> (and optionally <code style="color:var(--accent)">file_format</code>)</p>
-    <div class="row">
-      <div class="field">
-        <label>Upload CSV</label>
-        <input type="file" id="bulkFile" accept=".csv"/>
-      </div>
-    </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <button class="btn btn-primary" onclick="startBulk()">▶ Start Bulk Download</button>
-      <button class="btn btn-ghost" onclick="pauseBulk()" id="pauseBtn">⏸ Pause</button>
-      <button class="btn btn-danger btn-sm" onclick="stopBulk()">■ Stop</button>
-    </div>
-    <div class="progress-bar" style="margin-top:14px;"><div class="progress-bar-fill" id="bulkProgress" style="width:0%"></div></div>
-    <div id="bulkCount" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;"></div>
-    <div class="bulk-log" id="bulkLog" style="margin-top:12px;"></div>
-  </div>
-</div>
-
-</main>
 
 <script>
-// ══════════════════════════════════════════════════════════════════
-// State
-// ══════════════════════════════════════════════════════════════════
-let apiKey = '', accessToken = '';
-let selectedToken = '', selectedSymbol = '';
-let searchDebounce = null;
-let optType = 'CE';   // CE | PE | BOTH
-let bulkPaused = false, bulkStopped = false;
+// ── State ──────────────────────────────
+let apiKey='',apiSecret='',accessToken='';
+let selTok='',selSym='';
+let searchTimer=null;
+let optType='CE';
+let futTok='',futSym='';
+let bulkPaused=false,bulkStopped=false;
 
-// ── Credentials ──────────────────────────────────────────────────
-function saveCredentials() {
-  localStorage.setItem('zp_apiKey', document.getElementById('apiKey').value.trim());
-  localStorage.setItem('zp_apiSecret', document.getElementById('apiSecret').value.trim());
-}
-function loadCredentials() {
-  const k = localStorage.getItem('zp_apiKey') || '';
-  const s = localStorage.getItem('zp_apiSecret') || '';
-  const t = localStorage.getItem('zp_accessToken') || '';
-  if (k) document.getElementById('apiKey').value = k;
-  if (s) document.getElementById('apiSecret').value = s;
-  if (t) document.getElementById('accessTokenDirect').value = t;
-  apiKey = k;
-  accessToken = t;
-  if (k && t) validateToken();
+// ══════════════════════════════════════
+// PAGE ROUTING
+// ══════════════════════════════════════
+function showPage(n){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+n).classList.add('active');
 }
 
-// ── Tabs ──────────────────────────────────────────────────────────
-function switchTab(name) {
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('panel-' + name).classList.add('active');
-  event.target.classList.add('active');
-}
+window.addEventListener('load',()=>{
+  setDates();
+  const params=new URLSearchParams(window.location.search);
+  const reqTok=params.get('request_token');
 
-// ── Token generation ──────────────────────────────────────────────
-function openKiteLogin() {
-  const k = document.getElementById('apiKey').value.trim();
-  if (!k) { alert('Enter API Key first'); return; }
-  window.open(`https://kite.zerodha.com/connect/login?api_key=${k}&v=3`, '_blank');
-}
+  apiKey=localStorage.getItem('zp_k')||'';
+  apiSecret=localStorage.getItem('zp_s')||'';
+  accessToken=localStorage.getItem('zp_t')||'';
 
-async function generateToken() {
-  const k = document.getElementById('apiKey').value.trim();
-  const s = document.getElementById('apiSecret').value.trim();
-  const r = document.getElementById('requestToken').value.trim();
-  if (!k || !s || !r) { showStatus('loginStatus', 'Fill API Key, Secret and Request Token.', 'err'); return; }
-  showStatus('loginStatus', '⏳ Generating token...', 'info');
-  try {
-    const res = await fetch('/api/generate-token', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({api_key: k, request_token: r, api_secret: s}),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Error');
-    accessToken = data.access_token;
-    apiKey = k;
-    localStorage.setItem('zp_accessToken', accessToken);
-    localStorage.setItem('zp_apiKey', k);
-    document.getElementById('accessTokenDirect').value = accessToken;
-    showStatus('loginStatus', '✓ Access token generated & saved!', 'ok');
-    validateToken();
-  } catch(e) { showStatus('loginStatus', '✗ ' + e.message, 'err'); }
-}
-
-function useDirectToken() {
-  const k = document.getElementById('apiKey').value.trim();
-  const t = document.getElementById('accessTokenDirect').value.trim();
-  if (!k || !t) { showStatus('loginStatus', 'Enter API Key and Access Token.', 'err'); return; }
-  apiKey = k; accessToken = t;
-  localStorage.setItem('zp_apiKey', k);
-  localStorage.setItem('zp_accessToken', t);
-  validateToken();
-}
-
-async function validateToken() {
-  if (!apiKey || !accessToken) return;
-  try {
-    const res = await fetch(`/api/validate-token?api_key=${apiKey}&access_token=${accessToken}`);
-    const data = await res.json();
-    const dot = document.getElementById('connDot');
-    const lbl = document.getElementById('connLabel');
-    const usr = document.getElementById('userLabel');
-    if (data.valid) {
-      dot.classList.add('live');
-      lbl.textContent = 'Connected';
-      usr.textContent = data.user;
-    } else {
-      dot.classList.remove('live');
-      lbl.textContent = 'Token invalid';
-    }
-  } catch(e) {}
-}
-
-// ── Instrument Search ─────────────────────────────────────────────
-function searchInstruments() {
-  clearTimeout(searchDebounce);
-  const q = document.getElementById('symbolSearch').value.trim();
-  if (q.length < 2) { document.getElementById('searchResults').style.display = 'none'; return; }
-  searchDebounce = setTimeout(() => _doSearch(q), 300);
-}
-
-async function _doSearch(q) {
-  if (!apiKey || !accessToken) { alert('Connect your token first (Login tab)'); return; }
-  const exchange = document.getElementById('exchange').value;
-  const box = document.getElementById('searchResults');
-  box.style.display = 'block';
-  box.innerHTML = '<div style="padding:10px;color:var(--muted);font-family:var(--mono);font-size:12px;">Searching...</div>';
-  try {
-    const url = `/api/instruments?api_key=${apiKey}&access_token=${accessToken}&exchange=${exchange}&search=${encodeURIComponent(q)}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    if (!data.length) { box.innerHTML = '<div style="padding:10px;color:var(--muted);font-family:var(--mono);font-size:12px;">No results found</div>'; return; }
-    box.innerHTML = data.map(r => `
-      <div class="search-result-item" onclick="selectInstrument('${r.instrument_token}', '${r.tradingsymbol}', '${r.name || ''}')">
-        <span class="sym">${r.tradingsymbol}</span>
-        <span class="meta">${r.instrument_type || ''} ${r.expiry ? '· ' + r.expiry : ''} ${r.strike ? '· ₹' + r.strike : ''}</span>
-      </div>
-    `).join('');
-  } catch(e) { box.innerHTML = '<div style="padding:10px;color:var(--danger);font-family:var(--mono);font-size:12px;">Error: ' + e.message + '</div>'; }
-}
-
-function selectInstrument(token, sym, name) {
-  selectedToken = token;
-  selectedSymbol = sym;
-  document.getElementById('selectedSymbol').textContent = sym + (name ? '  (' + name + ')' : '');
-  document.getElementById('selectedToken').textContent = token;
-  document.getElementById('selectedInstrumentDiv').style.display = 'block';
-  document.getElementById('searchResults').style.display = 'none';
-  document.getElementById('symbolSearch').value = sym;
-}
-
-function clearSelectedInstrument() {
-  selectedToken = ''; selectedSymbol = '';
-  document.getElementById('selectedInstrumentDiv').style.display = 'none';
-  document.getElementById('symbolSearch').value = '';
-  document.getElementById('searchResults').style.display = 'none';
-}
-
-// ── Download & Preview (generic tab) ─────────────────────────────
-function _getDownloadParams() {
-  return {
-    api_key: apiKey,
-    access_token: accessToken,
-    instrument_token: selectedToken,
-    from_date: document.getElementById('fromDate').value,
-    to_date: document.getElementById('toDate').value,
-    interval: document.getElementById('interval').value,
-    continuous: document.getElementById('continuous').checked,
-    oi: document.getElementById('includeOI').checked,
-    file_format: document.getElementById('fileFormat').value,
-  };
-}
-
-async function previewData() {
-  if (!_validateDownload()) return;
-  showStatus('downloadStatus', '⏳ Loading preview...', 'info');
-  try {
-    const body = _getDownloadParams();
-    const res = await fetch('/api/preview', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Error');
-    document.getElementById('previewDiv').innerHTML = renderTable(data.rows, data.total);
-    showStatus('downloadStatus', `✓ Total rows in range: ${data.total}`, 'ok');
-  } catch(e) { showStatus('downloadStatus', '✗ ' + e.message, 'err'); }
-}
-
-async function downloadData() {
-  if (!_validateDownload()) return;
-  showStatus('downloadStatus', '⏳ Downloading...', 'info');
-  try {
-    const body = _getDownloadParams();
-    const res = await fetch('/api/historical', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) { const d = await res.json(); throw new Error(d.detail || 'Error'); }
-    const blob = await res.blob();
-    const cd = res.headers.get('Content-Disposition') || '';
-    const fname = cd.match(/filename="(.+)"/)?.[1] || 'data.' + body.file_format;
-    triggerDownload(blob, fname);
-    showStatus('downloadStatus', '✓ Downloaded: ' + fname, 'ok');
-  } catch(e) { showStatus('downloadStatus', '✗ ' + e.message, 'err'); }
-}
-
-function _validateDownload(prefix) {
-  if (!apiKey || !accessToken) { alert('Connect token first (Login tab)'); return false; }
-  if (!selectedToken) { alert('Select an instrument first'); return false; }
-  if (!document.getElementById('fromDate').value) { alert('Select From Date'); return false; }
-  if (!document.getElementById('toDate').value) { alert('Select To Date'); return false; }
-  return true;
-}
-
-// ── OPTIONS TAB ───────────────────────────────────────────────────
-function opt_resetFromUnderlying() {
-  document.getElementById('opt_expiry').innerHTML = '<option value="">— Load expiries first —</option>';
-  document.getElementById('opt_expiry').disabled = true;
-  document.getElementById('opt_strike').innerHTML = '<option value="">— Load strikes first —</option>';
-  document.getElementById('opt_strike').disabled = true;
-  document.getElementById('opt_contractInfo').textContent = '';
-}
-
-async function opt_loadExpiries() {
-  const underlying = document.getElementById('opt_underlying').value;
-  if (!underlying) return;
-  if (!apiKey || !accessToken) { alert('Connect token first'); return; }
-  const exchange = document.getElementById('opt_exchange').value;
-  const sel = document.getElementById('opt_expiry');
-  sel.innerHTML = '<option>Loading...</option>';
-  sel.disabled = true;
-  try {
-    const res = await fetch(`/api/options/expiries?api_key=${apiKey}&access_token=${accessToken}&underlying=${underlying}&exchange=${exchange}`);
-    const data = await res.json();
-    sel.innerHTML = data.expiries.length
-      ? data.expiries.map(e => `<option value="${e}">${e}</option>`).join('')
-      : '<option value="">No expiries found</option>';
-    sel.disabled = false;
-    // Auto-load strikes for first expiry
-    opt_loadStrikes();
-  } catch(e) { sel.innerHTML = '<option>Error loading</option>'; }
-}
-
-async function opt_loadStrikes() {
-  const underlying = document.getElementById('opt_underlying').value;
-  const expiry = document.getElementById('opt_expiry').value;
-  if (!underlying || !expiry) return;
-  const exchange = document.getElementById('opt_exchange').value;
-  const sel = document.getElementById('opt_strike');
-  sel.innerHTML = '<option>Loading...</option>';
-  sel.disabled = true;
-  try {
-    const res = await fetch(`/api/options/strikes?api_key=${apiKey}&access_token=${accessToken}&underlying=${underlying}&expiry=${expiry}&exchange=${exchange}`);
-    const data = await res.json();
-    sel.innerHTML = data.strikes.length
-      ? data.strikes.map(s => `<option value="${s}">${s}</option>`).join('')
-      : '<option value="">No strikes found</option>';
-    sel.disabled = false;
-  } catch(e) { sel.innerHTML = '<option>Error loading</option>'; }
-}
-
-function opt_selectType(t) {
-  optType = t;
-  ['CE','PE','BOTH'].forEach(x => {
-    document.getElementById('otype-' + x).className = 'otype-btn';
-  });
-  document.getElementById('otype-' + t).className = `otype-btn active-${t.toLowerCase()}`;
-}
-
-async function _opt_getToken(underlying, expiry, strike, otype) {
-  const exchange = document.getElementById('opt_exchange').value;
-  const res = await fetch(`/api/options/token?api_key=${apiKey}&access_token=${accessToken}&underlying=${underlying}&expiry=${expiry}&strike=${strike}&option_type=${otype}&exchange=${exchange}`);
-  if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
-  return res.json();
-}
-
-function _opt_validate() {
-  if (!apiKey || !accessToken) { alert('Connect token first'); return false; }
-  if (!document.getElementById('opt_underlying').value) { alert('Select underlying'); return false; }
-  if (!document.getElementById('opt_expiry').value) { alert('Select expiry'); return false; }
-  if (!document.getElementById('opt_strike').value) { alert('Select strike'); return false; }
-  if (!document.getElementById('opt_fromDate').value) { alert('Select From Date'); return false; }
-  if (!document.getElementById('opt_toDate').value) { alert('Select To Date'); return false; }
-  return true;
-}
-
-async function opt_preview() {
-  if (!_opt_validate()) return;
-  const underlying = document.getElementById('opt_underlying').value;
-  const expiry = document.getElementById('opt_expiry').value;
-  const strike = document.getElementById('opt_strike').value;
-  const types = optType === 'BOTH' ? ['CE','PE'] : [optType];
-  showStatus('opt_status', '⏳ Loading preview...', 'info');
-  try {
-    const t = await _opt_getToken(underlying, expiry, strike, types[0]);
-    const body = {
-      api_key: apiKey, access_token: accessToken,
-      instrument_token: t.instrument_token,
-      from_date: document.getElementById('opt_fromDate').value,
-      to_date: document.getElementById('opt_toDate').value,
-      interval: document.getElementById('opt_interval').value,
-      oi: document.getElementById('opt_oi').checked,
-      continuous: false,
-      file_format: 'csv',
-    };
-    document.getElementById('opt_contractInfo').textContent = 'Symbol: ' + t.tradingsymbol + ' | Token: ' + t.instrument_token;
-    const res = await fetch('/api/preview', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail);
-    document.getElementById('opt_previewDiv').innerHTML = renderTable(data.rows, data.total);
-    showStatus('opt_status', `✓ ${t.tradingsymbol} — ${data.total} rows`, 'ok');
-  } catch(e) { showStatus('opt_status', '✗ ' + e.message, 'err'); }
-}
-
-async function opt_download() {
-  if (!_opt_validate()) return;
-  const underlying = document.getElementById('opt_underlying').value;
-  const expiry = document.getElementById('opt_expiry').value;
-  const strike = document.getElementById('opt_strike').value;
-  const fmt = document.getElementById('opt_format').value;
-  const types = optType === 'BOTH' ? ['CE','PE'] : [optType];
-  showStatus('opt_status', '⏳ Downloading...', 'info');
-  let downloaded = 0;
-  for (const otype of types) {
-    try {
-      const t = await _opt_getToken(underlying, expiry, strike, otype);
-      const body = {
-        api_key: apiKey, access_token: accessToken,
-        instrument_token: t.instrument_token,
-        from_date: document.getElementById('opt_fromDate').value,
-        to_date: document.getElementById('opt_toDate').value,
-        interval: document.getElementById('opt_interval').value,
-        oi: document.getElementById('opt_oi').checked,
-        continuous: false,
-        file_format: fmt,
-      };
-      const res = await fetch('/api/historical', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
-      const blob = await res.blob();
-      triggerDownload(blob, `${t.tradingsymbol}_${body.interval}_${body.from_date}_${body.to_date}.${fmt}`);
-      downloaded++;
-    } catch(e) { showStatus('opt_status', '✗ ' + otype + ': ' + e.message, 'err'); }
+  if(reqTok){
+    // Returning from Kite login
+    window.history.replaceState({},'',window.location.pathname);
+    showPage('token');
+    document.getElementById('reqTokenDisplay').textContent=reqTok;
+    document.getElementById('reqTokenDisplay').classList.add('filled');
+    document.getElementById('reqTokenManual').value=reqTok;
+    document.getElementById('autofillBadge').style.display='inline-flex';
+    document.getElementById('step1desc').textContent='API Key: '+apiKey;
+    showAlert('tokenMsg','⚡ Request token auto-detected! Just click Generate below.','info');
+    return;
   }
-  if (downloaded > 0) showStatus('opt_status', `✓ Downloaded ${downloaded} file(s)`, 'ok');
-}
 
-// ── FUTURES TAB ───────────────────────────────────────────────────
-let futContractToken = '', futContractSymbol = '';
-
-function fut_resetFromUnderlying() {
-  document.getElementById('fut_expiry').innerHTML = '<option value="">— Load expiries first —</option>';
-  document.getElementById('fut_expiry').disabled = true;
-  futContractToken = ''; futContractSymbol = '';
-  document.getElementById('fut_contractInfo').textContent = '';
-}
-
-async function fut_loadExpiries() {
-  const underlying = document.getElementById('fut_underlying').value.trim().toUpperCase();
-  if (!underlying) { alert('Enter underlying symbol first'); return; }
-  if (!apiKey || !accessToken) { alert('Connect token first'); return; }
-  const exchange = document.getElementById('fut_exchange').value;
-  const sel = document.getElementById('fut_expiry');
-  sel.innerHTML = '<option>Loading...</option>'; sel.disabled = true;
-  try {
-    const res = await fetch(`/api/futures/expiries?api_key=${apiKey}&access_token=${accessToken}&underlying=${underlying}&exchange=${exchange}`);
-    const data = await res.json();
-    if (!data.expiries.length) { sel.innerHTML = '<option>No contracts found</option>'; return; }
-    sel.innerHTML = data.expiries.map(e => `<option value="${e}">${e}</option>`).join('');
-    sel.disabled = false;
-    // auto-load token for first expiry
-    await fut_loadToken();
-    sel.onchange = fut_loadToken;
-  } catch(e) { sel.innerHTML = '<option>Error</option>'; }
-}
-
-async function fut_loadToken() {
-  const underlying = document.getElementById('fut_underlying').value.trim().toUpperCase();
-  const expiry = document.getElementById('fut_expiry').value;
-  const exchange = document.getElementById('fut_exchange').value;
-  if (!underlying || !expiry) return;
-  try {
-    const res = await fetch(`/api/futures/token?api_key=${apiKey}&access_token=${accessToken}&underlying=${underlying}&expiry=${expiry}&exchange=${exchange}`);
-    const data = await res.json();
-    futContractToken = data.instrument_token;
-    futContractSymbol = data.tradingsymbol;
-    document.getElementById('fut_contractInfo').textContent = 'Symbol: ' + data.tradingsymbol + ' | Token: ' + data.instrument_token;
-  } catch(e) { document.getElementById('fut_contractInfo').textContent = 'Contract not found'; }
-}
-
-function _fut_validate() {
-  if (!apiKey || !accessToken) { alert('Connect token first'); return false; }
-  if (!futContractToken) { alert('Load a futures contract first'); return false; }
-  if (!document.getElementById('fut_fromDate').value) { alert('Select From Date'); return false; }
-  if (!document.getElementById('fut_toDate').value) { alert('Select To Date'); return false; }
-  return true;
-}
-
-async function fut_preview() {
-  if (!_fut_validate()) return;
-  showStatus('fut_status', '⏳ Loading preview...', 'info');
-  try {
-    const body = {
-      api_key: apiKey, access_token: accessToken,
-      instrument_token: futContractToken,
-      from_date: document.getElementById('fut_fromDate').value,
-      to_date: document.getElementById('fut_toDate').value,
-      interval: document.getElementById('fut_interval').value,
-      oi: true,
-      continuous: document.getElementById('fut_continuous').checked,
-      file_format: 'csv',
-    };
-    const res = await fetch('/api/preview', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail);
-    document.getElementById('fut_previewDiv').innerHTML = renderTable(data.rows, data.total);
-    showStatus('fut_status', `✓ ${futContractSymbol} — ${data.total} rows`, 'ok');
-  } catch(e) { showStatus('fut_status', '✗ ' + e.message, 'err'); }
-}
-
-async function fut_download() {
-  if (!_fut_validate()) return;
-  const fmt = document.getElementById('fut_format').value;
-  showStatus('fut_status', '⏳ Downloading...', 'info');
-  try {
-    const body = {
-      api_key: apiKey, access_token: accessToken,
-      instrument_token: futContractToken,
-      from_date: document.getElementById('fut_fromDate').value,
-      to_date: document.getElementById('fut_toDate').value,
-      interval: document.getElementById('fut_interval').value,
-      oi: true,
-      continuous: document.getElementById('fut_continuous').checked,
-      file_format: fmt,
-    };
-    const res = await fetch('/api/historical', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-    if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
-    const blob = await res.blob();
-    triggerDownload(blob, `${futContractSymbol}_${body.interval}_${body.from_date}_${body.to_date}.${fmt}`);
-    showStatus('fut_status', '✓ Downloaded!', 'ok');
-  } catch(e) { showStatus('fut_status', '✗ ' + e.message, 'err'); }
-}
-
-// ── BULK TAB ──────────────────────────────────────────────────────
-async function startBulk() {
-  const file = document.getElementById('bulkFile').files[0];
-  if (!file) { alert('Upload a CSV file first'); return; }
-  if (!apiKey || !accessToken) { alert('Connect token first'); return; }
-  bulkPaused = false; bulkStopped = false;
-  const text = await file.text();
-  const rows = parseCSV(text);
-  const log = document.getElementById('bulkLog');
-  const prog = document.getElementById('bulkProgress');
-  log.innerHTML = '';
-  let done = 0;
-  for (const row of rows) {
-    if (bulkStopped) { logLine(log, '■ Stopped.', 'info'); break; }
-    while (bulkPaused && !bulkStopped) await sleep(300);
-    if (bulkStopped) break;
-    const token = row.instrument_token?.trim();
-    const from = row.from_date?.trim();
-    const to = row.to_date?.trim();
-    const interval = row.interval?.trim() || 'day';
-    const fmt = row.file_format?.trim() || 'csv';
-    if (!token || !from || !to) { logLine(log, `✗ Skipping invalid row: ${JSON.stringify(row)}`, 'err'); continue; }
-    logLine(log, `⏳ Downloading ${token} [${from} → ${to}] ${interval}...`, 'info');
-    try {
-      const res = await fetch('/api/historical', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ api_key: apiKey, access_token: accessToken, instrument_token: token, from_date: from, to_date: to, interval, oi: true, continuous: false, file_format: fmt }),
-      });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
-      const blob = await res.blob();
-      triggerDownload(blob, `${token}_${interval}_${from}_${to}.${fmt}`);
-      done++;
-      logLine(log, `✓ ${token} downloaded`, 'ok');
-    } catch(e) { logLine(log, `✗ ${token}: ${e.message}`, 'err'); }
-    prog.style.width = Math.round((done / rows.length) * 100) + '%';
-    document.getElementById('bulkCount').textContent = `${done} / ${rows.length} done`;
-    await sleep(500); // rate limit buffer
+  if(accessToken&&apiKey){
+    showPage('app');
+    document.getElementById('userPill').textContent=apiKey.substring(0,8)+'...';
+    return;
   }
-  logLine(log, `Done. ${done}/${rows.length} files downloaded.`, 'ok');
-}
 
-function pauseBulk() {
-  bulkPaused = !bulkPaused;
-  document.getElementById('pauseBtn').textContent = bulkPaused ? '▶ Resume' : '⏸ Pause';
-}
-function stopBulk() { bulkStopped = true; bulkPaused = false; }
-
-function parseCSV(text) {
-  const lines = text.trim().split('\n');
-  const headers = lines[0].split(',').map(h => h.trim());
-  return lines.slice(1).map(line => {
-    const vals = line.split(',');
-    const obj = {};
-    headers.forEach((h, i) => obj[h] = vals[i]?.trim() || '');
-    return obj;
-  });
-}
-
-// ── Helpers ────────────────────────────────────────────────────────
-function showStatus(id, msg, type) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.innerHTML = `<div class="alert alert-${type === 'ok' ? 'ok' : type === 'err' ? 'err' : 'info'}">${msg}</div>`;
-}
-
-function renderTable(rows, total) {
-  if (!rows || !rows.length) return '<div style="color:var(--muted);font-size:13px;">No data</div>';
-  const keys = Object.keys(rows[0]);
-  return `<div class="preview-table-wrap"><table>
-    <tr>${keys.map(k => `<th>${k}</th>`).join('')}</tr>
-    ${rows.map(r => `<tr>${keys.map(k => `<td>${r[k]}</td>`).join('')}</tr>`).join('')}
-  </table><div style="color:var(--muted);font-size:11px;font-family:var(--mono);margin-top:6px;">Showing 5 of ${total} rows</div></div>`;
-}
-
-function triggerDownload(blob, fname) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = fname;
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-function logLine(el, msg, type) {
-  el.innerHTML += `<div class="log-${type}">${msg}</div>`;
-  el.scrollTop = el.scrollHeight;
-}
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-// ── Set default dates ──────────────────────────────────────────────
-function setDefaultDates() {
-  const today = new Date();
-  const y = today.getFullYear(), m = String(today.getMonth()+1).padStart(2,'0'), d = String(today.getDate()).padStart(2,'0');
-  const todayStr = `${y}-${m}-${d}`;
-  const monthAgo = new Date(today); monthAgo.setMonth(monthAgo.getMonth() - 1);
-  const my = monthAgo.getFullYear(), mm = String(monthAgo.getMonth()+1).padStart(2,'0'), md = String(monthAgo.getDate()).padStart(2,'0');
-  const fromStr = `${my}-${mm}-${md}`;
-  ['fromDate','opt_fromDate','fut_fromDate'].forEach(id => { const el = document.getElementById(id); if(el) el.value = fromStr; });
-  ['toDate','opt_toDate','fut_toDate'].forEach(id => { const el = document.getElementById(id); if(el) el.value = todayStr; });
-}
-
-// Close search dropdown when clicking outside
-document.addEventListener('click', e => {
-  if (!e.target.closest('#symbolSearch') && !e.target.closest('#searchResults')) {
-    document.getElementById('searchResults').style.display = 'none';
-  }
+  showPage('login');
+  if(apiKey){document.getElementById('apiKey').value=apiKey;document.getElementById('savedBadge').style.display='flex';}
+  if(apiSecret)document.getElementById('apiSecret').value=apiSecret;
 });
 
-// ── Init ──────────────────────────────────────────────────────────
-setDefaultDates();
-loadCredentials();
+// ══════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════
+function goToKiteLogin(){
+  const k=document.getElementById('apiKey').value.trim();
+  const s=document.getElementById('apiSecret').value.trim();
+  if(!k){showAlert('loginMsg','Enter your API Key first','err');return;}
+  if(!s){showAlert('loginMsg','Enter your API Secret first','err');return;}
+  apiKey=k;apiSecret=s;
+  localStorage.setItem('zp_k',k);
+  localStorage.setItem('zp_s',s);
+  window.location.href=`https://kite.zerodha.com/connect/login?api_key=${k}&v=3`;
+}
+
+function useDirectToken(){
+  const k=document.getElementById('apiKey').value.trim();
+  const t=document.getElementById('directToken').value.trim();
+  if(!k||!t){showAlert('loginMsg','Enter API Key and Access Token','err');return;}
+  apiKey=k;accessToken=t;
+  localStorage.setItem('zp_k',k);
+  localStorage.setItem('zp_t',t);
+  enterApp();
+}
+
+// ══════════════════════════════════════
+// TOKEN PAGE
+// ══════════════════════════════════════
+function retryKiteLogin(){
+  if(!apiKey){showPage('login');return;}
+  window.location.href=`https://kite.zerodha.com/connect/login?api_key=${apiKey}&v=3`;
+}
+
+async function generateToken(){
+  const k=apiKey||localStorage.getItem('zp_k')||'';
+  const s=apiSecret||localStorage.getItem('zp_s')||'';
+  const r=document.getElementById('reqTokenManual').value.trim()||document.getElementById('reqTokenDisplay').textContent.trim();
+  if(!k||!s){showAlert('tokenMsg','API Key/Secret missing. Go back.','err');return;}
+  if(!r||r==='Waiting...'){showAlert('tokenMsg','No request token. Paste it manually.','err');return;}
+  const btn=document.getElementById('generateBtn');
+  btn.disabled=true;btn.textContent='⏳ Generating...';
+  showAlert('tokenMsg','Generating...','info');
+  try{
+    const res=await fetch('/api/generate-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:k,request_token:r,api_secret:s})});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.detail||'Failed');
+    accessToken=data.access_token;apiKey=k;apiSecret=s;
+    localStorage.setItem('zp_t',accessToken);
+    localStorage.setItem('zp_k',k);localStorage.setItem('zp_s',s);
+    const ad=document.getElementById('accessTokenDisplay');
+    ad.textContent=accessToken.substring(0,24)+'...';ad.classList.add('filled');
+    document.getElementById('step3num').className='step-num done';
+    document.getElementById('step3num').textContent='✓';
+    showAlert('tokenMsg','✓ Token generated! Entering app...','ok');
+    btn.textContent='✓ Done!';
+    setTimeout(()=>enterApp(),1200);
+  }catch(e){
+    showAlert('tokenMsg','✗ '+e.message,'err');
+    btn.disabled=false;btn.textContent='⚡ Generate Access Token';
+  }
+}
+
+function enterApp(){
+  showPage('app');
+  document.getElementById('userPill').textContent=apiKey.substring(0,8)+'...';
+}
+
+function doRelogin(){
+  localStorage.removeItem('zp_t');accessToken='';
+  showPage('login');
+  if(apiKey)document.getElementById('apiKey').value=apiKey;
+  if(apiSecret)document.getElementById('apiSecret').value=apiSecret;
+  document.getElementById('savedBadge').style.display='flex';
+}
+
+// ══════════════════════════════════════
+// TABS
+// ══════════════════════════════════════
+function switchTab(n,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('panel-'+n).classList.add('active');
+  el.classList.add('active');
+}
+
+// ══════════════════════════════════════
+// INSTRUMENT SEARCH
+// ══════════════════════════════════════
+function searchInst(){
+  clearTimeout(searchTimer);
+  const q=document.getElementById('symbolSearch').value.trim();
+  if(q.length<2){document.getElementById('searchResults').style.display='none';return;}
+  searchTimer=setTimeout(()=>doSearch(q),300);
+}
+
+async function doSearch(q){
+  const ex=document.getElementById('exchange').value;
+  const box=document.getElementById('searchResults');
+  box.style.display='block';
+  box.innerHTML='<div style="padding:10px;color:var(--muted);font-family:var(--mono);font-size:12px;">Searching in '+ex+'...</div>';
+  try{
+    const res=await fetch(`/api/instruments?api_key=${apiKey}&access_token=${accessToken}&exchange=${ex}&search=${encodeURIComponent(q)}`);
+    let data;
+    try{ data=await res.json(); }
+    catch(je){ box.innerHTML='<div style="padding:10px;color:var(--danger);font-family:var(--mono);font-size:12px;">Server error — check your token is valid</div>'; return; }
+    if(!res.ok){ box.innerHTML='<div style="padding:10px;color:var(--danger);font-family:var(--mono);font-size:12px;">'+(data.detail||'Error fetching instruments')+'</div>'; return; }
+    if(!Array.isArray(data)||!data.length){box.innerHTML='<div style="padding:10px;color:var(--muted);font-family:var(--mono);font-size:12px;">No results found in '+ex+' for "'+q+'"</div>';return;}
+    box.innerHTML=data.map(r=>`<div class="sri" onclick="pickInst('${r.instrument_token}','${r.tradingsymbol}','${r.name||''}')"><span class="sym">${r.tradingsymbol}</span><span class="meta">${r.instrument_type||''} ${r.expiry?'· '+r.expiry:''} ${r.strike?'· ₹'+r.strike:''}</span></div>`).join('');
+  }catch(e){box.innerHTML='<div style="padding:10px;color:var(--danger);font-family:var(--mono);font-size:12px;">'+e.message+'</div>';}
+}
+
+function pickInst(tok,sym,name){
+  selTok=tok;selSym=sym;
+  document.getElementById('selSym').textContent=sym+(name?' ('+name+')':'');
+  document.getElementById('selTok').textContent=tok;
+  document.getElementById('selInstDiv').style.display='block';
+  document.getElementById('searchResults').style.display='none';
+  document.getElementById('symbolSearch').value=sym;
+}
+
+function clearSel(){
+  selTok='';selSym='';
+  document.getElementById('selInstDiv').style.display='none';
+  document.getElementById('symbolSearch').value='';
+  document.getElementById('searchResults').style.display='none';
+}
+
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#symbolSearch')&&!e.target.closest('#searchResults'))
+    document.getElementById('searchResults').style.display='none';
+});
+
+// ══════════════════════════════════════
+// DOWNLOAD TAB
+// ══════════════════════════════════════
+function getParams(){return{api_key:apiKey,access_token:accessToken,instrument_token:selTok,from_date:document.getElementById('fromDate').value,to_date:document.getElementById('toDate').value,interval:document.getElementById('interval').value,continuous:document.getElementById('continuous').checked,oi:document.getElementById('includeOI').checked,file_format:document.getElementById('fileFormat').value};}
+
+async function previewData(){
+  if(!selTok){alert('Select an instrument first');return;}
+  showAlert('dlStatus','⏳ Loading...','info');
+  try{
+    const r=await fetch('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(getParams())});
+    const d=await r.json();if(!r.ok)throw new Error(d.detail);
+    document.getElementById('previewDiv').innerHTML=mkTable(d.rows,d.total);
+    showAlert('dlStatus','✓ '+d.total+' total rows','ok');
+  }catch(e){showAlert('dlStatus','✗ '+e.message,'err');}
+}
+
+async function downloadData(){
+  if(!selTok){alert('Select an instrument first');return;}
+  showAlert('dlStatus','⏳ Downloading...','info');
+  try{
+    const body=getParams();
+    const r=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok){const d=await r.json();throw new Error(d.detail);}
+    const blob=await r.blob();
+    const cd=r.headers.get('Content-Disposition')||'';
+    const fn=cd.match(/filename="(.+)"/)?.[1]||'data.'+body.file_format;
+    dlBlob(blob,fn);showAlert('dlStatus','✓ Downloaded: '+fn,'ok');
+  }catch(e){showAlert('dlStatus','✗ '+e.message,'err');}
+}
+
+// ══════════════════════════════════════
+// OPTIONS
+// ══════════════════════════════════════
+async function opt_loadExpiries(){
+  const u=document.getElementById('opt_ul').value;if(!u)return;
+  const ex=document.getElementById('opt_ex').value;
+  const sel=document.getElementById('opt_expiry');
+  sel.innerHTML='<option>Loading...</option>';sel.disabled=true;
+  document.getElementById('opt_strike').innerHTML='<option>—</option>';document.getElementById('opt_strike').disabled=true;
+  try{
+    const r=await fetch(`/api/options/expiries?api_key=${apiKey}&access_token=${accessToken}&underlying=${u}&exchange=${ex}`);
+    const d=await r.json();
+    sel.innerHTML=d.expiries.length?d.expiries.map(e=>`<option value="${e}">${e}</option>`).join(''):'<option>None found</option>';
+    sel.disabled=false;opt_loadStrikes();
+  }catch(e){sel.innerHTML='<option>Error</option>';}
+}
+
+async function opt_loadStrikes(){
+  const u=document.getElementById('opt_ul').value,ex_d=document.getElementById('opt_expiry').value;
+  if(!u||!ex_d)return;
+  const ex=document.getElementById('opt_ex').value;
+  const sel=document.getElementById('opt_strike');
+  sel.innerHTML='<option>Loading...</option>';sel.disabled=true;
+  try{
+    const r=await fetch(`/api/options/strikes?api_key=${apiKey}&access_token=${accessToken}&underlying=${u}&expiry=${ex_d}&exchange=${ex}`);
+    const d=await r.json();
+    sel.innerHTML=d.strikes.length?d.strikes.map(s=>`<option value="${s}">${s}</option>`).join(''):'<option>None</option>';
+    sel.disabled=false;
+  }catch(e){sel.innerHTML='<option>Error</option>';}
+}
+
+function opt_type(t){
+  optType=t;
+  ['CE','PE','BOTH'].forEach(x=>document.getElementById('otype-'+x).className='otype-btn');
+  document.getElementById('otype-'+t).className='otype-btn active-'+t.toLowerCase();
+}
+
+async function optGetTok(u,exp,str,ot){
+  const ex=document.getElementById('opt_ex').value;
+  const r=await fetch(`/api/options/token?api_key=${apiKey}&access_token=${accessToken}&underlying=${u}&expiry=${exp}&strike=${str}&option_type=${ot}&exchange=${ex}`);
+  if(!r.ok){const d=await r.json();throw new Error(d.detail);}
+  return r.json();
+}
+
+function optValidate(){
+  if(!document.getElementById('opt_ul').value){alert('Select underlying');return false;}
+  if(!document.getElementById('opt_expiry').value){alert('Select expiry');return false;}
+  if(!document.getElementById('opt_strike').value){alert('Select strike');return false;}
+  if(!document.getElementById('opt_from').value||!document.getElementById('opt_to').value){alert('Select date range');return false;}
+  return true;
+}
+
+async function opt_preview(){
+  if(!optValidate())return;
+  const u=document.getElementById('opt_ul').value,exp=document.getElementById('opt_expiry').value,str=document.getElementById('opt_strike').value;
+  const types=optType==='BOTH'?['CE','PE']:[optType];
+  showAlert('opt_status','⏳ Loading...','info');
+  try{
+    const t=await optGetTok(u,exp,str,types[0]);
+    document.getElementById('opt_info').textContent='Symbol: '+t.tradingsymbol+' | Token: '+t.instrument_token;
+    const body={api_key:apiKey,access_token:accessToken,instrument_token:t.instrument_token,from_date:document.getElementById('opt_from').value,to_date:document.getElementById('opt_to').value,interval:document.getElementById('opt_interval').value,oi:document.getElementById('opt_oi').checked,continuous:false,file_format:'csv'};
+    const r=await fetch('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();if(!r.ok)throw new Error(d.detail);
+    document.getElementById('opt_prev').innerHTML=mkTable(d.rows,d.total);
+    showAlert('opt_status','✓ '+t.tradingsymbol+' — '+d.total+' rows','ok');
+  }catch(e){showAlert('opt_status','✗ '+e.message,'err');}
+}
+
+async function opt_dl(){
+  if(!optValidate())return;
+  const u=document.getElementById('opt_ul').value,exp=document.getElementById('opt_expiry').value,str=document.getElementById('opt_strike').value,fmt=document.getElementById('opt_fmt').value;
+  const types=optType==='BOTH'?['CE','PE']:[optType];
+  showAlert('opt_status','⏳ Downloading...','info');
+  let done=0;
+  for(const ot of types){
+    try{
+      const t=await optGetTok(u,exp,str,ot);
+      const body={api_key:apiKey,access_token:accessToken,instrument_token:t.instrument_token,from_date:document.getElementById('opt_from').value,to_date:document.getElementById('opt_to').value,interval:document.getElementById('opt_interval').value,oi:document.getElementById('opt_oi').checked,continuous:false,file_format:fmt};
+      const r=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      if(!r.ok){const d=await r.json();throw new Error(d.detail);}
+      dlBlob(await r.blob(),`${t.tradingsymbol}_${body.interval}_${body.from_date}_${body.to_date}.${fmt}`);done++;
+    }catch(e){showAlert('opt_status','✗ '+ot+': '+e.message,'err');}
+  }
+  if(done>0)showAlert('opt_status','✓ Downloaded '+done+' file(s)','ok');
+}
+
+// ══════════════════════════════════════
+// FUTURES
+// ══════════════════════════════════════
+async function fut_loadExpiries(){
+  const u=document.getElementById('fut_ul').value.trim().toUpperCase();
+  if(!u){alert('Enter underlying symbol');return;}
+  const ex=document.getElementById('fut_ex').value;
+  const sel=document.getElementById('fut_expiry');
+  sel.innerHTML='<option>Loading...</option>';sel.disabled=true;
+  try{
+    const r=await fetch(`/api/futures/expiries?api_key=${apiKey}&access_token=${accessToken}&underlying=${u}&exchange=${ex}`);
+    const d=await r.json();
+    if(!d.expiries.length){sel.innerHTML='<option>No contracts found</option>';return;}
+    sel.innerHTML=d.expiries.map(e=>`<option value="${e}">${e}</option>`).join('');
+    sel.disabled=false;await fut_loadTok();sel.onchange=fut_loadTok;
+  }catch(e){sel.innerHTML='<option>Error</option>';}
+}
+
+async function fut_loadTok(){
+  const u=document.getElementById('fut_ul').value.trim().toUpperCase();
+  const exp=document.getElementById('fut_expiry').value;
+  const ex=document.getElementById('fut_ex').value;
+  if(!u||!exp)return;
+  try{
+    const r=await fetch(`/api/futures/token?api_key=${apiKey}&access_token=${accessToken}&underlying=${u}&expiry=${exp}&exchange=${ex}`);
+    const d=await r.json();
+    futTok=d.instrument_token;futSym=d.tradingsymbol;
+    document.getElementById('fut_info').textContent='Symbol: '+d.tradingsymbol+' | Token: '+d.instrument_token;
+  }catch(e){document.getElementById('fut_info').textContent='Not found';}
+}
+
+async function fut_preview(){
+  if(!futTok){alert('Load a futures contract first');return;}
+  showAlert('fut_status','⏳ Loading...','info');
+  try{
+    const body={api_key:apiKey,access_token:accessToken,instrument_token:futTok,from_date:document.getElementById('fut_from').value,to_date:document.getElementById('fut_to').value,interval:document.getElementById('fut_interval').value,oi:true,continuous:document.getElementById('fut_cont').checked,file_format:'csv'};
+    const r=await fetch('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();if(!r.ok)throw new Error(d.detail);
+    document.getElementById('fut_prev').innerHTML=mkTable(d.rows,d.total);
+    showAlert('fut_status','✓ '+futSym+' — '+d.total+' rows','ok');
+  }catch(e){showAlert('fut_status','✗ '+e.message,'err');}
+}
+
+async function fut_dl(){
+  if(!futTok){alert('Load a futures contract first');return;}
+  const fmt=document.getElementById('fut_fmt').value;
+  showAlert('fut_status','⏳ Downloading...','info');
+  try{
+    const body={api_key:apiKey,access_token:accessToken,instrument_token:futTok,from_date:document.getElementById('fut_from').value,to_date:document.getElementById('fut_to').value,interval:document.getElementById('fut_interval').value,oi:true,continuous:document.getElementById('fut_cont').checked,file_format:fmt};
+    const r=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok){const d=await r.json();throw new Error(d.detail);}
+    dlBlob(await r.blob(),`${futSym}_${body.interval}_${body.from_date}_${body.to_date}.${fmt}`);
+    showAlert('fut_status','✓ Downloaded!','ok');
+  }catch(e){showAlert('fut_status','✗ '+e.message,'err');}
+}
+
+// ══════════════════════════════════════
+// BULK
+// ══════════════════════════════════════
+async function startBulk(){
+  const file=document.getElementById('bulkFile').files[0];
+  if(!file){alert('Upload CSV first');return;}
+  bulkPaused=false;bulkStopped=false;
+  const rows=parseCSV(await file.text());
+  const log=document.getElementById('bulkLog'),prog=document.getElementById('bulkProg');
+  log.innerHTML='';let done=0;
+  for(const row of rows){
+    if(bulkStopped){logLine(log,'■ Stopped.','info');break;}
+    while(bulkPaused&&!bulkStopped)await sleep(300);
+    if(bulkStopped)break;
+    const tok=row.instrument_token?.trim(),from=row.from_date?.trim(),to=row.to_date?.trim(),interval=row.interval?.trim()||'day',fmt=row.file_format?.trim()||'csv';
+    if(!tok||!from||!to){logLine(log,'✗ Skipping invalid row','err');continue;}
+    logLine(log,'⏳ '+tok+' ['+from+'→'+to+'] '+interval+'...','info');
+    try{
+      const r=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:apiKey,access_token:accessToken,instrument_token:tok,from_date:from,to_date:to,interval,oi:true,continuous:false,file_format:fmt})});
+      if(!r.ok){const d=await r.json();throw new Error(d.detail);}
+      dlBlob(await r.blob(),`${tok}_${interval}_${from}_${to}.${fmt}`);done++;logLine(log,'✓ '+tok,'ok');
+    }catch(e){logLine(log,'✗ '+tok+': '+e.message,'err');}
+    prog.style.width=Math.round((done/rows.length)*100)+'%';
+    document.getElementById('bulkCount').textContent=done+'/'+rows.length+' done';
+    await sleep(500);
+  }
+  logLine(log,'Done. '+done+'/'+rows.length+' files.','ok');
+}
+
+function pauseBulk(){bulkPaused=!bulkPaused;document.getElementById('pauseBtn').textContent=bulkPaused?'▶ Resume':'⏸ Pause';}
+function stopBulk(){bulkStopped=true;bulkPaused=false;}
+
+// ══════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════
+function showAlert(id,msg,type){
+  const el=document.getElementById(id);if(!el)return;
+  const c=type==='ok'?'alert-ok':type==='err'?'alert-err':'alert-info';
+  el.innerHTML=`<div class="alert ${c}">${msg}</div>`;
+}
+function mkTable(rows,total){
+  if(!rows||!rows.length)return'<div style="color:var(--muted);font-size:13px;margin-top:10px;">No data</div>';
+  const keys=Object.keys(rows[0]);
+  return`<div class="tbl-wrap"><table><tr>${keys.map(k=>`<th>${k}</th>`).join('')}</tr>${rows.map(r=>`<tr>${keys.map(k=>`<td>${r[k]}</td>`).join('')}</tr>`).join('')}</table><div style="color:var(--muted);font-size:11px;font-family:var(--mono);margin-top:6px;">Showing 5 of ${total} rows</div></div>`;
+}
+function dlBlob(blob,fname){
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=fname;document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function logLine(el,msg,type){el.innerHTML+=`<div class="log-${type}">${msg}</div>`;el.scrollTop=el.scrollHeight;}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function parseCSV(text){
+  const lines=text.trim().split('\n'),headers=lines[0].split(',').map(h=>h.trim());
+  return lines.slice(1).map(line=>{const v=line.split(','),o={};headers.forEach((h,i)=>o[h]=v[i]?.trim()||'');return o;});
+}
+function setDates(){
+  const t=new Date(),p=n=>String(n).padStart(2,'0');
+  const td=`${t.getFullYear()}-${p(t.getMonth()+1)}-${p(t.getDate())}`;
+  const a=new Date(t);a.setMonth(a.getMonth()-1);
+  const fd=`${a.getFullYear()}-${p(a.getMonth()+1)}-${p(a.getDate())}`;
+  ['fromDate','opt_from','fut_from'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=fd;});
+  ['toDate','opt_to','fut_to'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=td;});
+}
 </script>
 </body>
 </html>
