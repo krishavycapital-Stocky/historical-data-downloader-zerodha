@@ -348,5 +348,225 @@ async def preview_historical(req: HistoricalRequest):
     return {"rows": df.to_dict(orient="records"), "total": len(candles)}
 
 
+
+# ── Spot token map ─────────────────────────────────────────────────────────────
+SPOT_TOKENS = {
+    "NIFTY":      "256265",   # NSE:NIFTY 50
+    "BANKNIFTY":  "260105",   # NSE:NIFTY BANK
+}
+
+STEP_SIZE = {
+    "NIFTY":     50,
+    "BANKNIFTY": 100,
+}
+
+# ── Options Chain endpoint ─────────────────────────────────────────────────────
+
+class ChainRequest(BaseModel):
+    api_key: str
+    access_token: str
+    index: str              # NIFTY | BANKNIFTY
+    expiry_date: str        # YYYY-MM-DD
+    expiry_number: int      # 1 = nearest, 2 = next, etc.
+    expiry_type: str        # weekly | monthly | quarterly
+    strike_range: int       # 5 or 10
+    interval: str           # minute | 3minute | 15minute | 60minute | 75minute | day
+    from_date: str          # auto-calculated data window start (3wk/3mo/9mo before expiry)
+    to_date: str            # = expiry_date
+    file_format: str = "parquet"
+
+def _resample_75min(df: pd.DataFrame) -> pd.DataFrame:
+    """Resample 15-min OHLCV data to 75-min bars."""
+    df = df.copy()
+    df["date"] = pd.to_datetime(df["date"])
+    df = df.set_index("date")
+    # Preserve non-OHLCV columns
+    extra_cols = [c for c in df.columns if c not in ["open","high","low","close","volume","oi"]]
+    ohlcv = df[["open","high","low","close","volume","oi"]].resample("75min", label="left", closed="left").agg({
+        "open": "first", "high": "max", "low": "min", "close": "last",
+        "volume": "sum", "oi": "last"
+    }).dropna(subset=["open"])
+    # Re-attach extra cols by nearest timestamp
+    for col in extra_cols:
+        ohlcv[col] = df[col].resample("75min", label="left", closed="left").last()
+    return ohlcv.reset_index()
+
+@app.post("/api/options-chain")
+async def download_options_chain(req: ChainRequest):
+    """
+    Download all strikes for one expiry date, merged into one file.
+    Columns: date, open, high, low, close, volume, oi, spot,
+             strike, strike_index, option_type, expiry_date,
+             expiry_number, expiry_type, symbol, interval_min
+    """
+    index = req.index.upper()
+    exchange = "NFO"
+    step = STEP_SIZE.get(index, 50)
+    actual_interval = "15minute" if req.interval == "75minute" else req.interval
+
+    # interval_min label
+    interval_label_map = {
+        "minute": 1, "3minute": 3, "5minute": 5, "10minute": 10,
+        "15minute": 15, "30minute": 30, "60minute": 60, "75minute": 75, "day": 1440
+    }
+    interval_min = interval_label_map.get(req.interval, 0)
+
+    # ── 1. Get ATM from spot data ──────────────────────────────────────────
+    spot_token = SPOT_TOKENS.get(index)
+    spot_df = pd.DataFrame()
+    if spot_token:
+        try:
+            spot_candles = await _fetch_candles(
+                req.api_key, req.access_token, spot_token,
+                req.from_date, req.to_date, actual_interval, False, False
+            )
+            if spot_candles:
+                spot_df = _build_df(spot_candles)
+                spot_df = spot_df[["date","close"]].rename(columns={"close":"spot"})
+                spot_df["date"] = pd.to_datetime(spot_df["date"])
+                if req.interval == "75minute":
+                    spot_df = spot_df.set_index("date")["spot"].resample(
+                        "75min", label="left", closed="left"
+                    ).last().reset_index()
+        except Exception:
+            pass
+
+    # ── 2. Get instrument list for this expiry ─────────────────────────────
+    df_instr = await _get_exchange_df(req.api_key, req.access_token, exchange)
+    mask = (
+        df_instr["name"].astype(str).str.upper().eq(index) &
+        df_instr["expiry"].astype(str).eq(req.expiry_date) &
+        df_instr["instrument_type"].isin(["CE","PE"])
+    )
+    contracts = df_instr[mask].copy()
+
+    if contracts.empty:
+        raise HTTPException(status_code=404, detail=f"No contracts found for {index} expiry {req.expiry_date}")
+
+    # ── 3. Determine ATM strike ────────────────────────────────────────────
+    # Use last available spot close, else mid of strike range
+    if not spot_df.empty:
+        last_spot = float(spot_df["spot"].dropna().iloc[-1])
+    else:
+        strikes_available = sorted(contracts["strike"].unique())
+        last_spot = float(strikes_available[len(strikes_available)//2])
+
+    atm_raw = round(last_spot / step) * step
+
+    # ── 4. Build strike list ───────────────────────────────────────────────
+    strikes = [atm_raw + i * step for i in range(-req.strike_range, req.strike_range + 1)]
+
+    # ── 5. Download each strike/type and build combined df ─────────────────
+    all_frames = []
+
+    for otype in ["CE", "PE"]:
+        for i, strike in enumerate(strikes):
+            atm_offset = i - req.strike_range  # -10..0..+10
+
+            # Find token
+            match = contracts[
+                (contracts["strike"] == strike) &
+                (contracts["instrument_type"] == otype)
+            ]
+            if match.empty:
+                continue
+
+            token = str(match.iloc[0]["instrument_token"])
+            sym   = match.iloc[0]["tradingsymbol"]
+
+            try:
+                candles = await _fetch_candles(
+                    req.api_key, req.access_token, token,
+                    req.from_date, req.to_date, actual_interval, False, True
+                )
+            except Exception:
+                continue
+
+            if not candles:
+                continue
+
+            df = _build_df(candles)
+            if df.empty:
+                continue
+
+            df["date"] = pd.to_datetime(df["date"])
+
+            # Resample to 75min if needed
+            if req.interval == "75minute":
+                df = _resample_75min(df)
+
+            # Merge spot
+            if not spot_df.empty:
+                spot_df["date"] = pd.to_datetime(spot_df["date"])
+                df = df.merge(spot_df, on="date", how="left")
+                # Forward-fill spot
+                df["spot"] = df["spot"].ffill()
+            else:
+                df["spot"] = None
+
+            # Recalculate ATM based on spot per row
+            if "spot" in df.columns and df["spot"].notna().any():
+                df["atm_strike"] = (df["spot"] / step).round() * step
+                df["strike_offset"] = ((strike - df["atm_strike"]) / step).round().astype(int)
+                df["strike_index"] = df["strike_offset"].apply(
+                    lambda x: "ATM" if x == 0 else (f"ATM+{x}" if x > 0 else f"ATM{x}")
+                )
+            else:
+                atm_label = "ATM" if atm_offset == 0 else (f"ATM+{atm_offset}" if atm_offset > 0 else f"ATM{atm_offset}")
+                df["strike_index"] = atm_label
+
+            # Add metadata columns
+            df["strike"]        = strike
+            df["symbol"]        = sym
+            df["option_type"]   = "CALL" if otype == "CE" else "PUT"
+            df["expiry_date"]   = req.expiry_date
+            df["expiry_number"] = req.expiry_number
+            # Normalise expiry_type label
+    expiry_label = {"weekly": "WEEK", "monthly": "MONTHLY", "quarterly": "QUARTERLY"}.get(req.expiry_type.lower(), req.expiry_type.upper())
+    df["expiry_type"]   = expiry_label
+            df["interval_min"]  = interval_min
+            df["index"]         = index
+
+            all_frames.append(df)
+
+            # small delay to avoid rate limit
+            await asyncio.sleep(0.1)
+
+    if not all_frames:
+        raise HTTPException(status_code=404, detail="No data found for any strike in this expiry.")
+
+    combined = pd.concat(all_frames, ignore_index=True)
+    combined = combined.sort_values(["date","option_type","strike"]).reset_index(drop=True)
+
+    # Rename date→datetime, add timestamp
+    combined["datetime"] = combined["date"].astype(str)
+    combined["timestamp"] = pd.to_datetime(combined["date"]).astype("int64") // 10**9
+    cols_order = ["timestamp","datetime","open","high","low","close","volume","oi",
+                  "spot","strike","strike_index","symbol","option_type",
+                  "expiry_date","expiry_number","expiry_type","index","interval_min"]
+    existing = [c for c in cols_order if c in combined.columns]
+    combined = combined[existing]
+
+    # ── 6. Serve file ──────────────────────────────────────────────────────
+    step_label = str(interval_min) + "min" if req.interval != "day" else "day"
+    expiry_label = {"weekly": "WEEK", "monthly": "MONTHLY", "quarterly": "QUARTERLY"}.get(req.expiry_type.lower(), req.expiry_type.upper())
+    fname = f"{index}_{expiry_label}_{req.expiry_date}_{step_label}"
+
+    if req.file_format == "parquet":
+        if not PARQUET_OK:
+            raise HTTPException(status_code=400, detail="Parquet not available.")
+        buf = io.BytesIO()
+        combined.to_parquet(buf, index=False, engine="fastparquet")
+        buf.seek(0)
+        return StreamingResponse(buf, media_type="application/octet-stream",
+            headers={"Content-Disposition": f'attachment; filename="{fname}.parquet"'})
+    else:
+        combined["datetime"] = combined["datetime"].astype(str)
+        buf = io.StringIO()
+        combined.to_csv(buf, index=False)
+        return StreamingResponse(io.BytesIO(buf.getvalue().encode()), media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="{fname}.csv"'})
+
+
 # ── Serve frontend ─────────────────────────────────────────────────────────────
 app.mount("/", StaticFiles(directory="static", html=True), name="static")

@@ -239,9 +239,10 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
 
   <div class="tabs">
     <button class="tab active" onclick="switchTab('download',this)">📈 Equity & ETF</button>
-    <button class="tab" onclick="switchTab('options',this)">🎯 Options (Active)</button>
+    <button class="tab" onclick="switchTab('options',this)">🎯 Options</button>
     <button class="tab" onclick="switchTab('expired',this)">📦 Expired Options</button>
     <button class="tab" onclick="switchTab('futures',this)">📈 Futures</button>
+    <button class="tab" onclick="switchTab('chain',this)">🔗 Options Chain</button>
   </div>
 
   <main>
@@ -585,6 +586,101 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
         <div id="exp_count" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;"></div>
         <div id="exp_status" style="margin-top:8px;"></div>
         <div class="bulk-log" id="exp_log" style="margin-top:10px;display:none;"></div>
+      </div>
+
+    </div>
+
+    <!-- OPTIONS CHAIN TAB -->
+    <div class="panel" id="panel-chain">
+
+      <div style="background:rgba(0,145,255,.08);border:1px solid rgba(0,145,255,.25);border-radius:6px;padding:12px 16px;font-family:var(--mono);font-size:12px;color:var(--accent2);margin-bottom:16px;">
+        📊 Downloads <strong>all strikes merged into one file per expiry</strong> — with spot price, ATM labels, expiry info. Perfect for backtesting.
+      </div>
+
+      <div class="card">
+        <div class="section-head">Step 1 — Index & Expiry Type</div>
+        <div class="row">
+          <div class="field">
+            <label>Index</label>
+            <select id="ch_index" onchange="ch_updateEstimate()">
+              <option value="NIFTY">NIFTY</option>
+              <option value="BANKNIFTY">BANKNIFTY</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Expiry Type</label>
+            <select id="ch_exptype" onchange="ch_onExpiryTypeChange()">
+              <option value="weekly">Weekly (3 weeks data per file)</option>
+              <option value="monthly">Monthly (3 months data per file)</option>
+              <option value="quarterly">Quarterly — Mar/Jun/Sep/Dec (9 months data per file)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Data window info box -->
+        <div id="ch_window_info" style="background:rgba(0,145,255,.08);border:1px solid rgba(0,145,255,.2);border-radius:5px;padding:10px 14px;font-family:var(--mono);font-size:11px;color:var(--accent2);margin-bottom:14px;">
+          📅 <strong>Weekly:</strong> Each file contains data from <strong>3 weeks before expiry</strong> up to expiry date.
+        </div>
+
+        <div class="section-head" style="margin-top:4px;">Step 2 — Which Expiries to Include</div>
+        <div class="row">
+          <div class="field">
+            <label>Expiries From (expiry date on or after)</label>
+            <input type="date" id="ch_from" onchange="ch_updateEstimate()"/>
+          </div>
+          <div class="field">
+            <label>Expiries To (expiry date on or before)</label>
+            <input type="date" id="ch_to" onchange="ch_updateEstimate()"/>
+          </div>
+        </div>
+
+        <div class="section-head" style="margin-top:4px;">Step 3 — Strike Range & Interval</div>
+        <div class="row">
+          <div class="field">
+            <label>Strike Range</label>
+            <select id="ch_strikes" onchange="ch_updateEstimate()">
+              <option value="5">± 5 strikes (11 CE + 11 PE = 22 rows per candle)</option>
+              <option value="10" selected>± 10 strikes (21 CE + 21 PE = 42 rows per candle)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Interval</label>
+            <select id="ch_interval" onchange="ch_updateEstimate()">
+              <option value="minute">1 min</option>
+              <option value="3minute">3 min</option>
+              <option value="15minute" selected>15 min</option>
+              <option value="60minute">60 min (1 hour)</option>
+              <option value="75minute">75 min (resampled from 15min)</option>
+              <option value="day">Day</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Format</label>
+            <select id="ch_fmt">
+              <option value="parquet" selected>Parquet (recommended)</option>
+              <option value="csv">CSV</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Live estimate box -->
+        <div style="background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.2);border-radius:5px;padding:14px 16px;font-family:var(--mono);font-size:12px;margin-top:4px;" id="ch_estimate">
+          Select options above to see estimate.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-head">Step 4 — Download Options Chain</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <button class="btn btn-primary" onclick="ch_download()" id="ch_dlbtn">⬇ Download All Expiries</button>
+          <button class="btn btn-ghost" onclick="ch_stop()" id="ch_stopbtn" style="display:none;">■ Stop</button>
+        </div>
+        <div class="progress-bar" style="margin-top:12px;">
+          <div class="progress-bar-fill" id="ch_prog" style="width:0%"></div>
+        </div>
+        <div id="ch_count" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;"></div>
+        <div id="ch_status" style="margin-top:8px;"></div>
+        <div class="bulk-log" id="ch_log" style="margin-top:10px;display:none;"></div>
       </div>
 
     </div>
@@ -1447,6 +1543,206 @@ async function exp_download() {
   showAlert('exp_status', `✓ Done! ${done} files downloaded. ${failed} not found (expired contracts not in Kite dump).`, done > 0 ? 'ok' : 'err');
 }
 
+
+// ══════════════════════════════════════════════════════════════
+// OPTIONS CHAIN TAB
+// ══════════════════════════════════════════════════════════════
+let chStopped = false;
+
+// Data windows per contract type (days before expiry)
+const CH_DATA_WINDOWS = {
+  weekly:    21,   // 3 weeks
+  monthly:   90,   // 3 months
+  quarterly: 270,  // 9 months
+};
+
+const CH_WINDOW_INFO = {
+  weekly:    '📅 <strong>Weekly:</strong> Each file contains data from <strong>3 weeks before expiry</strong> up to expiry date.',
+  monthly:   '📅 <strong>Monthly:</strong> Each file contains data from <strong>3 months before expiry</strong> up to expiry date.',
+  quarterly: '📅 <strong>Quarterly (Mar/Jun/Sep/Dec):</strong> Each file contains data from <strong>9 months before expiry</strong> up to expiry date. Great for LEAPS backtesting.',
+};
+
+function ch_onExpiryTypeChange() {
+  const type = document.getElementById('ch_exptype').value;
+  document.getElementById('ch_window_info').innerHTML = CH_WINDOW_INFO[type];
+  ch_updateEstimate();
+}
+
+function ch_getQuarterlyExpiries(from, to) {
+  // Quarterly = last Thursday of Mar, Jun, Sep, Dec
+  const expiries = [];
+  const start = new Date(from);
+  const end   = new Date(to);
+  const quarterMonths = [2, 5, 8, 11]; // Mar=2, Jun=5, Sep=8, Dec=11
+
+  let year = start.getFullYear();
+  while (year <= end.getFullYear() + 1) {
+    for (const month of quarterMonths) {
+      const lastThur = getLastThursdayOfMonth(year, month);
+      if (lastThur >= start && lastThur <= end) {
+        expiries.push(lastThur);
+      }
+    }
+    year++;
+  }
+  return expiries.sort((a, b) => a - b);
+}
+
+function ch_getAllExpiries(from, to, type) {
+  if (type === 'quarterly') return ch_getQuarterlyExpiries(from, to);
+  // weekly and monthly reuse exp_getExpiries
+  return exp_getExpiries(from, to, type, document.getElementById('ch_index').value);
+}
+
+function ch_calcFromDate(expDate, type) {
+  // Calculate data start date = expiry - data window
+  const days = CH_DATA_WINDOWS[type] || 21;
+  const d = new Date(expDate);
+  d.setDate(d.getDate() - days);
+  return exp_fmtDate(d);
+}
+
+function ch_updateEstimate() {
+  const from     = document.getElementById('ch_from').value;
+  const to       = document.getElementById('ch_to').value;
+  const type     = document.getElementById('ch_exptype').value;
+  const range    = parseInt(document.getElementById('ch_strikes').value);
+  const interval = document.getElementById('ch_interval').value;
+  const index    = document.getElementById('ch_index').value;
+  const el       = document.getElementById('ch_estimate');
+
+  if (!from || !to) { el.innerHTML = 'Select date range to see estimate.'; return; }
+
+  const expiries = ch_getAllExpiries(from, to, type);
+  const strikes  = range * 2 + 1;
+  const files    = expiries.length;
+  const step     = index === 'BANKNIFTY' ? 100 : 50;
+
+  const windowDays = CH_DATA_WINDOWS[type];
+  const intervalWarnings = {
+    'minute':    '⚠ 1-min: very large files. Each file = ~375 candles/day × ' + strikes*2 + ' strikes.',
+    '3minute':   '⚠ 3-min: large files.',
+    '15minute':  '✓ 15-min: recommended. ~125 candles/day × ' + strikes*2 + ' strikes.',
+    '60minute':  '✓ 60-min: compact.',
+    '75minute':  '✓ 75-min: resampled from 15min on server.',
+    'day':       '✓ Daily: smallest files. ' + windowDays + ' rows max per strike.',
+  };
+  const warn = intervalWarnings[interval] || '';
+
+  // Sample first expiry to show data window
+  let exampleWindow = '';
+  if (expiries.length > 0) {
+    const ex = expiries[0];
+    const exStr = exp_fmtDate(ex);
+    const fromStr = ch_calcFromDate(ex, type);
+    exampleWindow = `<div style="margin-top:6px;color:var(--muted);">Example: expiry <strong style="color:var(--text);">${exStr}</strong> → data from <strong style="color:var(--text);">${fromStr}</strong> to <strong style="color:var(--text);">${exStr}</strong></div>`;
+  }
+
+  el.innerHTML = `
+    <div style="display:flex;gap:20px;flex-wrap:wrap;">
+      <div><span style="color:var(--muted);">Expiries:</span> <strong style="color:var(--accent);">${files}</strong></div>
+      <div><span style="color:var(--muted);">Strikes per file:</span> <strong style="color:var(--accent);">${strikes} CE + ${strikes} PE</strong></div>
+      <div><span style="color:var(--muted);">Files total:</span> <strong style="color:var(--accent);">${files}</strong></div>
+      <div><span style="color:var(--muted);">Step size:</span> <strong style="color:var(--accent);">₹${step}</strong></div>
+    </div>
+    <div style="margin-top:6px;color:var(--muted);">File name format: <strong style="color:var(--text);">${index}_${type.toUpperCase()}_YYYY-MM-DD_${interval.replace('minute','min')}.${document.getElementById('ch_fmt').value}</strong></div>
+    ${exampleWindow}
+    <div style="margin-top:8px;color:var(--warn);font-size:11px;">${warn}</div>
+  `;
+}
+
+function ch_stop() {
+  chStopped = true;
+  document.getElementById('ch_stopbtn').style.display = 'none';
+}
+
+async function ch_download() {
+  const from     = document.getElementById('ch_from').value;
+  const to       = document.getElementById('ch_to').value;
+  const index    = document.getElementById('ch_index').value;
+  const type     = document.getElementById('ch_exptype').value;
+  const range    = parseInt(document.getElementById('ch_strikes').value);
+  const interval = document.getElementById('ch_interval').value;
+  const fmt      = document.getElementById('ch_fmt').value;
+
+  if (!from || !to)            { alert('Select expiry date range'); return; }
+  if (!apiKey || !accessToken) { alert('Connect token first'); return; }
+
+  const expiries = ch_getAllExpiries(from, to, type);
+  if (!expiries.length) { showAlert('ch_status', 'No expiries found in this date range', 'err'); return; }
+
+  const log = document.getElementById('ch_log');
+  log.style.display = 'block';
+  log.innerHTML = '';
+  chStopped = false;
+
+  document.getElementById('ch_dlbtn').disabled = true;
+  document.getElementById('ch_stopbtn').style.display = '';
+  document.getElementById('ch_prog').style.width = '0%';
+  document.getElementById('ch_count').textContent = `0 / ${expiries.length} expiries`;
+
+  let done = 0, failed = 0;
+
+  for (let i = 0; i < expiries.length; i++) {
+    if (chStopped) { logLine(log, '■ Stopped.', 'info'); break; }
+
+    const expDate   = exp_fmtDate(expiries[i]);
+    const dataFrom  = ch_calcFromDate(expiries[i], type);  // auto data window
+    const expNum    = i + 1;
+
+    logLine(log, `⏳ [${i+1}/${expiries.length}] ${index} ${type} exp:${expDate} | data: ${dataFrom} → ${expDate}`, 'info');
+
+    try {
+      const body = {
+        api_key:       apiKey,
+        access_token:  accessToken,
+        index:         index,
+        expiry_date:   expDate,
+        expiry_number: expNum,
+        expiry_type:   type,
+        strike_range:  range,
+        interval:      interval,
+        from_date:     dataFrom,   // ← correct data window per contract type
+        to_date:       expDate,
+        file_format:   fmt,
+      };
+
+      const res = await fetch('/api/options-chain', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({ detail: 'Unknown error' }));
+        logLine(log, `✗ ${expDate}: ${d.detail}`, 'err');
+        failed++;
+      } else {
+        const blob = await res.blob();
+        const intervalLabel = interval === 'day' ? 'day' : interval.replace('minute','min');
+        const fname = `${index}_${type.toUpperCase()}_${expDate}_${intervalLabel}.${fmt}`;
+        dlBlob(blob, fname);
+        logLine(log, `✓ ${fname}`, 'ok');
+        done++;
+      }
+    } catch(e) {
+      logLine(log, `✗ ${expDate}: ${e.message}`, 'err');
+      failed++;
+    }
+
+    document.getElementById('ch_prog').style.width = Math.round((done+failed)/expiries.length*100) + '%';
+    document.getElementById('ch_count').textContent = `${done} downloaded, ${failed} failed — ${done+failed}/${expiries.length}`;
+    await sleep(300);
+  }
+
+  document.getElementById('ch_dlbtn').disabled = false;
+  document.getElementById('ch_stopbtn').style.display = 'none';
+  showAlert('ch_status',
+    `✓ Done! ${done} files downloaded${failed ? `, ${failed} failed` : ''}.`,
+    done > 0 ? 'ok' : 'err'
+  );
+}
+
 function showAlert(id,msg,type){
   const el=document.getElementById(id);if(!el)return;
   const c=type==='ok'?'alert-ok':type==='err'?'alert-err':'alert-info';
@@ -1473,8 +1769,8 @@ function setDates(){
   const td=`${t.getFullYear()}-${p(t.getMonth()+1)}-${p(t.getDate())}`;
   const a=new Date(t);a.setMonth(a.getMonth()-1);
   const fd=`${a.getFullYear()}-${p(a.getMonth()+1)}-${p(a.getDate())}`;
-  ['fromDate','opt_from','fut_from','exp_from'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=fd;});
-  ['toDate','opt_to','fut_to','exp_to'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=td;});
+  ['fromDate','opt_from','fut_from','exp_from','ch_from'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=fd;});
+  ['toDate','opt_to','fut_to','exp_to','ch_to'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=td;});
 }
 </script>
 </body>
