@@ -238,10 +238,9 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
   </header>
 
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('download',this)">📥 Download Data</button>
+    <button class="tab active" onclick="switchTab('download',this)">📈 Equity & ETF</button>
     <button class="tab" onclick="switchTab('options',this)">🎯 Options</button>
     <button class="tab" onclick="switchTab('futures',this)">📈 Futures</button>
-    <button class="tab" onclick="switchTab('bulk',this)">📦 Bulk Download</button>
   </div>
 
   <main>
@@ -262,7 +261,7 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
             </select>
           </div>
           <div class="field"><label>Format</label>
-            <select id="fileFormat"><option value="csv">CSV</option><option value="json">JSON</option></select>
+            <select id="fileFormat"><option value="csv">CSV</option><option value="json">JSON</option><option value="parquet">Parquet</option></select>
           </div>
         </div>
         <div style="display:flex;gap:20px;flex-wrap:wrap;">
@@ -275,9 +274,8 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
         <div class="row">
           <div class="field"><label>Exchange</label>
             <select id="exchange" onchange="onExchangeChange()">
-              <option value="NFO">NFO (F&amp;O)</option><option value="BFO">BFO (BSE F&amp;O)</option>
-              <option value="NSE">NSE (Equity)</option><option value="BSE">BSE (Equity)</option>
-              <option value="MCX">MCX</option>
+              <option value="NSE">NSE (Stocks &amp; ETFs)</option>
+              <option value="BSE">BSE (Stocks &amp; ETFs)</option>
             </select>
           </div>
           <div class="field" style="flex:2"><label>Search Symbol</label>
@@ -293,7 +291,7 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
         </div>
       </div>
       <div class="card">
-        <div class="section-head">Step 3 — Preview & Download</div>
+        <div class="section-head">Step 3 — Download Equity / ETF Data</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button class="btn btn-primary" onclick="downloadData()">⬇ Download</button>
         </div>
@@ -317,7 +315,7 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
             </select>
           </div>
           <div class="field"><label>Format</label>
-            <select id="opt_fmt"><option value="csv">CSV</option><option value="json">JSON</option></select>
+            <select id="opt_fmt"><option value="csv">CSV</option><option value="json">JSON</option><option value="parquet">Parquet</option></select>
           </div>
         </div>
       </div>
@@ -340,7 +338,10 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
         <div id="opt_index_row">
           <div class="row">
             <div class="field"><label>Exchange</label>
-              <select id="opt_ex"><option value="NFO">NFO</option><option value="BFO">BFO</option></select>
+              <select id="opt_ex" onchange="opt_filterUnderlyings()">
+              <option value="NFO">NFO</option>
+              <option value="BFO">BFO</option>
+            </select>
             </div>
             <div class="field"><label>Underlying Index</label>
               <select id="opt_ul" onchange="opt_loadExpiries()">
@@ -395,7 +396,7 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
         <div id="opt_info" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;"></div>
       </div>
       <div class="card">
-        <div class="section-head">Step 3 — Preview & Download</div>
+        <div class="section-head">Step 3 — Download Options Data</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button class="btn btn-primary" onclick="opt_dl()">⬇ Download</button>
         </div>
@@ -419,10 +420,10 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
             </select>
           </div>
           <div class="field"><label>Format</label>
-            <select id="fut_fmt"><option value="csv">CSV</option><option value="json">JSON</option></select>
+            <select id="fut_fmt"><option value="csv">CSV</option><option value="json">JSON</option><option value="parquet">Parquet</option></select>
           </div>
         </div>
-        <div class="trow"><input type="checkbox" id="fut_cont"/><label for="fut_cont">Continuous (rollover)</label></div>
+        <div class="trow"><input type="checkbox" id="fut_cont" onchange="fut_toggleContinuous()"/><label for="fut_cont">Continuous (rollover) — stitches all expiries automatically</label></div>
       </div>
       <div class="card">
         <div class="section-head">Step 2 — Select Futures Contract</div>
@@ -437,15 +438,15 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
             <button class="btn btn-ghost" onclick="fut_loadExpiries()" style="width:100%">Load Expiries</button>
           </div>
         </div>
-        <div class="row">
-          <div class="field"><label>Expiry Date</label>
+        <div id="fut_expiry_row" class="row">
+          <div class="field"><label>Expiry Date <span style="color:var(--muted);font-size:10px;">(hidden when Continuous is on)</span></label>
             <select id="fut_expiry" disabled><option>— load expiries first —</option></select>
           </div>
         </div>
         <div id="fut_info" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;"></div>
       </div>
       <div class="card">
-        <div class="section-head">Step 3 — Preview & Download</div>
+        <div class="section-head">Step 3 — Download Futures Data</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button class="btn btn-primary" onclick="fut_dl()">⬇ Download</button>
         </div>
@@ -453,22 +454,6 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
       </div>
     </div>
 
-    <!-- BULK TAB -->
-    <div class="panel" id="panel-bulk">
-      <div class="card">
-        <div class="section-head">Bulk Download via CSV</div>
-        <p style="color:var(--muted);font-size:13px;margin-bottom:14px;">CSV columns: <code style="color:var(--accent)">instrument_token, from_date, to_date, interval</code> (optionally file_format)</p>
-        <div class="row"><div class="field"><label>Upload CSV</label><input type="file" id="bulkFile" accept=".csv"/></div></div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="btn btn-primary" onclick="startBulk()">▶ Start</button>
-          <button class="btn btn-ghost" onclick="pauseBulk()" id="pauseBtn">⏸ Pause</button>
-          <button class="btn btn-danger" onclick="stopBulk()">■ Stop</button>
-        </div>
-        <div class="progress-bar"><div class="progress-bar-fill" id="bulkProg" style="width:0%"></div></div>
-        <div id="bulkCount" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;"></div>
-        <div class="bulk-log" id="bulkLog"></div>
-      </div>
-    </div>
 
   </main>
 </div>
@@ -835,7 +820,7 @@ function optValidate(){
   const u = optMode==='stock' ? optStockName : document.getElementById('opt_ul').value;
   if(!u){alert(optMode==='stock'?'Search and select a stock first':'Select underlying index');return false;}
   if(!document.getElementById('opt_expiry').value){alert('Select expiry');return false;}
-  if(!document.getElementById('opt_strike').value){alert('Select strike');return false;}
+  if(strikeMode==='single'&&!document.getElementById('opt_strike').value){alert('Select strike price');return false;}
   if(!document.getElementById('opt_from').value||!document.getElementById('opt_to').value){alert('Select date range');return false;}
   return true;
 }
@@ -859,7 +844,17 @@ async function opt_preview(){
 async function opt_dl(){
   if(!optValidate())return;
   const u = optMode==='stock' ? optStockName : document.getElementById('opt_ul').value;
-  const exp=document.getElementById('opt_expiry').value,str=document.getElementById('opt_strike').value,fmt=document.getElementById('opt_fmt').value;
+  const exp=document.getElementById('opt_expiry').value;
+  const fmt=document.getElementById('opt_fmt').value;
+
+  // ATM Range mode
+  if (strikeMode === 'range') {
+    await opt_dl_range(u, exp, fmt);
+    return;
+  }
+
+  // Single strike mode
+  const str=document.getElementById('opt_strike').value;
   const types=optType==='BOTH'?['CE','PE']:[optType];
   showAlert('opt_status','⏳ Downloading...','info');
   let done=0;
@@ -966,6 +961,98 @@ function stopBulk(){bulkStopped=true;bulkPaused=false;}
 // ══════════════════════════════════════
 // HELPERS
 // ══════════════════════════════════════
+// ── Strike mode toggle ──────────────────────────────────────
+let strikeMode = 'single';
+
+function opt_setStrikeMode(mode) {
+  strikeMode = mode;
+  const s = document.getElementById('smode-single');
+  const r = document.getElementById('smode-range');
+  const single_row = document.getElementById('strike_single_row');
+  const range_row = document.getElementById('strike_range_row');
+  if (mode === 'single') {
+    s.style.cssText = 'flex:1;padding:7px;text-align:center;font-family:var(--mono);font-size:11px;font-weight:600;border-radius:4px;cursor:pointer;background:rgba(0,212,170,.12);border:1px solid var(--accent);color:var(--accent);';
+    r.style.cssText = 'flex:1;padding:7px;text-align:center;font-family:var(--mono);font-size:11px;font-weight:600;border-radius:4px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--muted);';
+    single_row.style.display = '';
+    range_row.style.display = 'none';
+  } else {
+    r.style.cssText = 'flex:1;padding:7px;text-align:center;font-family:var(--mono);font-size:11px;font-weight:600;border-radius:4px;cursor:pointer;background:rgba(0,145,255,.12);border:1px solid var(--accent2);color:var(--accent2);';
+    s.style.cssText = 'flex:1;padding:7px;text-align:center;font-family:var(--mono);font-size:11px;font-weight:600;border-radius:4px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--muted);';
+    single_row.style.display = 'none';
+    range_row.style.display = '';
+  }
+}
+
+// ── BFO/NFO underlying filter ────────────────────────────────
+function opt_filterUnderlyings() {
+  const ex = document.getElementById('opt_ex').value;
+  const sel = document.getElementById('opt_ul');
+  if (ex === 'BFO') {
+    sel.innerHTML = '<option value="">— Select —</option><option value="SENSEX">SENSEX</option><option value="BANKEX">BANKEX</option>';
+  } else {
+    sel.innerHTML = '<option value="">— Select —</option><option value="NIFTY">NIFTY</option><option value="BANKNIFTY">BANKNIFTY</option><option value="FINNIFTY">FINNIFTY</option><option value="MIDCPNIFTY">MIDCPNIFTY</option>';
+  }
+  // Reset expiry/strike
+  document.getElementById('opt_expiry').innerHTML = '<option>— select underlying first —</option>';
+  document.getElementById('opt_expiry').disabled = true;
+  document.getElementById('opt_strike').innerHTML = '<option>— select expiry first —</option>';
+  document.getElementById('opt_strike').disabled = true;
+}
+
+// ── Futures continuous toggle ──────────────────────────────────
+function fut_toggleContinuous() {
+  const isCont = document.getElementById('fut_cont').checked;
+  const row = document.getElementById('fut_expiry_row');
+  if (row) row.style.display = isCont ? 'none' : '';
+  // When continuous: auto-select nearest expiry after loading
+  if (isCont && document.getElementById('fut_expiry').value) {
+    // already have expiries loaded, nearest is first — fine
+  }
+}
+
+// ── ATM range download ───────────────────────────────────────
+async function opt_dl_range(u, exp, fmt) {
+  const atmPrice = parseFloat(document.getElementById('atm_price').value);
+  const step = parseFloat(document.getElementById('atm_step').value) || 50;
+  const range = parseInt(document.getElementById('atm_range').value) || 10;
+  if (!atmPrice || atmPrice <= 0) { alert('Enter a valid Spot/ATM price'); return; }
+
+  // Round ATM price to nearest step
+  const atm = Math.round(atmPrice / step) * step;
+  const types = optType === 'BOTH' ? ['CE','PE'] : [optType];
+  const strikes = [];
+  for (let i = -range; i <= range; i++) strikes.push(atm + i * step);
+
+  showAlert('opt_status', `⏳ Downloading ${strikes.length * types.length} files (ATM ${atm} ± ${range} strikes)...`, 'info');
+  let done = 0, failed = 0;
+  const total = strikes.length * types.length;
+
+  for (const strike of strikes) {
+    for (const ot of types) {
+      try {
+        const t = await optGetTok(u, exp, strike, ot);
+        const body = {
+          api_key: apiKey, access_token: accessToken,
+          instrument_token: t.instrument_token,
+          from_date: document.getElementById('opt_from').value,
+          to_date: document.getElementById('opt_to').value,
+          interval: document.getElementById('opt_interval').value,
+          oi: document.getElementById('opt_oi').checked,
+          continuous: false,
+          file_format: fmt
+        };
+        const r = await fetch('/api/historical', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+        if (!r.ok) { failed++; continue; }
+        dlBlob(await r.blob(), `${t.tradingsymbol}_${body.interval}_${body.from_date}_${body.to_date}.${fmt}`);
+        done++;
+      } catch(e) { failed++; }
+      showAlert('opt_status', `⏳ Downloaded ${done}/${total}... (${failed} not found)`, 'info');
+      await sleep(200); // small delay between downloads
+    }
+  }
+  showAlert('opt_status', `✓ Done! ${done} files downloaded. ${failed} strikes not found (normal for far OTM).`, 'ok');
+}
+
 function showAlert(id,msg,type){
   const el=document.getElementById(id);if(!el)return;
   const c=type==='ok'?'alert-ok':type==='err'?'alert-err':'alert-info';

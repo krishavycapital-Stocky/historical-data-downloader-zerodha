@@ -10,6 +10,11 @@ import io
 import json
 from datetime import datetime, timedelta
 import asyncio
+try:
+    import fastparquet
+    PARQUET_OK = True
+except ImportError:
+    PARQUET_OK = False
 
 app = FastAPI(title="ZetaPull — Historical Data Downloader")
 
@@ -314,7 +319,16 @@ async def download_historical(req: HistoricalRequest):
         return StreamingResponse(io.BytesIO(df.to_json(orient="records", indent=2).encode()),
                                   media_type="application/json",
                                   headers={"Content-Disposition": f'attachment; filename="{fname}.json"'})
-    raise HTTPException(status_code=400, detail="Use csv or json.")
+    elif req.file_format == "parquet":
+        if not PARQUET_OK:
+            raise HTTPException(status_code=400, detail="Parquet not available on this server.")
+        buf = io.BytesIO()
+        df.to_parquet(buf, index=False, engine="fastparquet")
+        buf.seek(0)
+        return StreamingResponse(buf,
+                                  media_type="application/octet-stream",
+                                  headers={"Content-Disposition": f'attachment; filename="{fname}.parquet"'})
+    raise HTTPException(status_code=400, detail="Use csv, json, or parquet.")
 
 
 @app.post("/api/preview")
