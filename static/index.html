@@ -4,240 +4,176 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>ZetaPull — Zerodha Historical Data</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
-:root {
-  --bg:#0a0e14;--surface:#111720;--surface2:#18202e;--border:#1e2d44;
-  --accent:#00d4aa;--accent2:#0091ff;--danger:#ff4d6d;--warn:#ffb347;
-  --text:#e0eaf8;--muted:#5a7a9a;
-  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
-}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;min-height:100vh;}
-
-/* PAGE SYSTEM */
-.page{display:none;min-height:100vh;}
-.page.active{display:flex;flex-direction:column;}
-
-/* ── LOGIN PAGE ── */
-#page-login{align-items:center;justify-content:center;padding:40px 20px;}
-.login-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px;width:100%;max-width:480px;}
-.login-logo{font-family:var(--mono);font-size:28px;font-weight:600;color:var(--accent);margin-bottom:4px;}
-.login-logo span{color:var(--muted);font-weight:400;}
-.login-tagline{color:var(--muted);font-size:13px;margin-bottom:28px;}
-.login-label{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:6px;display:block;}
-.login-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:14px;padding:11px 14px;outline:none;margin-bottom:6px;transition:border-color .2s;}
-.login-input:focus{border-color:var(--accent2);}
-.login-hint{font-size:11px;color:var(--muted);margin-bottom:18px;font-family:var(--mono);}
-.login-hint a{color:var(--accent2);text-decoration:none;}
-.btn-login{width:100%;padding:13px;background:var(--accent);color:#000;border:none;border-radius:6px;font-family:var(--mono);font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;transition:opacity .2s;letter-spacing:.3px;}
-.btn-login:hover{opacity:.88;}
-.saved-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);border-radius:4px;padding:5px 10px;font-family:var(--mono);font-size:11px;color:var(--accent);margin-bottom:18px;}
-.divider-or{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--muted);font-size:12px;font-family:var(--mono);}
-.divider-or::before,.divider-or::after{content:'';flex:1;height:1px;background:var(--border);}
-
-/* ── TOKEN PAGE ── */
-#page-token{align-items:center;justify-content:center;padding:40px 20px;}
-.token-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px;width:100%;max-width:520px;}
-.token-logo{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--accent);margin-bottom:4px;}
-.token-logo span{color:var(--muted);font-weight:400;}
-.token-step{display:flex;align-items:flex-start;gap:14px;margin-bottom:22px;}
-.step-num{width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);font-family:var(--mono);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);}
-.step-num.done{background:rgba(0,212,170,.15);border-color:var(--accent);color:var(--accent);}
-.step-num.active{background:rgba(0,145,255,.15);border-color:var(--accent2);color:var(--accent2);}
-.step-title{font-size:14px;font-weight:500;margin-bottom:4px;}
-.step-desc{font-size:12px;color:var(--muted);font-family:var(--mono);}
-.autofill-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);border-radius:20px;padding:3px 10px;font-family:var(--mono);font-size:10px;color:var(--accent);margin-left:8px;vertical-align:middle;}
-.token-display{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:10px;word-break:break-all;min-height:40px;}
-.token-display.filled{color:var(--accent);border-color:rgba(0,212,170,.4);}
-.btn-generate{width:100%;padding:13px;background:var(--accent);color:#000;border:none;border-radius:6px;font-family:var(--mono);font-size:14px;font-weight:600;cursor:pointer;margin-top:20px;transition:opacity .2s;}
-.btn-generate:hover{opacity:.88;}
-.btn-generate:disabled{opacity:.4;cursor:not-allowed;}
-.btn-outline{width:100%;padding:11px;background:transparent;color:var(--accent2);border:1px solid var(--accent2);border-radius:6px;font-family:var(--mono);font-size:13px;font-weight:600;cursor:pointer;margin-top:10px;transition:background .2s;}
-.btn-outline:hover{background:rgba(0,145,255,.08);}
-.back-link{font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;margin-top:16px;text-align:center;}
-.back-link:hover{color:var(--text);}
-
-/* ── APP PAGE ── */
-#page-app{flex-direction:column;}
-header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;flex-shrink:0;}
-.logo{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--accent);}
+:root{--bg:#0a0e14;--surf:#111720;--surf2:#18202e;--bdr:#1e2d44;--grn:#00d4aa;--blu:#0091ff;--red:#ff4d6d;--ylw:#ffb347;--txt:#e0eaf8;--muted:#5a7a9a;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;}
+body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:14px;min-height:100vh;}
+.page{display:none;min-height:100vh;flex-direction:column;}
+.page.active{display:flex;}
+.center-page{align-items:center;justify-content:center;padding:40px 20px;}
+.box{background:var(--surf);border:1px solid var(--bdr);border-radius:12px;padding:40px;width:100%;max-width:480px;}
+.logo{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--grn);margin-bottom:4px;}
 .logo span{color:var(--muted);font-weight:400;}
-.conn-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);flex-shrink:0;}
-.conn-label{font-size:12px;color:var(--accent);font-family:var(--mono);}
-.header-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
-.user-pill{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-family:var(--mono);font-size:11px;color:var(--muted);}
-.btn-relogin{font-family:var(--mono);font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:4px;padding:4px 10px;cursor:pointer;}
-.btn-relogin:hover{color:var(--warn);border-color:var(--warn);}
-
-/* TABS */
-.tabs{display:flex;gap:0;padding:0 20px;border-bottom:1px solid var(--border);background:var(--surface);overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tagline{color:var(--muted);font-size:13px;margin-bottom:24px;}
+.lbl{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:5px;display:block;}
+.inp{width:100%;background:var(--surf2);border:1px solid var(--bdr);border-radius:6px;color:var(--txt);font-family:var(--mono);font-size:13px;padding:10px 13px;outline:none;margin-bottom:5px;transition:border-color .2s;}
+.inp:focus{border-color:var(--blu);}
+.hint{font-size:11px;color:var(--muted);margin-bottom:14px;font-family:var(--mono);}
+.hint a{color:var(--blu);text-decoration:none;}
+.btn-big{width:100%;padding:12px;border:none;border-radius:6px;font-family:var(--mono);font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;transition:opacity .2s;}
+.btn-big:hover{opacity:.85;}
+.btn-big.grn{background:var(--grn);color:#000;}
+.btn-big.blu{background:var(--blu);color:#fff;}
+.divider{display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--muted);font-size:12px;font-family:var(--mono);}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--bdr);}
+.saved-badge{display:none;align-items:center;gap:6px;background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);border-radius:4px;padding:5px 10px;font-family:var(--mono);font-size:11px;color:var(--grn);margin-bottom:16px;}
+/* Token page */
+.token-box{background:var(--surf);border:1px solid var(--bdr);border-radius:12px;padding:36px;width:100%;max-width:520px;}
+.step-row{display:flex;gap:14px;margin-bottom:20px;align-items:flex-start;}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--surf2);border:1px solid var(--bdr);font-family:var(--mono);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);}
+.step-num.done{background:rgba(0,212,170,.15);border-color:var(--grn);color:var(--grn);}
+.step-num.active{background:rgba(0,145,255,.15);border-color:var(--blu);color:var(--blu);}
+.step-title{font-size:14px;font-weight:500;margin-bottom:3px;}
+.step-desc{font-size:12px;color:var(--muted);font-family:var(--mono);}
+.tok-display{background:var(--surf2);border:1px solid var(--bdr);border-radius:6px;padding:9px 13px;font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:8px;word-break:break-all;min-height:38px;}
+.tok-display.filled{color:var(--grn);border-color:rgba(0,212,170,.4);}
+.autofill-badge{display:none;background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);border-radius:20px;padding:2px 9px;font-family:var(--mono);font-size:10px;color:var(--grn);margin-left:8px;vertical-align:middle;}
+.back-link{font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;text-align:center;margin-top:14px;}
+.back-link:hover{color:var(--txt);}
+/* App header */
+header{background:var(--surf);border-bottom:1px solid var(--bdr);padding:11px 22px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;flex-shrink:0;}
+.hlogo{font-family:var(--mono);font-size:17px;font-weight:600;color:var(--grn);}
+.hlogo span{color:var(--muted);font-weight:400;}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--grn);box-shadow:0 0 6px var(--grn);}
+.conn{font-size:12px;color:var(--grn);font-family:var(--mono);}
+.hright{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.pill{background:var(--surf2);border:1px solid var(--bdr);border-radius:20px;padding:3px 11px;font-family:var(--mono);font-size:11px;color:var(--muted);}
+.relogin-btn{font-family:var(--mono);font-size:11px;color:var(--muted);background:none;border:1px solid var(--bdr);border-radius:4px;padding:4px 10px;cursor:pointer;}
+.relogin-btn:hover{color:var(--ylw);border-color:var(--ylw);}
+/* Tabs */
+.tabs{display:flex;padding:0 22px;border-bottom:1px solid var(--bdr);background:var(--surf);overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
 .tabs::-webkit-scrollbar{display:none;}
-.tab{padding:10px 16px;border:none;background:transparent;color:#5a7a9a;font-family:var(--mono);font-size:11px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .2s,border-color .2s;letter-spacing:.5px;text-transform:uppercase;line-height:1.4;}
-.tab:hover{color:var(--text);}
-.tab.active{color:#00d4aa !important;border-bottom-color:#00d4aa;}
-
-/* MAIN */
-main{padding:24px;max-width:900px;flex:1;}
+.tab{padding:11px 15px;border:none;background:transparent;color:var(--muted);font-family:var(--mono);font-size:11px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;text-transform:uppercase;letter-spacing:.4px;transition:color .2s,border-color .2s;}
+.tab:hover{color:var(--txt);}
+.tab.active{color:var(--grn);border-bottom-color:var(--grn);}
+/* Main */
+main{padding:22px;max-width:880px;}
 .panel{display:none;}
 .panel.active{display:block;}
-
-/* CARDS */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px;}
-.section-head{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--accent2);margin-bottom:14px;padding-bottom:6px;border-bottom:1px solid var(--border);}
-
-/* FORM */
-.row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
-.field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:160px;}
-.field label{font-size:11px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;}
-input,select{background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--mono);font-size:13px;padding:9px 12px;width:100%;outline:none;transition:border-color .2s;}
-input:focus,select:focus{border-color:var(--accent2);}
-select option{background:var(--surface2);}
-
-/* BUTTONS */
-.btn{padding:9px 18px;border-radius:5px;border:none;font-family:var(--mono);font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.5px;transition:opacity .2s,transform .1s;white-space:nowrap;}
-.btn:active{transform:scale(.97);}
+.card{background:var(--surf);border:1px solid var(--bdr);border-radius:8px;padding:18px;margin-bottom:14px;}
+.sh{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--blu);margin-bottom:12px;padding-bottom:5px;border-bottom:1px solid var(--bdr);}
+.row{display:flex;gap:11px;flex-wrap:wrap;margin-bottom:12px;}
+.field{display:flex;flex-direction:column;gap:5px;flex:1;min-width:150px;}
+.field label{font-size:11px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.4px;}
+input,select{background:var(--surf2);border:1px solid var(--bdr);border-radius:5px;color:var(--txt);font-family:var(--mono);font-size:13px;padding:8px 11px;width:100%;outline:none;transition:border-color .2s;}
+input:focus,select:focus{border-color:var(--blu);}
+select option{background:var(--surf2);}
+.btn{padding:8px 16px;border-radius:5px;border:none;font-family:var(--mono);font-size:12px;font-weight:600;cursor:pointer;transition:opacity .2s;white-space:nowrap;}
+.btn:hover{opacity:.85;}
 .btn:disabled{opacity:.4;cursor:not-allowed;}
-.btn-primary{background:var(--accent);color:#000;}
-.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
-.btn-danger{background:var(--danger);color:#fff;}
-
-/* ALERTS */
-.alert{padding:10px 14px;border-radius:5px;font-family:var(--mono);font-size:12px;margin-top:12px;}
-.alert-ok{background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);color:var(--accent);}
-.alert-err{background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.3);color:var(--danger);}
-.alert-info{background:rgba(0,145,255,.1);border:1px solid rgba(0,145,255,.3);color:var(--accent2);}
-
-/* SEARCH */
+.btn-p{background:var(--grn);color:#000;}
+.btn-g{background:var(--surf2);color:var(--txt);border:1px solid var(--bdr);}
+.btn-d{background:var(--red);color:#fff;}
+.alert{padding:9px 13px;border-radius:5px;font-family:var(--mono);font-size:12px;margin-top:10px;}
+.alert-ok{background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);color:var(--grn);}
+.alert-err{background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.3);color:var(--red);}
+.alert-info{background:rgba(0,145,255,.1);border:1px solid rgba(0,145,255,.3);color:var(--blu);}
 .search-wrap{position:relative;}
-.search-results{position:absolute;top:100%;left:0;right:0;max-height:220px;overflow-y:auto;background:var(--surface2);border:1px solid var(--border);border-top:none;border-radius:0 0 5px 5px;display:none;z-index:50;}
-.sri{padding:9px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12px;transition:background .15s;}
-.sri:hover{background:var(--border);}
-.sri .sym{color:var(--accent);font-weight:600;}
+.search-results{position:absolute;top:100%;left:0;right:0;max-height:220px;overflow-y:auto;background:var(--surf2);border:1px solid var(--bdr);border-top:none;border-radius:0 0 5px 5px;display:none;z-index:50;}
+.sri{padding:8px 11px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bdr);font-family:var(--mono);font-size:12px;}
+.sri:hover{background:var(--bdr);}
+.sri .sym{color:var(--grn);font-weight:600;}
 .sri .meta{color:var(--muted);font-size:11px;}
-.sel-chip{display:inline-flex;align-items:center;gap:8px;background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.4);border-radius:4px;padding:6px 12px;font-family:var(--mono);font-size:12px;color:var(--accent);margin-top:8px;}
-.sel-chip .clr{cursor:pointer;color:var(--muted);}
-.sel-chip .clr:hover{color:var(--danger);}
-
-/* TABLE */
-.tbl-wrap{overflow-x:auto;margin-top:12px;}
-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;}
-th{background:var(--surface2);color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);}
-td{padding:7px 10px;border-bottom:1px solid rgba(30,45,68,.5);}
-tr:last-child td{border-bottom:none;}
-
-/* BULK */
-.progress-bar{background:var(--surface2);border-radius:3px;height:4px;overflow:hidden;margin-top:8px;}
-.progress-bar-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .3s;}
-.bulk-log{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:12px;font-family:var(--mono);font-size:11px;max-height:260px;overflow-y:auto;line-height:1.8;margin-top:12px;}
-.log-ok{color:var(--accent);}.log-err{color:var(--danger);}.log-info{color:var(--muted);}
-
-/* TOGGLES */
-.trow{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.chip{display:inline-flex;align-items:center;gap:7px;background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.4);border-radius:4px;padding:5px 11px;font-family:var(--mono);font-size:12px;color:var(--grn);margin-top:7px;}
+.chip .x{cursor:pointer;color:var(--muted);}
+.chip .x:hover{color:var(--red);}
+.trow{display:flex;align-items:center;gap:9px;margin-bottom:9px;}
 .trow label{font-size:13px;cursor:pointer;}
-input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
-
-/* OPTION TYPE */
-.otype-group{display:flex;gap:6px;}
-.otype-btn{flex:1;padding:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-family:var(--mono);font-size:12px;font-weight:600;border-radius:4px;cursor:pointer;transition:all .2s;text-align:center;}
-.otype-btn.active-ce{border-color:var(--accent);color:var(--accent);background:rgba(0,212,170,.08);}
-.otype-btn.active-pe{border-color:var(--danger);color:var(--danger);background:rgba(255,77,109,.08);}
-.otype-btn.active-both{border-color:var(--warn);color:var(--warn);background:rgba(255,179,71,.08);}
+input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--grn);}
+.otype-g{display:flex;gap:5px;}
+.otype-b{flex:1;padding:7px;border:1px solid var(--bdr);background:var(--surf2);color:var(--muted);font-family:var(--mono);font-size:12px;font-weight:600;border-radius:4px;cursor:pointer;text-align:center;transition:all .2s;}
+.otype-b.a-ce{border-color:var(--grn);color:var(--grn);background:rgba(0,212,170,.08);}
+.otype-b.a-pe{border-color:var(--red);color:var(--red);background:rgba(255,77,109,.08);}
+.otype-b.a-both{border-color:var(--ylw);color:var(--ylw);background:rgba(255,179,71,.08);}
+.pbar{background:var(--surf2);border-radius:3px;height:4px;overflow:hidden;margin-top:8px;}
+.pbar-fill{height:100%;background:var(--grn);border-radius:3px;transition:width .3s;}
+.blog{background:var(--surf2);border:1px solid var(--bdr);border-radius:5px;padding:11px;font-family:var(--mono);font-size:11px;max-height:240px;overflow-y:auto;line-height:1.8;margin-top:10px;}
+.log-ok{color:var(--grn);}.log-err{color:var(--red);}.log-info{color:var(--muted);}
+.mode-btn{flex:1;padding:8px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;transition:all .2s;}
+.info-box{border-radius:5px;padding:10px 13px;font-family:var(--mono);font-size:11px;margin-top:8px;}
+.info-grn{background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.2);color:var(--grn);}
+.info-blu{background:rgba(0,145,255,.08);border:1px solid rgba(0,145,255,.2);color:var(--blu);}
+.info-ylw{background:rgba(255,179,71,.08);border:1px solid rgba(255,179,71,.3);color:var(--ylw);}
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════
-     PAGE 1 — LOGIN
-═══════════════════════════════════════ -->
-<div class="page" id="page-login">
-  <div class="login-box">
-    <div class="login-logo">Zeta<span>Pull</span></div>
-    <div class="login-tagline">Zerodha Historical Data Downloader</div>
-
-    <div id="savedBadge" style="display:none" class="saved-badge">✓ Credentials saved — just click Login</div>
-
-    <label class="login-label">API Key</label>
-    <input class="login-input" type="text" id="apiKey" placeholder="Your Kite API Key"/>
-    <div class="login-hint">From <a href="https://developers.kite.trade/apps" target="_blank">developers.kite.trade/apps</a> → your app</div>
-
-    <label class="login-label">API Secret</label>
-    <input class="login-input" type="password" id="apiSecret" placeholder="Your Kite API Secret"/>
-    <div class="login-hint">Same page — never share this with anyone</div>
-
-    <button class="btn-login" onclick="goToKiteLogin()">🔐 Login with Zerodha Kite →</button>
-
-    <div class="divider-or">or paste today's token directly</div>
-
-    <label class="login-label">Access Token (if you already have it)</label>
-    <input class="login-input" type="text" id="directToken" placeholder="Paste access_token here"/>
-    <button class="btn-login" style="background:var(--accent2);color:#fff;" onclick="useDirectToken()">Use This Token</button>
-
-    <div id="loginMsg" style="margin-top:14px;"></div>
+<!-- ═══════ PAGE: LOGIN ═══════ -->
+<div class="page center-page" id="page-login">
+  <div class="box">
+    <div class="logo">Zeta<span>Pull</span></div>
+    <div class="tagline">Zerodha Historical Data Downloader</div>
+    <div class="saved-badge" id="savedBadge">✓ Credentials saved — just click Login</div>
+    <label class="lbl">API Key</label>
+    <input class="inp" type="text" id="apiKey" placeholder="Your Kite API Key"/>
+    <div class="hint">From <a href="https://developers.kite.trade/apps" target="_blank">developers.kite.trade/apps</a></div>
+    <label class="lbl">API Secret</label>
+    <input class="inp" type="password" id="apiSecret" placeholder="Your Kite API Secret"/>
+    <div class="hint">Same page — keep private</div>
+    <button class="btn-big grn" onclick="doKiteLogin()">🔐 Login with Zerodha Kite →</button>
+    <div class="divider">or paste today's token directly</div>
+    <label class="lbl">Access Token (if you already have it)</label>
+    <input class="inp" type="text" id="directToken" placeholder="Paste access_token here"/>
+    <button class="btn-big blu" onclick="useDirectToken()">Use This Token</button>
+    <div id="loginMsg" style="margin-top:12px;"></div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════
-     PAGE 2 — TOKEN
-═══════════════════════════════════════ -->
-<div class="page" id="page-token">
+<!-- ═══════ PAGE: TOKEN ═══════ -->
+<div class="page center-page" id="page-token">
   <div class="token-box">
-    <div class="token-logo">Zeta<span>Pull</span></div>
-    <p style="color:var(--muted);font-size:13px;margin-bottom:28px;">Daily Token — do this once every morning</p>
-
-    <div class="token-step">
+    <div class="logo">Zeta<span>Pull</span></div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:24px;">Daily Token Setup — do this once every morning</p>
+    <div class="step-row">
       <div class="step-num done">✓</div>
-      <div>
-        <div class="step-title">Logged in to Zerodha Kite</div>
-        <div class="step-desc" id="step1desc">Login successful</div>
-      </div>
+      <div><div class="step-title">Logged in to Zerodha Kite</div><div class="step-desc" id="step1desc">Login successful</div></div>
     </div>
-
-    <div class="token-step">
+    <div class="step-row">
       <div class="step-num active">2</div>
       <div style="flex:1">
-        <div class="step-title">
-          Request Token
-          <span class="autofill-badge" id="autofillBadge" style="display:none">⚡ Auto-filled</span>
-        </div>
-        <div class="step-desc">Zerodha sends this after you login</div>
-        <div class="token-display" id="reqTokenDisplay">Waiting...</div>
-        <input style="margin-top:8px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--mono);font-size:12px;padding:8px 12px;width:100%;outline:none;"
-               type="text" id="reqTokenManual" placeholder="Or paste request_token manually here"/>
+        <div class="step-title">Request Token <span class="autofill-badge" id="autofillBadge">⚡ Auto-filled</span></div>
+        <div class="step-desc">Zerodha sends this after login</div>
+        <div class="tok-display" id="reqTokenDisplay">Waiting...</div>
+        <input class="inp" type="text" id="reqTokenManual" placeholder="Or paste request_token manually here" style="margin-top:7px;"/>
       </div>
     </div>
-
-    <div class="token-step">
+    <div class="step-row">
       <div class="step-num" id="step3num">3</div>
       <div>
         <div class="step-title">Access Token</div>
-        <div class="step-desc">Generated below — valid until midnight</div>
-        <div class="token-display" id="accessTokenDisplay">Will appear here after Generate</div>
+        <div class="step-desc">Valid until midnight</div>
+        <div class="tok-display" id="accessTokenDisplay">Will appear here after Generate</div>
       </div>
     </div>
-
-    <button class="btn-generate" id="generateBtn" onclick="generateToken()">⚡ Generate Access Token</button>
-    <button class="btn-outline" onclick="retryKiteLogin()">↩ Go back to Kite Login</button>
-    <div id="tokenMsg" style="margin-top:14px;"></div>
+    <button class="btn-big grn" id="generateBtn" onclick="generateToken()" style="margin-top:4px;">⚡ Generate Access Token</button>
+    <button class="btn-big" onclick="retryKiteLogin()" style="background:transparent;color:var(--blu);border:1px solid var(--blu);margin-top:8px;">↩ Go back to Kite Login</button>
+    <div id="tokenMsg" style="margin-top:12px;"></div>
     <div class="back-link" onclick="showPage('login')">← Change API credentials</div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════
-     PAGE 3 — MAIN APP
-═══════════════════════════════════════ -->
+<!-- ═══════ PAGE: APP ═══════ -->
 <div class="page" id="page-app">
   <header>
-    <div class="logo">Zeta<span>Pull</span></div>
-    <div class="conn-dot"></div>
-    <div class="conn-label">Connected</div>
-    <div class="header-right">
-      <div class="user-pill" id="userPill">—</div>
-      <button class="btn-relogin" onclick="doRelogin()">↻ New Token</button>
+    <div class="hlogo">Zeta<span>Pull</span></div>
+    <div class="dot"></div>
+    <div class="conn">Connected</div>
+    <div class="hright">
+      <div class="pill" id="userPill">—</div>
+      <button class="relogin-btn" onclick="doRelogin()">↻ New Token</button>
     </div>
   </header>
-
   <div class="tabs">
     <button class="tab active" onclick="switchTab('download',this)">Equity</button>
     <button class="tab" onclick="switchTab('options',this)">Options</button>
@@ -245,59 +181,44 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
     <button class="tab" onclick="switchTab('futures',this)">Futures</button>
     <button class="tab" onclick="switchTab('chain',this)">Chain Download</button>
   </div>
-
   <main>
 
-    <!-- DOWNLOAD TAB -->
+    <!-- EQUITY TAB -->
     <div class="panel active" id="panel-download">
       <div class="card">
-        <div class="section-head">Step 1 — Date Range & Interval</div>
+        <div class="sh">Step 1 — Date Range & Interval</div>
         <div class="row">
           <div class="field"><label>From Date</label><input type="date" id="fromDate"/></div>
           <div class="field"><label>To Date</label><input type="date" id="toDate"/></div>
           <div class="field"><label>Interval</label>
-            <select id="interval">
-              <option value="minute">1 min</option><option value="3minute">3 min</option>
-              <option value="5minute">5 min</option><option value="10minute">10 min</option>
-              <option value="15minute">15 min</option><option value="30minute">30 min</option>
-              <option value="60minute">60 min</option><option value="day" selected>Day</option>
-            </select>
+            <select id="interval"><option value="minute">1 min</option><option value="3minute">3 min</option><option value="5minute">5 min</option><option value="10minute">10 min</option><option value="15minute">15 min</option><option value="30minute">30 min</option><option value="60minute">60 min</option><option value="day" selected>Day</option></select>
           </div>
           <div class="field"><label>Format</label>
             <select id="fileFormat"><option value="csv">CSV</option><option value="json">JSON</option><option value="parquet">Parquet</option></select>
           </div>
         </div>
-        <div style="display:flex;gap:20px;flex-wrap:wrap;">
-          <div class="trow"><input type="checkbox" id="includeOI"/><label for="includeOI">Include OI <span style="color:var(--muted);font-size:11px;">(F&amp;O only)</span></label></div>
-          <div class="trow"><input type="checkbox" id="continuous"/><label for="continuous">Continuous <span style="color:var(--muted);font-size:11px;">(Futures only)</span></label></div>
-        </div>
       </div>
       <div class="card">
-        <div class="section-head">Step 2 — Select Instrument</div>
+        <div class="sh">Step 2 — Select Instrument</div>
         <div class="row">
           <div class="field"><label>Exchange</label>
-            <select id="exchange" onchange="onExchangeChange()">
-              <option value="NSE">NSE (Stocks &amp; ETFs)</option>
-              <option value="BSE">BSE (Stocks &amp; ETFs)</option>
-            </select>
+            <select id="exchange" onchange="clearSel()"><option value="NSE">NSE (Stocks &amp; ETFs)</option><option value="BSE">BSE (Stocks &amp; ETFs)</option></select>
           </div>
           <div class="field" style="flex:2"><label>Search Symbol</label>
             <div class="search-wrap">
-              <input type="text" id="symbolSearch" placeholder="Type e.g. RELIANCE, NIFTY..." oninput="searchInst()" autocomplete="off"/>
+              <input type="text" id="symbolSearch" placeholder="Type e.g. RELIANCE, NIFTY 50, GOLDBEES..." oninput="searchInst()" autocomplete="off"/>
               <div class="search-results" id="searchResults"></div>
             </div>
           </div>
         </div>
-        <div id="selInstDiv" style="display:none">
-          <div class="sel-chip"><span id="selSym"></span><span class="clr" onclick="clearSel()">✕</span></div>
-          <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;">Token: <span id="selTok"></span></div>
+        <div id="selDiv" style="display:none">
+          <div class="chip"><span id="selSym"></span><span class="x" onclick="clearSel()">✕</span></div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:5px;">Token: <span id="selTok"></span></div>
         </div>
       </div>
       <div class="card">
-        <div class="section-head">Step 3 — Download Equity / ETF Data</div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="btn btn-primary" onclick="downloadData()">⬇ Download</button>
-        </div>
+        <div class="sh">Step 3 — Download</div>
+        <button class="btn btn-p" onclick="dlEquity()">⬇ Download</button>
         <div id="dlStatus"></div>
       </div>
     </div>
@@ -305,17 +226,12 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
     <!-- OPTIONS TAB -->
     <div class="panel" id="panel-options">
       <div class="card">
-        <div class="section-head">Step 1 — Date Range & Interval</div>
+        <div class="sh">Step 1 — Date Range & Interval</div>
         <div class="row">
           <div class="field"><label>From Date</label><input type="date" id="opt_from"/></div>
           <div class="field"><label>To Date</label><input type="date" id="opt_to"/></div>
           <div class="field"><label>Interval</label>
-            <select id="opt_interval">
-              <option value="minute">1 min</option><option value="3minute">3 min</option>
-              <option value="5minute">5 min</option><option value="15minute">15 min</option>
-              <option value="30minute">30 min</option><option value="60minute">60 min</option>
-              <option value="day" selected>Day</option>
-            </select>
+            <select id="opt_interval"><option value="minute">1 min</option><option value="3minute">3 min</option><option value="5minute">5 min</option><option value="15minute">15 min</option><option value="30minute">30 min</option><option value="60minute">60 min</option><option value="day" selected>Day</option></select>
           </div>
           <div class="field"><label>Format</label>
             <select id="opt_fmt"><option value="csv">CSV</option><option value="json">JSON</option><option value="parquet">Parquet</option></select>
@@ -323,113 +239,153 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
         </div>
       </div>
       <div class="card">
-        <div class="section-head">Step 2 — Select Option Contract</div>
-
-        <!-- Index vs Stock toggle -->
-        <div style="display:flex;gap:8px;margin-bottom:16px;">
-          <div id="optmode-index" onclick="opt_setMode('index')"
-               style="flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:rgba(0,212,170,.12);border:1px solid var(--accent);color:var(--accent);">
-            📊 Index Options
-          </div>
-          <div id="optmode-stock" onclick="opt_setMode('stock')"
-               style="flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--muted);">
-            🏢 Stock Options
-          </div>
+        <div class="sh">Step 2 — Select Option Contract</div>
+        <div style="display:flex;gap:7px;margin-bottom:14px;">
+          <div class="mode-btn" id="optmode-index" onclick="optSetMode('index')" style="background:rgba(0,212,170,.12);border:1px solid var(--grn);color:var(--grn);">📊 Index Options</div>
+          <div class="mode-btn" id="optmode-stock" onclick="optSetMode('stock')" style="background:var(--surf2);border:1px solid var(--bdr);color:var(--muted);">🏢 Stock Options</div>
         </div>
-
         <!-- Index mode -->
         <div id="opt_index_row">
           <div class="row">
             <div class="field"><label>Exchange</label>
-              <select id="opt_ex" onchange="opt_filterUnderlyings()">
-              <option value="NFO">NFO</option>
-              <option value="BFO">BFO</option>
-            </select>
+              <select id="opt_ex" onchange="optFilterUL()"><option value="NFO">NFO</option><option value="BFO">BFO</option></select>
             </div>
-            <div class="field"><label>Underlying Index</label>
-              <select id="opt_ul" onchange="opt_loadExpiries()">
-                <option value="">— Select —</option>
-                <option value="NIFTY">NIFTY</option><option value="BANKNIFTY">BANKNIFTY</option>
-                <option value="FINNIFTY">FINNIFTY</option><option value="MIDCPNIFTY">MIDCPNIFTY</option>
-                <option value="SENSEX">SENSEX</option><option value="BANKEX">BANKEX</option>
+            <div class="field"><label>Underlying</label>
+              <select id="opt_ul" onchange="optLoadExpiries()">
+                <option value="">— Select —</option><option value="NIFTY">NIFTY</option><option value="BANKNIFTY">BANKNIFTY</option><option value="FINNIFTY">FINNIFTY</option><option value="MIDCPNIFTY">MIDCPNIFTY</option>
               </select>
             </div>
           </div>
         </div>
-
         <!-- Stock mode -->
-        <div id="opt_stock_row" style="display:none;">
+        <div id="opt_stock_row" style="display:none">
           <div class="row">
-            <div class="field"><label>Search Stock Symbol</label>
+            <div class="field"><label>Search Stock</label>
               <div class="search-wrap">
-                <input type="text" id="opt_stock_search" placeholder="Type stock e.g. RELIANCE, TCS, INFY..."
-                       oninput="opt_searchStock()" autocomplete="off"/>
+                <input type="text" id="opt_stock_search" placeholder="e.g. RELIANCE, TCS, INFY..." oninput="optSearchStock()" autocomplete="off"/>
                 <div class="search-results" id="opt_stock_results"></div>
               </div>
             </div>
           </div>
-          <div id="opt_stock_chip" style="display:none;margin-bottom:12px;">
-            <div class="sel-chip">
-              <span id="opt_stock_sym"></span>
-              <span class="clr" onclick="opt_clearStock()">✕</span>
-            </div>
+          <div id="opt_stock_chip" style="display:none;margin-bottom:10px;">
+            <div class="chip"><span id="opt_stock_sym"></span><span class="x" onclick="optClearStock()">✕</span></div>
           </div>
-          <div style="display:flex;gap:10px;margin-bottom:4px;">
-            <button class="btn btn-ghost" style="font-size:11px;" onclick="opt_loadStockExpiries()">Load Expiries →</button>
-          </div>
+          <button class="btn btn-g" onclick="optLoadStockExpiries()">Load Expiries →</button>
         </div>
-        <div class="row">
+        <div class="row" style="margin-top:12px;">
           <div class="field"><label>Expiry Date</label>
-            <select id="opt_expiry" onchange="opt_loadStrikes()" disabled><option>— select underlying first —</option></select>
+            <select id="opt_expiry" onchange="optLoadStrikes()" disabled><option>— select underlying first —</option></select>
           </div>
           <div class="field"><label>Strike Price</label>
             <select id="opt_strike" disabled><option>— select expiry first —</option></select>
           </div>
         </div>
-        <div class="row">
-          <div class="field"><label>Option Type</label>
-            <div class="otype-group">
-              <div class="otype-btn active-ce" id="otype-CE" onclick="opt_type('CE')">CE</div>
-              <div class="otype-btn" id="otype-PE" onclick="opt_type('PE')">PE</div>
-              <div class="otype-btn" id="otype-BOTH" onclick="opt_type('BOTH')">CE + PE</div>
-            </div>
+        <div class="field" style="margin-bottom:10px;"><label>Option Type</label>
+          <div class="otype-g">
+            <div class="otype-b a-ce" id="ot-CE" onclick="optSetType('CE')">CE</div>
+            <div class="otype-b" id="ot-PE" onclick="optSetType('PE')">PE</div>
+            <div class="otype-b" id="ot-BOTH" onclick="optSetType('BOTH')">CE + PE</div>
           </div>
         </div>
         <div class="trow"><input type="checkbox" id="opt_oi" checked/><label for="opt_oi">Include OI</label></div>
         <div id="opt_info" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;"></div>
       </div>
       <div class="card">
-        <div class="section-head">Step 3 — Download Options Data</div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="btn btn-primary" onclick="opt_dl()">⬇ Download</button>
-        </div>
+        <div class="sh">Step 3 — Download</div>
+        <button class="btn btn-p" onclick="dlOptions()">⬇ Download</button>
         <div id="opt_status"></div>
+      </div>
+    </div>
+
+    <!-- EXPIRED OPTIONS TAB -->
+    <div class="panel" id="panel-expired">
+      <div class="info-box info-ylw" style="margin-bottom:14px;">⚡ Find all expiries in a date range → pick one → download all strikes for that expiry.</div>
+      <div class="card">
+        <div class="sh">Step 1 — Date Range & Type</div>
+        <div class="row">
+          <div class="field"><label>Index</label>
+            <select id="exp_index"><option value="NIFTY">NIFTY</option><option value="BANKNIFTY">BANKNIFTY</option><option value="FINNIFTY">FINNIFTY</option><option value="MIDCPNIFTY">MIDCPNIFTY</option><option value="SENSEX">SENSEX</option><option value="BANKEX">BANKEX</option></select>
+          </div>
+          <div class="field"><label>Expiry Type</label>
+            <select id="exp_type"><option value="weekly">Weekly</option><option value="monthly" selected>Monthly</option></select>
+          </div>
+          <div class="field"><label>Option Type</label>
+            <select id="exp_otype"><option value="CE">CE</option><option value="PE">PE</option><option value="BOTH" selected>Both</option></select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field"><label>From Date</label><input type="date" id="exp_from"/></div>
+          <div class="field"><label>To Date</label><input type="date" id="exp_to"/></div>
+        </div>
+        <button class="btn btn-g" onclick="expFindExpiries()">🔍 Find Expiries in This Range</button>
+      </div>
+      <div class="card" id="exp_step2" style="display:none">
+        <div class="sh">Step 2 — Select Expiry (<span id="exp_count">0</span> found)</div>
+        <div class="field">
+          <select id="exp_expiry_sel" style="font-family:var(--mono);"><option value="">— Select an expiry —</option></select>
+        </div>
+        <div id="exp_sel_info" style="display:none;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;">Selected: <strong id="exp_sel_date" style="color:var(--grn);"></strong></div>
+      </div>
+      <div class="card" id="exp_step3" style="display:none">
+        <div class="sh">Step 3 — Strike Selection</div>
+        <div style="display:flex;gap:7px;margin-bottom:14px;">
+          <div class="mode-btn" id="emode-atm" onclick="expSetStrikeMode('atm')" style="background:rgba(0,212,170,.12);border:1px solid var(--grn);color:var(--grn);">ATM Range</div>
+          <div class="mode-btn" id="emode-specific" onclick="expSetStrikeMode('specific')" style="background:var(--surf2);border:1px solid var(--bdr);color:var(--muted);">Specific Strike</div>
+        </div>
+        <div id="exp_atm_row">
+          <div class="row">
+            <div class="field"><label>Spot / ATM Price</label><input type="number" id="exp_atm" placeholder="e.g. 24500" step="50"/></div>
+            <div class="field"><label>Step Size</label>
+              <select id="exp_step"><option value="50">50 (NIFTY/FINNIFTY)</option><option value="100">100 (BANKNIFTY)</option><option value="500">500 (SENSEX/BANKEX)</option></select>
+            </div>
+            <div class="field"><label>Range</label>
+              <select id="exp_range"><option value="3">ATM ± 3</option><option value="5" selected>ATM ± 5</option><option value="10">ATM ± 10</option></select>
+            </div>
+          </div>
+        </div>
+        <div id="exp_specific_row" style="display:none">
+          <div class="field"><label>Strike Price</label><input type="number" id="exp_strike" placeholder="e.g. 24000" step="50"/></div>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <div class="field"><label>Interval</label>
+            <select id="exp_interval"><option value="minute">1 min</option><option value="3minute">3 min</option><option value="15minute">15 min</option><option value="60minute">60 min</option><option value="day" selected>Day</option></select>
+          </div>
+          <div class="field"><label>Format</label>
+            <select id="exp_fmt"><option value="csv">CSV</option><option value="json">JSON</option><option value="parquet">Parquet</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="card" id="exp_step4" style="display:none">
+        <div class="sh">Step 4 — Download</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-p" onclick="expDownload()" id="exp_dlbtn">⬇ Download All Strikes</button>
+          <button class="btn btn-d" onclick="expStop()" id="exp_stopbtn" style="display:none;">■ Stop</button>
+        </div>
+        <div class="pbar"><div class="pbar-fill" id="exp_prog" style="width:0%"></div></div>
+        <div id="exp_cnt" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:5px;"></div>
+        <div id="exp_status"></div>
+        <div class="blog" id="exp_log" style="display:none;"></div>
       </div>
     </div>
 
     <!-- FUTURES TAB -->
     <div class="panel" id="panel-futures">
       <div class="card">
-        <div class="section-head">Step 1 — Date Range & Interval</div>
+        <div class="sh">Step 1 — Date Range & Interval</div>
         <div class="row">
           <div class="field"><label>From Date</label><input type="date" id="fut_from"/></div>
           <div class="field"><label>To Date</label><input type="date" id="fut_to"/></div>
           <div class="field"><label>Interval</label>
-            <select id="fut_interval">
-              <option value="minute">1 min</option><option value="3minute">3 min</option>
-              <option value="5minute">5 min</option><option value="15minute">15 min</option>
-              <option value="30minute">30 min</option><option value="60minute">60 min</option>
-              <option value="day" selected>Day</option>
-            </select>
+            <select id="fut_interval"><option value="minute">1 min</option><option value="3minute">3 min</option><option value="5minute">5 min</option><option value="15minute">15 min</option><option value="30minute">30 min</option><option value="60minute">60 min</option><option value="day" selected>Day</option></select>
           </div>
           <div class="field"><label>Format</label>
             <select id="fut_fmt"><option value="csv">CSV</option><option value="json">JSON</option><option value="parquet">Parquet</option></select>
           </div>
         </div>
-        <div class="trow"><input type="checkbox" id="fut_cont" onchange="fut_toggleContinuous()"/><label for="fut_cont">Continuous (rollover) — stitches all expiries automatically</label></div>
+        <div class="trow"><input type="checkbox" id="fut_cont" onchange="futToggleCont()"/><label for="fut_cont">Continuous (stitches all expiries automatically)</label></div>
       </div>
       <div class="card">
-        <div class="section-head">Step 2 — Select Futures Contract</div>
+        <div class="sh">Step 2 — Select Futures Contract</div>
         <div class="row">
           <div class="field"><label>Exchange</label>
             <select id="fut_ex"><option value="NFO">NFO</option><option value="BFO">BFO</option><option value="MCX">MCX</option></select>
@@ -438,1387 +394,764 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--accent);}
             <input type="text" id="fut_ul" placeholder="e.g. NIFTY, BANKNIFTY, RELIANCE"/>
           </div>
           <div class="field" style="align-self:flex-end">
-            <button class="btn btn-ghost" onclick="fut_loadExpiries()" style="width:100%">Load Expiries</button>
+            <button class="btn btn-g" onclick="futLoadExpiries()" style="width:100%">Load Expiries</button>
           </div>
         </div>
         <div id="fut_expiry_row" class="row">
-          <div class="field"><label>Expiry Date <span style="color:var(--muted);font-size:10px;">(hidden when Continuous is on)</span></label>
+          <div class="field"><label>Expiry Date</label>
             <select id="fut_expiry" disabled><option>— load expiries first —</option></select>
           </div>
         </div>
-        <div id="fut_info" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;"></div>
+        <div id="fut_info" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:5px;"></div>
       </div>
       <div class="card">
-        <div class="section-head">Step 3 — Download Futures Data</div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="btn btn-primary" onclick="fut_dl()">⬇ Download</button>
-        </div>
+        <div class="sh">Step 3 — Download</div>
+        <button class="btn btn-p" onclick="dlFutures()">⬇ Download</button>
         <div id="fut_status"></div>
       </div>
     </div>
 
-    <!-- EXPIRED OPTIONS TAB -->
-    <div class="panel" id="panel-expired">
-
-      <div style="background:rgba(255,179,71,.08);border:1px solid rgba(255,179,71,.3);border-radius:6px;padding:12px 16px;font-family:var(--mono);font-size:12px;color:var(--warn);margin-bottom:16px;">
-        ⚡ Select a date range, find all expiries in it, pick one, then download all strikes for that expiry.
-      </div>
-
-      <div class="card">
-        <div class="section-head">Step 1 — Date Range & Expiry Type</div>
-        <div class="row">
-          <div class="field">
-            <label>Index</label>
-            <select id="exp_index">
-              <option value="NIFTY">NIFTY (NFO)</option>
-              <option value="BANKNIFTY">BANKNIFTY (NFO)</option>
-              <option value="FINNIFTY">FINNIFTY (NFO)</option>
-              <option value="MIDCPNIFTY">MIDCPNIFTY (NFO)</option>
-              <option value="SENSEX">SENSEX (BFO)</option>
-              <option value="BANKEX">BANKEX (BFO)</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Expiry Type</label>
-            <select id="exp_type">
-              <option value="weekly">Weekly</option>
-              <option value="monthly" selected>Monthly</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Option Type</label>
-            <select id="exp_otype">
-              <option value="CE">CE (Call)</option>
-              <option value="PE">PE (Put)</option>
-              <option value="BOTH" selected>Both (CE + PE)</option>
-            </select>
-          </div>
-        </div>
-        <div class="row">
-          <div class="field"><label>From Date</label><input type="date" id="exp_from"/></div>
-          <div class="field"><label>To Date</label><input type="date" id="exp_to"/></div>
-        </div>
-        <button class="btn btn-ghost" onclick="exp_findExpiries()" style="margin-top:4px;">🔍 Find Expiries in This Range</button>
-      </div>
-
-      <div class="card" id="exp_step2_card" style="display:none;">
-        <div class="section-head">Step 2 — Select Expiry</div>
-        <div class="row">
-          <div class="field">
-            <label>Available Expiries (<span id="exp_expiry_count">0</span> found)</label>
-            <select id="exp_expiry_select" style="font-family:var(--mono);font-size:13px;">
-              <option value="">— Select an expiry —</option>
-            </select>
-          </div>
-        </div>
-        <div id="exp_selected_info" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px;display:none;">
-          Selected: <strong id="exp_selected_date" style="color:var(--accent);"></strong>
-        </div>
-      </div>
-
-      <div class="card" id="exp_step3_card" style="display:none;">
-        <div class="section-head">Step 3 — Strike Selection</div>
-
-        <div style="display:flex;gap:8px;margin-bottom:16px;">
-          <div id="emode-atm" onclick="exp_setStrikeMode('atm')"
-            style="flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:rgba(0,212,170,.12);border:1px solid var(--accent);color:var(--accent);">
-            ATM Range
-          </div>
-          <div id="emode-specific" onclick="exp_setStrikeMode('specific')"
-            style="flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--muted);">
-            Specific Strike
-          </div>
-        </div>
-
-        <div id="exp_atm_row">
-          <div class="row">
-            <div class="field">
-              <label>Spot / ATM Price (approximate — used to centre strikes)</label>
-              <input type="number" id="exp_atm" placeholder="e.g. 24500" step="50"/>
-            </div>
-            <div class="field">
-              <label>Strike Step Size</label>
-              <select id="exp_step">
-                <option value="50">50 (NIFTY, FINNIFTY)</option>
-                <option value="100">100 (BANKNIFTY, MIDCPNIFTY)</option>
-                <option value="500">500 (SENSEX, BANKEX)</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>Range (ATM ± N strikes)</label>
-              <select id="exp_range">
-                <option value="3">ATM ± 3 (7 strikes)</option>
-                <option value="5" selected>ATM ± 5 (11 strikes)</option>
-                <option value="10">ATM ± 10 (21 strikes)</option>
-                <option value="15">ATM ± 15 (31 strikes)</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div id="exp_specific_row" style="display:none;">
-          <div class="row">
-            <div class="field">
-              <label>Strike Price</label>
-              <input type="number" id="exp_strike" placeholder="e.g. 24000" step="50"/>
-            </div>
-          </div>
-        </div>
-
-        <div class="row" style="margin-top:8px;">
-          <div class="field">
-            <label>Interval</label>
-            <select id="exp_interval">
-              <option value="minute">1 min</option>
-              <option value="3minute">3 min</option>
-              <option value="5minute">5 min</option>
-              <option value="15minute">15 min</option>
-              <option value="30minute">30 min</option>
-              <option value="60minute">60 min</option>
-              <option value="day" selected>Day</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Format</label>
-            <select id="exp_fmt">
-              <option value="csv">CSV</option>
-              <option value="json">JSON</option>
-              <option value="parquet">Parquet</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="exp_estimate" style="background:rgba(0,145,255,.08);border:1px solid rgba(0,145,255,.2);border-radius:5px;padding:10px 14px;font-family:var(--mono);font-size:11px;color:var(--accent2);margin-top:8px;">
-          Select strike options above to see estimate.
-        </div>
-      </div>
-
-      <div class="card" id="exp_step4_card" style="display:none;">
-        <div class="section-head">Step 4 — Download</div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-          <button class="btn btn-primary" onclick="exp_download()" id="exp_dlbtn">⬇ Download All Strikes</button>
-          <button class="btn btn-ghost" onclick="exp_stop()" id="exp_stopbtn" style="display:none;">■ Stop</button>
-        </div>
-        <div class="progress-bar" style="margin-top:12px;"><div class="progress-bar-fill" id="exp_prog" style="width:0%"></div></div>
-        <div id="exp_count" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;"></div>
-        <div id="exp_status" style="margin-top:8px;"></div>
-        <div class="bulk-log" id="exp_log" style="margin-top:10px;display:none;"></div>
-      </div>
-
-    </div>
-
-        <!-- OPTIONS CHAIN TAB -->
+    <!-- CHAIN DOWNLOAD TAB -->
     <div class="panel" id="panel-chain">
-
-      <div style="background:rgba(0,145,255,.08);border:1px solid rgba(0,145,255,.25);border-radius:6px;padding:12px 16px;font-family:var(--mono);font-size:12px;color:var(--accent2);margin-bottom:16px;">
-        📊 Downloads <strong>all strikes merged into one file per expiry</strong> — with spot price, ATM labels, expiry info. Perfect for backtesting.
-      </div>
-
+      <div class="info-box info-blu" style="margin-bottom:14px;">📊 Downloads <strong>all strikes merged into one file per expiry</strong> — with spot price, ATM labels. Perfect for backtesting.</div>
       <div class="card">
-        <div class="section-head">Step 1 — Index & Expiry Type</div>
+        <div class="sh">Step 1 — Index & Expiry Type</div>
         <div class="row">
-          <div class="field">
-            <label>Index</label>
-            <select id="ch_index" onchange="ch_updateEstimate()">
-              <option value="NIFTY">NIFTY</option>
-              <option value="BANKNIFTY">BANKNIFTY</option>
-            </select>
+          <div class="field"><label>Index</label>
+            <select id="ch_index" onchange="chUpdateEstimate()"><option value="NIFTY">NIFTY</option><option value="BANKNIFTY">BANKNIFTY</option></select>
           </div>
-          <div class="field">
-            <label>Expiry Type</label>
-            <select id="ch_exptype" onchange="ch_onExpiryTypeChange()">
+          <div class="field"><label>Expiry Type</label>
+            <select id="ch_exptype" onchange="chOnExpiryChange()">
               <option value="weekly">Weekly (3 weeks data per file)</option>
               <option value="monthly">Monthly (3 months data per file)</option>
-              <option value="quarterly">Quarterly — Mar/Jun/Sep/Dec (9 months data per file)</option>
+              <option value="quarterly">Quarterly Mar/Jun/Sep/Dec (9 months data per file)</option>
             </select>
           </div>
         </div>
-
-        <!-- Data window info box -->
-        <div id="ch_window_info" style="background:rgba(0,145,255,.08);border:1px solid rgba(0,145,255,.2);border-radius:5px;padding:10px 14px;font-family:var(--mono);font-size:11px;color:var(--accent2);margin-bottom:14px;">
-          📅 <strong>Weekly:</strong> Each file contains data from <strong>3 weeks before expiry</strong> up to expiry date.
-        </div>
-
-        <div class="section-head" style="margin-top:4px;">Step 2 — Which Expiries to Include</div>
+        <div class="info-box info-blu" id="ch_window_info">📅 <strong>Weekly:</strong> Each file = 3 weeks before expiry up to expiry date.</div>
+        <div class="sh" style="margin-top:14px;">Step 2 — Which Expiries</div>
         <div class="row">
-          <div class="field">
-            <label>Expiries From (expiry date on or after)</label>
-            <input type="date" id="ch_from" onchange="ch_updateEstimate()"/>
-          </div>
-          <div class="field">
-            <label>Expiries To (expiry date on or before)</label>
-            <input type="date" id="ch_to" onchange="ch_updateEstimate()"/>
-          </div>
+          <div class="field"><label>Expiries From</label><input type="date" id="ch_from" onchange="chUpdateEstimate()"/></div>
+          <div class="field"><label>Expiries To</label><input type="date" id="ch_to" onchange="chUpdateEstimate()"/></div>
         </div>
-
-        <div class="section-head" style="margin-top:4px;">Step 3 — Strike Range & Interval</div>
+        <div class="sh" style="margin-top:4px;">Step 3 — Strike Range & Interval</div>
         <div class="row">
-          <div class="field">
-            <label>Strike Range</label>
-            <select id="ch_strikes" onchange="ch_updateEstimate()">
-              <option value="5">± 5 strikes (11 CE + 11 PE = 22 rows per candle)</option>
-              <option value="10" selected>± 10 strikes (21 CE + 21 PE = 42 rows per candle)</option>
-            </select>
+          <div class="field"><label>Strike Range</label>
+            <select id="ch_strikes" onchange="chUpdateEstimate()"><option value="5">± 5 strikes</option><option value="10" selected>± 10 strikes</option></select>
           </div>
-          <div class="field">
-            <label>Interval</label>
-            <select id="ch_interval" onchange="ch_updateEstimate()">
-              <option value="minute">1 min</option>
-              <option value="3minute">3 min</option>
-              <option value="15minute" selected>15 min</option>
-              <option value="60minute">60 min (1 hour)</option>
-              <option value="75minute">75 min (resampled from 15min)</option>
-              <option value="day">Day</option>
-            </select>
+          <div class="field"><label>Interval</label>
+            <select id="ch_interval" onchange="chUpdateEstimate()"><option value="minute">1 min</option><option value="3minute">3 min</option><option value="15minute" selected>15 min</option><option value="60minute">60 min</option><option value="75minute">75 min (resampled)</option><option value="day">Day</option></select>
           </div>
-          <div class="field">
-            <label>Format</label>
-            <select id="ch_fmt">
-              <option value="parquet" selected>Parquet (recommended)</option>
-              <option value="csv">CSV</option>
-            </select>
+          <div class="field"><label>Format</label>
+            <select id="ch_fmt"><option value="parquet" selected>Parquet</option><option value="csv">CSV</option></select>
           </div>
         </div>
-
-        <!-- Live estimate box -->
-        <div style="background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.2);border-radius:5px;padding:14px 16px;font-family:var(--mono);font-size:12px;margin-top:4px;" id="ch_estimate">
-          Select options above to see estimate.
-        </div>
+        <div class="info-box info-grn" id="ch_estimate">Select options above to see estimate.</div>
       </div>
-
       <div class="card">
-        <div class="section-head">Step 4 — Download Options Chain</div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-          <button class="btn btn-primary" onclick="ch_download()" id="ch_dlbtn">⬇ Download All Expiries</button>
-          <button class="btn btn-ghost" onclick="ch_stop()" id="ch_stopbtn" style="display:none;">■ Stop</button>
+        <div class="sh">Step 4 — Download Chain</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-p" onclick="chDownload()" id="ch_dlbtn">⬇ Download All Expiries</button>
+          <button class="btn btn-d" onclick="chStop()" id="ch_stopbtn" style="display:none;">■ Stop</button>
         </div>
-        <div class="progress-bar" style="margin-top:12px;">
-          <div class="progress-bar-fill" id="ch_prog" style="width:0%"></div>
-        </div>
-        <div id="ch_count" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;"></div>
-        <div id="ch_status" style="margin-top:8px;"></div>
-        <div class="bulk-log" id="ch_log" style="margin-top:10px;display:none;"></div>
+        <div class="pbar"><div class="pbar-fill" id="ch_prog" style="width:0%"></div></div>
+        <div id="ch_cnt" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:5px;"></div>
+        <div id="ch_status"></div>
+        <div class="blog" id="ch_log" style="display:none;"></div>
       </div>
-
     </div>
-
 
   </main>
 </div>
 
 <script>
-// ── State ──────────────────────────────
-let apiKey='',apiSecret='',accessToken='';
-let selTok='',selSym='';
-let searchTimer=null;
-let optType='CE';
-let futTok='',futSym='';
-let bulkPaused=false,bulkStopped=false;
+'use strict';
+// ── State ──────────────────────────────────────────────────────
+var apiKey='', apiSecret='', accessToken='';
+var selTok='', selSym='';
+var searchTimer=null;
+var optMode='index', optType='CE', optStockName='', optStockTimer=null;
+var futTok='', futSym='';
+var expStrikeMode='atm', expSelExpiry='', expStopped=false;
+var chStopped=false;
 
-// ══════════════════════════════════════
-// PAGE ROUTING
-// ══════════════════════════════════════
+// ── Page system ────────────────────────────────────────────────
 function showPage(n){
-  try {
-    document.querySelectorAll('.page').forEach(p=>{
-      p.classList.remove('active');
-      p.style.display='none';
-    });
-    var el = document.getElementById('page-'+n);
-    if(el){ el.classList.add('active'); el.style.display='flex'; }
-  } catch(e) { console.error('showPage error:', e); }
+  document.querySelectorAll('.page').forEach(function(p){
+    p.classList.remove('active');
+    p.style.display='none';
+  });
+  var el=document.getElementById('page-'+n);
+  if(el){ el.classList.add('active'); el.style.display='flex'; }
 }
 
-window.addEventListener('load',()=>{
-  // Step 1: always load credentials first
-  try {
-    apiKey      = localStorage.getItem('zp_k') || '';
-    apiSecret   = localStorage.getItem('zp_s') || '';
-    accessToken = localStorage.getItem('zp_t') || '';
-  } catch(e) { apiKey=''; apiSecret=''; accessToken=''; }
+function switchTab(n,el){
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.getElementById('panel-'+n).classList.add('active');
+  el.classList.add('active');
+}
 
-  // Step 2: set default dates
-  try { setDates(); } catch(e) {}
+// ── Storage helpers ────────────────────────────────────────────
+function lsGet(k){ try{return localStorage.getItem(k)||'';}catch(e){return '';} }
+function lsSet(k,v){ try{localStorage.setItem(k,v);}catch(e){} }
+function lsDel(k){ try{localStorage.removeItem(k);}catch(e){} }
 
-  // Step 3: check if returning from Kite login
+// ── On load ────────────────────────────────────────────────────
+window.addEventListener('load', function(){
+  // Load saved credentials first
+  apiKey      = lsGet('zp_k');
+  apiSecret   = lsGet('zp_s');
+  accessToken = lsGet('zp_t');
+
+  // Set default dates
+  try { setDates(); } catch(e){}
+
+  // Check if returning from Kite login
   var reqTok = '';
   try {
     var params = new URLSearchParams(window.location.search);
     reqTok = params.get('request_token') || '';
-    if (reqTok) {
-      // Clean the URL
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-  } catch(e) {}
+    if(reqTok) window.history.replaceState({},'',window.location.pathname);
+  } catch(e){}
 
-  // Step 4: decide which page to show
-  if (reqTok) {
-    // Returning from Kite — show token page with auto-filled token
+  if(reqTok){
     showPage('token');
     try {
-      var display = document.getElementById('reqTokenDisplay');
-      var manual  = document.getElementById('reqTokenManual');
-      var badge   = document.getElementById('autofillBadge');
-      var desc    = document.getElementById('step1desc');
-      if (display) { display.textContent = reqTok; display.classList.add('filled'); }
-      if (manual)  { manual.value = reqTok; }
-      if (badge)   { badge.style.display = 'inline-flex'; }
-      if (desc)    { desc.textContent = 'API Key: ' + apiKey; }
-    } catch(e) {}
+      document.getElementById('reqTokenDisplay').textContent = reqTok;
+      document.getElementById('reqTokenDisplay').classList.add('filled');
+      document.getElementById('reqTokenManual').value = reqTok;
+      document.getElementById('autofillBadge').style.display = 'inline-flex';
+      document.getElementById('step1desc').textContent = apiKey ? 'API Key: '+apiKey : 'Login successful';
+    } catch(e){}
     return;
   }
 
-  if (accessToken && apiKey) {
-    // Already have a valid session
+  if(accessToken && apiKey){
     showPage('app');
-    try { document.getElementById('userPill').textContent = apiKey.substring(0,8)+'...'; } catch(e) {}
+    try{ document.getElementById('userPill').textContent=apiKey.substring(0,8)+'...'; }catch(e){}
     return;
   }
 
-  // Default: show login page
   showPage('login');
   try {
-    if (apiKey) {
-      var keyEl = document.getElementById('apiKey');
-      var badge = document.getElementById('savedBadge');
-      if (keyEl) keyEl.value = apiKey;
-      if (badge) badge.style.display = 'flex';
-    }
-    if (apiSecret) {
-      var secEl = document.getElementById('apiSecret');
-      if (secEl) secEl.value = apiSecret;
-    }
-  } catch(e) {}
+    if(apiKey){ document.getElementById('apiKey').value=apiKey; document.getElementById('savedBadge').style.display='flex'; }
+    if(apiSecret) document.getElementById('apiSecret').value=apiSecret;
+  } catch(e){}
 });
 
-// ══════════════════════════════════════
-// LOGIN
-// ══════════════════════════════════════
-function goToKiteLogin(){
-  const k=document.getElementById('apiKey').value.trim();
-  const s=document.getElementById('apiSecret').value.trim();
-  if(!k){showAlert('loginMsg','Enter your API Key first','err');return;}
-  if(!s){showAlert('loginMsg','Enter your API Secret first','err');return;}
-  apiKey=k;apiSecret=s;
-  localStorage.setItem('zp_k',k);
-  localStorage.setItem('zp_s',s);
-  window.location.href=`https://kite.zerodha.com/connect/login?api_key=${k}&v=3`;
+// ── LOGIN ──────────────────────────────────────────────────────
+function doKiteLogin(){
+  var k=document.getElementById('apiKey').value.trim();
+  var s=document.getElementById('apiSecret').value.trim();
+  if(!k){ showAlert('loginMsg','Enter your API Key','err'); return; }
+  if(!s){ showAlert('loginMsg','Enter your API Secret','err'); return; }
+  apiKey=k; apiSecret=s;
+  lsSet('zp_k',k); lsSet('zp_s',s);
+  window.location.href='https://kite.zerodha.com/connect/login?api_key='+k+'&v=3';
 }
 
 function useDirectToken(){
-  const k=document.getElementById('apiKey').value.trim();
-  const t=document.getElementById('directToken').value.trim();
-  if(!k||!t){showAlert('loginMsg','Enter API Key and Access Token','err');return;}
-  apiKey=k;accessToken=t;
-  localStorage.setItem('zp_k',k);
-  localStorage.setItem('zp_t',t);
+  var k=document.getElementById('apiKey').value.trim();
+  var t=document.getElementById('directToken').value.trim();
+  if(!k||!t){ showAlert('loginMsg','Enter API Key and Access Token','err'); return; }
+  apiKey=k; accessToken=t;
+  lsSet('zp_k',k); lsSet('zp_t',t);
   enterApp();
 }
 
-// ══════════════════════════════════════
-// TOKEN PAGE
-// ══════════════════════════════════════
+// ── TOKEN ──────────────────────────────────────────────────────
 function retryKiteLogin(){
-  if(!apiKey){showPage('login');return;}
-  window.location.href=`https://kite.zerodha.com/connect/login?api_key=${apiKey}&v=3`;
+  if(!apiKey){ showPage('login'); return; }
+  window.location.href='https://kite.zerodha.com/connect/login?api_key='+apiKey+'&v=3';
 }
 
 async function generateToken(){
-  const k=apiKey||localStorage.getItem('zp_k')||'';
-  const s=apiSecret||localStorage.getItem('zp_s')||'';
-  const r=document.getElementById('reqTokenManual').value.trim()||document.getElementById('reqTokenDisplay').textContent.trim();
-  if(!k||!s){showAlert('tokenMsg','API Key/Secret missing. Go back.','err');return;}
-  if(!r||r==='Waiting...'){showAlert('tokenMsg','No request token. Paste it manually.','err');return;}
-  const btn=document.getElementById('generateBtn');
-  btn.disabled=true;btn.textContent='⏳ Generating...';
+  var k=apiKey||lsGet('zp_k');
+  var s=apiSecret||lsGet('zp_s');
+  var r=document.getElementById('reqTokenManual').value.trim()||document.getElementById('reqTokenDisplay').textContent.trim();
+  if(!k||!s){ showAlert('tokenMsg','API Key/Secret missing. Go back.','err'); return; }
+  if(!r||r==='Waiting...'){ showAlert('tokenMsg','No request token found. Paste it manually above.','err'); return; }
+  var btn=document.getElementById('generateBtn');
+  btn.disabled=true; btn.textContent='⏳ Generating...';
   showAlert('tokenMsg','Generating...','info');
-  try{
-    const res=await fetch('/api/generate-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:k,request_token:r,api_secret:s})});
-    const data=await res.json();
-    if(!res.ok)throw new Error(data.detail||'Failed');
-    accessToken=data.access_token;apiKey=k;apiSecret=s;
-    localStorage.setItem('zp_t',accessToken);
-    localStorage.setItem('zp_k',k);localStorage.setItem('zp_s',s);
-    const ad=document.getElementById('accessTokenDisplay');
-    ad.textContent=accessToken.substring(0,24)+'...';ad.classList.add('filled');
+  try {
+    var res=await fetch('/api/generate-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:k,request_token:r,api_secret:s})});
+    var data=await res.json();
+    if(!res.ok) throw new Error(data.detail||'Failed');
+    accessToken=data.access_token; apiKey=k; apiSecret=s;
+    lsSet('zp_t',accessToken); lsSet('zp_k',k); lsSet('zp_s',s);
+    document.getElementById('accessTokenDisplay').textContent=accessToken.substring(0,20)+'...';
+    document.getElementById('accessTokenDisplay').classList.add('filled');
     document.getElementById('step3num').className='step-num done';
     document.getElementById('step3num').textContent='✓';
     showAlert('tokenMsg','✓ Token generated! Entering app...','ok');
     btn.textContent='✓ Done!';
-    setTimeout(()=>enterApp(),1200);
-  }catch(e){
+    setTimeout(enterApp, 1200);
+  } catch(e){
     showAlert('tokenMsg','✗ '+e.message,'err');
-    btn.disabled=false;btn.textContent='⚡ Generate Access Token';
+    btn.disabled=false; btn.textContent='⚡ Generate Access Token';
   }
 }
 
 function enterApp(){
   showPage('app');
-  document.getElementById('userPill').textContent=apiKey.substring(0,8)+'...';
+  try{ document.getElementById('userPill').textContent=apiKey.substring(0,8)+'...'; }catch(e){}
 }
 
 function doRelogin(){
-  localStorage.removeItem('zp_t');accessToken='';
+  lsDel('zp_t'); accessToken='';
   showPage('login');
-  if(apiKey)document.getElementById('apiKey').value=apiKey;
-  if(apiSecret)document.getElementById('apiSecret').value=apiSecret;
-  document.getElementById('savedBadge').style.display='flex';
+  try {
+    if(apiKey){ document.getElementById('apiKey').value=apiKey; document.getElementById('savedBadge').style.display='flex'; }
+    if(apiSecret) document.getElementById('apiSecret').value=apiSecret;
+  } catch(e){}
 }
 
-// ══════════════════════════════════════
-// TABS
-// ══════════════════════════════════════
-function switchTab(n,el){
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('panel-'+n).classList.add('active');
-  el.classList.add('active');
-}
-
-// ══════════════════════════════════════
-// INSTRUMENT SEARCH
-// ══════════════════════════════════════
+// ── INSTRUMENT SEARCH (Equity) ─────────────────────────────────
 function searchInst(){
   clearTimeout(searchTimer);
-  const q=document.getElementById('symbolSearch').value.trim();
-  if(q.length<2){document.getElementById('searchResults').style.display='none';return;}
-  searchTimer=setTimeout(()=>doSearch(q),300);
+  var q=document.getElementById('symbolSearch').value.trim();
+  if(q.length<2){ document.getElementById('searchResults').style.display='none'; return; }
+  searchTimer=setTimeout(function(){ doSearch(q); }, 300);
 }
 
 async function doSearch(q){
-  const ex=document.getElementById('exchange').value;
-  const box=document.getElementById('searchResults');
+  var ex=document.getElementById('exchange').value;
+  var box=document.getElementById('searchResults');
   box.style.display='block';
-  box.innerHTML='<div style="padding:10px;color:var(--muted);font-family:var(--mono);font-size:12px;">Searching in '+ex+'...</div>';
-  try{
-    const res=await fetch(`/api/instruments?api_key=${apiKey}&access_token=${accessToken}&exchange=${ex}&search=${encodeURIComponent(q)}`);
-    let data;
-    try{ data=await res.json(); }
-    catch(je){ box.innerHTML='<div style="padding:10px;color:var(--danger);font-family:var(--mono);font-size:12px;">Server error — check your token is valid</div>'; return; }
-    if(!res.ok){ box.innerHTML='<div style="padding:10px;color:var(--danger);font-family:var(--mono);font-size:12px;">'+(data.detail||'Error fetching instruments')+'</div>'; return; }
-    if(!Array.isArray(data)||!data.length){box.innerHTML='<div style="padding:10px;color:var(--muted);font-family:var(--mono);font-size:12px;">No results found in '+ex+' for "'+q+'"</div>';return;}
-    box.innerHTML=data.map(r=>`<div class="sri" onclick="pickInst('${r.instrument_token}','${r.tradingsymbol}','${r.name||''}')"><span class="sym">${r.tradingsymbol}</span><span class="meta">${r.instrument_type||''} ${r.expiry?'· '+r.expiry:''} ${r.strike?'· ₹'+r.strike:''}</span></div>`).join('');
-  }catch(e){box.innerHTML='<div style="padding:10px;color:var(--danger);font-family:var(--mono);font-size:12px;">'+e.message+'</div>';}
+  box.innerHTML='<div style="padding:9px;color:var(--muted);font-family:var(--mono);font-size:12px;">Searching '+ex+'...</div>';
+  try {
+    var res=await fetch('/api/instruments?api_key='+apiKey+'&access_token='+accessToken+'&exchange='+ex+'&search='+encodeURIComponent(q));
+    var data; try{data=await res.json();}catch(e){box.innerHTML='<div style="padding:9px;color:var(--red);font-family:var(--mono);font-size:12px;">Server error — check token</div>';return;}
+    if(!res.ok){box.innerHTML='<div style="padding:9px;color:var(--red);font-family:var(--mono);font-size:12px;">'+(data.detail||'Error')+'</div>';return;}
+    if(!Array.isArray(data)||!data.length){box.innerHTML='<div style="padding:9px;color:var(--muted);font-family:var(--mono);font-size:12px;">No results in '+ex+'</div>';return;}
+    box.innerHTML=data.map(function(r){return '<div class="sri" onclick="pickInst(\''+r.instrument_token+'\',\''+r.tradingsymbol+'\',\''+(r.name||'')+'\')"><span class="sym">'+r.tradingsymbol+'</span><span class="meta">'+(r.instrument_type||'')+' '+(r.expiry?'· '+r.expiry:'')+' '+(r.strike?'· ₹'+r.strike:'')+'</span></div>';}).join('');
+  } catch(e){box.innerHTML='<div style="padding:9px;color:var(--red);font-family:var(--mono);font-size:12px;">'+e.message+'</div>';}
 }
 
 function pickInst(tok,sym,name){
-  selTok=tok;selSym=sym;
+  selTok=tok; selSym=sym;
   document.getElementById('selSym').textContent=sym+(name?' ('+name+')':'');
   document.getElementById('selTok').textContent=tok;
-  document.getElementById('selInstDiv').style.display='block';
+  document.getElementById('selDiv').style.display='block';
   document.getElementById('searchResults').style.display='none';
   document.getElementById('symbolSearch').value=sym;
 }
 
-function onExchangeChange() {
-  const ex = document.getElementById('exchange').value;
-  const isEquity = ex === 'NSE' || ex === 'BSE';
-  // Auto-uncheck OI and Continuous for equity — they don't apply
-  document.getElementById('includeOI').checked = !isEquity;
-  document.getElementById('continuous').checked = false;
-  // Grey out continuous for non-futures
-  document.getElementById('continuous').disabled = isEquity;
-  clearSel();
-}
-
 function clearSel(){
-  selTok='';selSym='';
-  document.getElementById('selInstDiv').style.display='none';
+  selTok=''; selSym='';
+  document.getElementById('selDiv').style.display='none';
   document.getElementById('symbolSearch').value='';
   document.getElementById('searchResults').style.display='none';
 }
 
-document.addEventListener('click',e=>{
-  if(!e.target.closest('#symbolSearch')&&!e.target.closest('#searchResults'))
-    document.getElementById('searchResults').style.display='none';
-  if(!e.target.closest('#opt_stock_search')&&!e.target.closest('#opt_stock_results'))
-    document.getElementById('opt_stock_results').style.display='none';
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#symbolSearch')&&!e.target.closest('#searchResults')) document.getElementById('searchResults').style.display='none';
+  if(!e.target.closest('#opt_stock_search')&&!e.target.closest('#opt_stock_results')){ var el=document.getElementById('opt_stock_results'); if(el) el.style.display='none'; }
 });
 
-// ══════════════════════════════════════
-// DOWNLOAD TAB
-// ══════════════════════════════════════
-function getParams(){return{api_key:apiKey,access_token:accessToken,instrument_token:selTok,from_date:document.getElementById('fromDate').value,to_date:document.getElementById('toDate').value,interval:document.getElementById('interval').value,continuous:document.getElementById('continuous').checked,oi:document.getElementById('includeOI').checked,file_format:document.getElementById('fileFormat').value};}
-
-async function previewData(){
-  if(!selTok){alert('Select an instrument first');return;}
-  showAlert('dlStatus','⏳ Loading...','info');
-  try{
-    const r=await fetch('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(getParams())});
-    const d=await r.json();if(!r.ok)throw new Error(d.detail);
-    document.getElementById('previewDiv').innerHTML=mkTable(d.rows,d.total);
-    showAlert('dlStatus','✓ '+d.total+' total rows','ok');
-  }catch(e){showAlert('dlStatus','✗ '+e.message,'err');}
-}
-
-async function downloadData(){
-  if(!selTok){alert('Select an instrument first');return;}
+// ── EQUITY DOWNLOAD ────────────────────────────────────────────
+async function dlEquity(){
+  if(!selTok){ showAlert('dlStatus','Select an instrument first','err'); return; }
+  if(!document.getElementById('fromDate').value){ showAlert('dlStatus','Select date range','err'); return; }
   showAlert('dlStatus','⏳ Downloading...','info');
-  try{
-    const body=getParams();
-    const r=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    if(!r.ok){const d=await r.json();throw new Error(d.detail);}
-    const blob=await r.blob();
-    const cd=r.headers.get('Content-Disposition')||'';
-    const fn=cd.match(/filename="(.+)"/)?.[1]||'data.'+body.file_format;
-    dlBlob(blob,fn);showAlert('dlStatus','✓ Downloaded: '+fn,'ok');
-  }catch(e){showAlert('dlStatus','✗ '+e.message,'err');}
+  try {
+    var body={api_key:apiKey,access_token:accessToken,instrument_token:selTok,from_date:document.getElementById('fromDate').value,to_date:document.getElementById('toDate').value,interval:document.getElementById('interval').value,continuous:false,oi:false,file_format:document.getElementById('fileFormat').value};
+    var res=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!res.ok){var d=await res.json();throw new Error(d.detail);}
+    var blob=await res.blob();
+    var cd=res.headers.get('Content-Disposition')||'';
+    var fn=cd.match(/filename="(.+)"/)?.[1]||selSym+'_'+body.interval+'.'+body.file_format;
+    dlBlob(blob,fn); showAlert('dlStatus','✓ Downloaded: '+fn,'ok');
+  } catch(e){showAlert('dlStatus','✗ '+e.message,'err');}
 }
 
-// ══════════════════════════════════════
-// OPTIONS — mode toggle (index / stock)
-// ══════════════════════════════════════
-let optMode = 'index';
-let optStockName = '';
-let optStockTimer = null;
-
-function opt_setMode(mode) {
-  optMode = mode;
-  // Style the toggle buttons
-  const idx = document.getElementById('optmode-index');
-  const stk = document.getElementById('optmode-stock');
-  if (mode === 'index') {
-    idx.style.cssText = 'flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:rgba(0,212,170,.12);border:1px solid var(--accent);color:var(--accent);';
-    stk.style.cssText = 'flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--muted);';
-    document.getElementById('opt_index_row').style.display = '';
-    document.getElementById('opt_stock_row').style.display = 'none';
+// ── OPTIONS ────────────────────────────────────────────────────
+function optSetMode(mode){
+  optMode=mode;
+  var ia=document.getElementById('optmode-index'), sa=document.getElementById('optmode-stock');
+  var ir=document.getElementById('opt_index_row'), sr=document.getElementById('opt_stock_row');
+  if(mode==='index'){
+    ia.style.cssText='flex:1;padding:8px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:rgba(0,212,170,.12);border:1px solid var(--grn);color:var(--grn);';
+    sa.style.cssText='flex:1;padding:8px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:var(--surf2);border:1px solid var(--bdr);color:var(--muted);';
+    ir.style.display=''; sr.style.display='none';
   } else {
-    stk.style.cssText = 'flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:rgba(0,145,255,.12);border:1px solid var(--accent2);color:var(--accent2);';
-    idx.style.cssText = 'flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--muted);';
-    document.getElementById('opt_index_row').style.display = 'none';
-    document.getElementById('opt_stock_row').style.display = '';
+    sa.style.cssText='flex:1;padding:8px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:rgba(0,145,255,.12);border:1px solid var(--blu);color:var(--blu);';
+    ia.style.cssText='flex:1;padding:8px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:var(--surf2);border:1px solid var(--bdr);color:var(--muted);';
+    ir.style.display='none'; sr.style.display='';
   }
-  // Reset expiry/strike
-  document.getElementById('opt_expiry').innerHTML = '<option>— select underlying first —</option>';
-  document.getElementById('opt_expiry').disabled = true;
-  document.getElementById('opt_strike').innerHTML = '<option>— select expiry first —</option>';
-  document.getElementById('opt_strike').disabled = true;
-  document.getElementById('opt_info').textContent = '';
+  resetExpiry();
 }
 
-function opt_searchStock() {
-  clearTimeout(optStockTimer);
-  const q = document.getElementById('opt_stock_search').value.trim();
-  if (q.length < 2) { document.getElementById('opt_stock_results').style.display = 'none'; return; }
-  optStockTimer = setTimeout(() => opt_doStockSearch(q), 300);
+function optFilterUL(){
+  var ex=document.getElementById('opt_ex').value;
+  var sel=document.getElementById('opt_ul');
+  if(ex==='BFO') sel.innerHTML='<option value="">— Select —</option><option value="SENSEX">SENSEX</option><option value="BANKEX">BANKEX</option>';
+  else sel.innerHTML='<option value="">— Select —</option><option value="NIFTY">NIFTY</option><option value="BANKNIFTY">BANKNIFTY</option><option value="FINNIFTY">FINNIFTY</option><option value="MIDCPNIFTY">MIDCPNIFTY</option>';
+  resetExpiry();
 }
 
-async function opt_doStockSearch(q) {
-  const box = document.getElementById('opt_stock_results');
-  box.style.display = 'block';
-  box.innerHTML = '<div style="padding:10px;color:var(--muted);font-family:var(--mono);font-size:12px;">Searching NFO...</div>';
+function resetExpiry(){
+  document.getElementById('opt_expiry').innerHTML='<option>— select underlying first —</option>';
+  document.getElementById('opt_expiry').disabled=true;
+  document.getElementById('opt_strike').innerHTML='<option>— select expiry first —</option>';
+  document.getElementById('opt_strike').disabled=true;
+}
+
+async function optLoadExpiries(){
+  var u=document.getElementById('opt_ul').value;
+  if(!u) return;
+  var ex=document.getElementById('opt_ex').value;
+  var sel=document.getElementById('opt_expiry');
+  sel.innerHTML='<option>Loading...</option>'; sel.disabled=true;
+  document.getElementById('opt_strike').innerHTML='<option>—</option>'; document.getElementById('opt_strike').disabled=true;
   try {
-    // Search NFO for stocks — filter to only show FUT/CE/PE type (F&O eligible stocks)
-    const res = await fetch(`/api/instruments?api_key=${apiKey}&access_token=${accessToken}&exchange=NFO&search=${encodeURIComponent(q)}`);
-    let data; try { data = await res.json(); } catch(e) { box.innerHTML = '<div style="padding:10px;color:var(--danger);font-family:var(--mono);font-size:12px;">Error</div>'; return; }
-    // Extract unique underlying names (the 'name' field)
-    const names = [...new Set(data.map(r => r.name).filter(n => n && n !== ''))];
-    if (!names.length) { box.innerHTML = '<div style="padding:10px;color:var(--muted);font-family:var(--mono);font-size:12px;">No F&O stocks found for "'+q+'"</div>'; return; }
-    box.innerHTML = names.slice(0,20).map(n =>
-      `<div class="sri" onclick="opt_pickStock('${n}')"><span class="sym">${n}</span><span class="meta">NFO</span></div>`
-    ).join('');
-  } catch(e) { box.innerHTML = '<div style="padding:10px;color:var(--danger);font-family:var(--mono);font-size:12px;">'+e.message+'</div>'; }
+    var res=await fetch('/api/options/expiries?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+u+'&exchange='+ex);
+    var d=await res.json();
+    sel.innerHTML=d.expiries.length?d.expiries.map(function(e){return '<option value="'+e+'">'+e+'</option>';}).join(''):'<option>None found</option>';
+    sel.disabled=false; optLoadStrikes();
+  } catch(e){sel.innerHTML='<option>Error</option>';}
 }
 
-function opt_pickStock(name) {
-  optStockName = name;
-  document.getElementById('opt_stock_search').value = name;
-  document.getElementById('opt_stock_sym').textContent = name;
-  document.getElementById('opt_stock_chip').style.display = 'block';
-  document.getElementById('opt_stock_results').style.display = 'none';
-}
-
-function opt_clearStock() {
-  optStockName = '';
-  document.getElementById('opt_stock_search').value = '';
-  document.getElementById('opt_stock_chip').style.display = 'none';
-  document.getElementById('opt_expiry').innerHTML = '<option>— select underlying first —</option>';
-  document.getElementById('opt_expiry').disabled = true;
-  document.getElementById('opt_strike').innerHTML = '<option>— select expiry first —</option>';
-  document.getElementById('opt_strike').disabled = true;
-}
-
-async function opt_loadStockExpiries() {
-  if (!optStockName) { alert('Search and select a stock first'); return; }
-  // Temporarily set opt_ul concept via direct API call
-  const sel = document.getElementById('opt_expiry');
-  sel.innerHTML = '<option>Loading...</option>'; sel.disabled = true;
-  document.getElementById('opt_strike').innerHTML = '<option>—</option>'; document.getElementById('opt_strike').disabled = true;
+async function optLoadStrikes(){
+  var u=optMode==='stock'?optStockName:document.getElementById('opt_ul').value;
+  var expDate=document.getElementById('opt_expiry').value;
+  if(!u||!expDate) return;
+  var ex=optMode==='stock'?'NFO':document.getElementById('opt_ex').value;
+  var sel=document.getElementById('opt_strike');
+  sel.innerHTML='<option>Loading...</option>'; sel.disabled=true;
   try {
-    const res = await fetch(`/api/options/expiries?api_key=${apiKey}&access_token=${accessToken}&underlying=${encodeURIComponent(optStockName)}&exchange=NFO`);
-    const d = await res.json();
-    if (!d.expiries.length) { sel.innerHTML = '<option>No expiries found</option>'; return; }
-    sel.innerHTML = d.expiries.map(e => `<option value="${e}">${e}</option>`).join('');
-    sel.disabled = false;
-    opt_loadStrikes();
-  } catch(e) { sel.innerHTML = '<option>Error</option>'; }
-}
-
-// ══════════════════════════════════════
-// OPTIONS
-// ══════════════════════════════════════
-async function opt_loadExpiries(){
-  const u=document.getElementById('opt_ul').value;if(!u)return;
-  const ex=document.getElementById('opt_ex').value;
-  const sel=document.getElementById('opt_expiry');
-  sel.innerHTML='<option>Loading...</option>';sel.disabled=true;
-  document.getElementById('opt_strike').innerHTML='<option>—</option>';document.getElementById('opt_strike').disabled=true;
-  try{
-    const r=await fetch(`/api/options/expiries?api_key=${apiKey}&access_token=${accessToken}&underlying=${u}&exchange=${ex}`);
-    const d=await r.json();
-    sel.innerHTML=d.expiries.length?d.expiries.map(e=>`<option value="${e}">${e}</option>`).join(''):'<option>None found</option>';
-    sel.disabled=false;opt_loadStrikes();
-  }catch(e){sel.innerHTML='<option>Error</option>';}
-}
-
-async function opt_loadStrikes(){
-  const u = optMode==='stock' ? optStockName : document.getElementById('opt_ul').value;
-  const ex_d=document.getElementById('opt_expiry').value;
-  if(!u||!ex_d)return;
-  const ex = optMode==='stock' ? 'NFO' : document.getElementById('opt_ex').value;
-  const sel=document.getElementById('opt_strike');
-  sel.innerHTML='<option>Loading...</option>';sel.disabled=true;
-  try{
-    const r=await fetch(`/api/options/strikes?api_key=${apiKey}&access_token=${accessToken}&underlying=${u}&expiry=${ex_d}&exchange=${ex}`);
-    const d=await r.json();
-    sel.innerHTML=d.strikes.length?d.strikes.map(s=>`<option value="${s}">${s}</option>`).join(''):'<option>None</option>';
+    var res=await fetch('/api/options/strikes?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+u+'&expiry='+expDate+'&exchange='+ex);
+    var d=await res.json();
+    sel.innerHTML=d.strikes.length?d.strikes.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join(''):'<option>None</option>';
     sel.disabled=false;
-  }catch(e){sel.innerHTML='<option>Error</option>';}
+  } catch(e){sel.innerHTML='<option>Error</option>';}
 }
 
-function opt_type(t){
+function optSetType(t){
   optType=t;
-  ['CE','PE','BOTH'].forEach(x=>document.getElementById('otype-'+x).className='otype-btn');
-  document.getElementById('otype-'+t).className='otype-btn active-'+t.toLowerCase();
-}
-
-async function optGetTok(u,exp,str,ot){
-  const ex = optMode==='stock' ? 'NFO' : document.getElementById('opt_ex').value;
-  const r=await fetch(`/api/options/token?api_key=${apiKey}&access_token=${accessToken}&underlying=${u}&expiry=${exp}&strike=${str}&option_type=${ot}&exchange=${ex}`);
-  if(!r.ok){const d=await r.json();throw new Error(d.detail);}
-  return r.json();
-}
-
-function optValidate(){
-  const u = optMode==='stock' ? optStockName : document.getElementById('opt_ul').value;
-  if(!u){alert(optMode==='stock'?'Search and select a stock first':'Select underlying index');return false;}
-  if(!document.getElementById('opt_expiry').value){alert('Select expiry');return false;}
-  if(strikeMode==='single'&&!document.getElementById('opt_strike').value){alert('Select strike price');return false;}
-  if(!document.getElementById('opt_from').value||!document.getElementById('opt_to').value){alert('Select date range');return false;}
-  return true;
-}
-
-async function opt_preview(){
-  if(!optValidate())return;
-  const u=document.getElementById('opt_ul').value,exp=document.getElementById('opt_expiry').value,str=document.getElementById('opt_strike').value;
-  const types=optType==='BOTH'?['CE','PE']:[optType];
-  showAlert('opt_status','⏳ Loading...','info');
-  try{
-    const t=await optGetTok(u,exp,str,types[0]);
-    document.getElementById('opt_info').textContent='Symbol: '+t.tradingsymbol+' | Token: '+t.instrument_token;
-    const body={api_key:apiKey,access_token:accessToken,instrument_token:t.instrument_token,from_date:document.getElementById('opt_from').value,to_date:document.getElementById('opt_to').value,interval:document.getElementById('opt_interval').value,oi:document.getElementById('opt_oi').checked,continuous:false,file_format:'csv'};
-    const r=await fetch('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    const d=await r.json();if(!r.ok)throw new Error(d.detail);
-    document.getElementById('opt_prev').innerHTML=mkTable(d.rows,d.total);
-    showAlert('opt_status','✓ '+t.tradingsymbol+' — '+d.total+' rows','ok');
-  }catch(e){showAlert('opt_status','✗ '+e.message,'err');}
-}
-
-async function opt_dl(){
-  if(!optValidate())return;
-  const u = optMode==='stock' ? optStockName : document.getElementById('opt_ul').value;
-  const exp=document.getElementById('opt_expiry').value;
-  const fmt=document.getElementById('opt_fmt').value;
-
-  // ATM Range mode
-  if (strikeMode === 'range') {
-    await opt_dl_range(u, exp, fmt);
-    return;
-  }
-
-  // Single strike mode
-  const str=document.getElementById('opt_strike').value;
-  const types=optType==='BOTH'?['CE','PE']:[optType];
-  showAlert('opt_status','⏳ Downloading...','info');
-  let done=0;
-  for(const ot of types){
-    try{
-      const t=await optGetTok(u,exp,str,ot);
-      const body={api_key:apiKey,access_token:accessToken,instrument_token:t.instrument_token,from_date:document.getElementById('opt_from').value,to_date:document.getElementById('opt_to').value,interval:document.getElementById('opt_interval').value,oi:document.getElementById('opt_oi').checked,continuous:false,file_format:fmt};
-      const r=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      if(!r.ok){const d=await r.json();throw new Error(d.detail);}
-      dlBlob(await r.blob(),`${t.tradingsymbol}_${body.interval}_${body.from_date}_${body.to_date}.${fmt}`);done++;
-    }catch(e){showAlert('opt_status','✗ '+ot+': '+e.message,'err');}
-  }
-  if(done>0)showAlert('opt_status','✓ Downloaded '+done+' file(s)','ok');
-}
-
-// ══════════════════════════════════════
-// FUTURES
-// ══════════════════════════════════════
-async function fut_loadExpiries(){
-  const u=document.getElementById('fut_ul').value.trim().toUpperCase();
-  if(!u){alert('Enter underlying symbol');return;}
-  const ex=document.getElementById('fut_ex').value;
-  const sel=document.getElementById('fut_expiry');
-  sel.innerHTML='<option>Loading...</option>';sel.disabled=true;
-  try{
-    const r=await fetch(`/api/futures/expiries?api_key=${apiKey}&access_token=${accessToken}&underlying=${u}&exchange=${ex}`);
-    const d=await r.json();
-    if(!d.expiries.length){sel.innerHTML='<option>No contracts found</option>';return;}
-    sel.innerHTML=d.expiries.map(e=>`<option value="${e}">${e}</option>`).join('');
-    sel.disabled=false;await fut_loadTok();sel.onchange=fut_loadTok;
-  }catch(e){sel.innerHTML='<option>Error</option>';}
-}
-
-async function fut_loadTok(){
-  const u=document.getElementById('fut_ul').value.trim().toUpperCase();
-  const exp=document.getElementById('fut_expiry').value;
-  const ex=document.getElementById('fut_ex').value;
-  if(!u||!exp)return;
-  try{
-    const r=await fetch(`/api/futures/token?api_key=${apiKey}&access_token=${accessToken}&underlying=${u}&expiry=${exp}&exchange=${ex}`);
-    const d=await r.json();
-    futTok=d.instrument_token;futSym=d.tradingsymbol;
-    document.getElementById('fut_info').textContent='Symbol: '+d.tradingsymbol+' | Token: '+d.instrument_token;
-  }catch(e){document.getElementById('fut_info').textContent='Not found';}
-}
-
-async function fut_preview(){
-  if(!futTok){alert('Load a futures contract first');return;}
-  showAlert('fut_status','⏳ Loading...','info');
-  try{
-    const body={api_key:apiKey,access_token:accessToken,instrument_token:futTok,from_date:document.getElementById('fut_from').value,to_date:document.getElementById('fut_to').value,interval:document.getElementById('fut_interval').value,oi:true,continuous:document.getElementById('fut_cont').checked,file_format:'csv'};
-    const r=await fetch('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    const d=await r.json();if(!r.ok)throw new Error(d.detail);
-    document.getElementById('fut_prev').innerHTML=mkTable(d.rows,d.total);
-    showAlert('fut_status','✓ '+futSym+' — '+d.total+' rows','ok');
-  }catch(e){showAlert('fut_status','✗ '+e.message,'err');}
-}
-
-async function fut_dl(){
-  if(!futTok){alert('Load a futures contract first');return;}
-  const fmt=document.getElementById('fut_fmt').value;
-  showAlert('fut_status','⏳ Downloading...','info');
-  try{
-    const body={api_key:apiKey,access_token:accessToken,instrument_token:futTok,from_date:document.getElementById('fut_from').value,to_date:document.getElementById('fut_to').value,interval:document.getElementById('fut_interval').value,oi:true,continuous:document.getElementById('fut_cont').checked,file_format:fmt};
-    const r=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    if(!r.ok){const d=await r.json();throw new Error(d.detail);}
-    dlBlob(await r.blob(),`${futSym}_${body.interval}_${body.from_date}_${body.to_date}.${fmt}`);
-    showAlert('fut_status','✓ Downloaded!','ok');
-  }catch(e){showAlert('fut_status','✗ '+e.message,'err');}
-}
-
-// ══════════════════════════════════════
-// BULK
-// ══════════════════════════════════════
-async function startBulk(){
-  const file=document.getElementById('bulkFile').files[0];
-  if(!file){alert('Upload CSV first');return;}
-  bulkPaused=false;bulkStopped=false;
-  const rows=parseCSV(await file.text());
-  const log=document.getElementById('bulkLog'),prog=document.getElementById('bulkProg');
-  log.innerHTML='';let done=0;
-  for(const row of rows){
-    if(bulkStopped){logLine(log,'■ Stopped.','info');break;}
-    while(bulkPaused&&!bulkStopped)await sleep(300);
-    if(bulkStopped)break;
-    const tok=row.instrument_token?.trim(),from=row.from_date?.trim(),to=row.to_date?.trim(),interval=row.interval?.trim()||'day',fmt=row.file_format?.trim()||'csv';
-    if(!tok||!from||!to){logLine(log,'✗ Skipping invalid row','err');continue;}
-    logLine(log,'⏳ '+tok+' ['+from+'→'+to+'] '+interval+'...','info');
-    try{
-      const r=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:apiKey,access_token:accessToken,instrument_token:tok,from_date:from,to_date:to,interval,oi:true,continuous:false,file_format:fmt})});
-      if(!r.ok){const d=await r.json();throw new Error(d.detail);}
-      dlBlob(await r.blob(),`${tok}_${interval}_${from}_${to}.${fmt}`);done++;logLine(log,'✓ '+tok,'ok');
-    }catch(e){logLine(log,'✗ '+tok+': '+e.message,'err');}
-    prog.style.width=Math.round((done/rows.length)*100)+'%';
-    document.getElementById('bulkCount').textContent=done+'/'+rows.length+' done';
-    await sleep(500);
-  }
-  logLine(log,'Done. '+done+'/'+rows.length+' files.','ok');
-}
-
-function pauseBulk(){bulkPaused=!bulkPaused;document.getElementById('pauseBtn').textContent=bulkPaused?'▶ Resume':'⏸ Pause';}
-function stopBulk(){bulkStopped=true;bulkPaused=false;}
-
-// ══════════════════════════════════════
-// HELPERS
-// ══════════════════════════════════════
-// ── Strike mode toggle ──────────────────────────────────────
-let strikeMode = 'single';
-
-function opt_setStrikeMode(mode) {
-  strikeMode = mode;
-  const s = document.getElementById('smode-single');
-  const r = document.getElementById('smode-range');
-  const single_row = document.getElementById('strike_single_row');
-  const range_row = document.getElementById('strike_range_row');
-  if (mode === 'single') {
-    s.style.cssText = 'flex:1;padding:7px;text-align:center;font-family:var(--mono);font-size:11px;font-weight:600;border-radius:4px;cursor:pointer;background:rgba(0,212,170,.12);border:1px solid var(--accent);color:var(--accent);';
-    r.style.cssText = 'flex:1;padding:7px;text-align:center;font-family:var(--mono);font-size:11px;font-weight:600;border-radius:4px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--muted);';
-    single_row.style.display = '';
-    range_row.style.display = 'none';
-  } else {
-    r.style.cssText = 'flex:1;padding:7px;text-align:center;font-family:var(--mono);font-size:11px;font-weight:600;border-radius:4px;cursor:pointer;background:rgba(0,145,255,.12);border:1px solid var(--accent2);color:var(--accent2);';
-    s.style.cssText = 'flex:1;padding:7px;text-align:center;font-family:var(--mono);font-size:11px;font-weight:600;border-radius:4px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--muted);';
-    single_row.style.display = 'none';
-    range_row.style.display = '';
-  }
-}
-
-// ── BFO/NFO underlying filter ────────────────────────────────
-function opt_filterUnderlyings() {
-  const ex = document.getElementById('opt_ex').value;
-  const sel = document.getElementById('opt_ul');
-  if (ex === 'BFO') {
-    sel.innerHTML = '<option value="">— Select —</option><option value="SENSEX">SENSEX</option><option value="BANKEX">BANKEX</option>';
-  } else {
-    sel.innerHTML = '<option value="">— Select —</option><option value="NIFTY">NIFTY</option><option value="BANKNIFTY">BANKNIFTY</option><option value="FINNIFTY">FINNIFTY</option><option value="MIDCPNIFTY">MIDCPNIFTY</option>';
-  }
-  // Reset expiry/strike
-  document.getElementById('opt_expiry').innerHTML = '<option>— select underlying first —</option>';
-  document.getElementById('opt_expiry').disabled = true;
-  document.getElementById('opt_strike').innerHTML = '<option>— select expiry first —</option>';
-  document.getElementById('opt_strike').disabled = true;
-}
-
-// ── Futures continuous toggle ──────────────────────────────────
-function fut_toggleContinuous() {
-  const isCont = document.getElementById('fut_cont').checked;
-  const row = document.getElementById('fut_expiry_row');
-  if (row) row.style.display = isCont ? 'none' : '';
-  // When continuous: auto-select nearest expiry after loading
-  if (isCont && document.getElementById('fut_expiry').value) {
-    // already have expiries loaded, nearest is first — fine
-  }
-}
-
-// ── ATM range download ───────────────────────────────────────
-async function opt_dl_range(u, exp, fmt) {
-  const atmPrice = parseFloat(document.getElementById('atm_price').value);
-  const step = parseFloat(document.getElementById('atm_step').value) || 50;
-  const range = parseInt(document.getElementById('atm_range').value) || 10;
-  if (!atmPrice || atmPrice <= 0) { showAlert('opt_status','✗ Enter a valid Spot/ATM price','err'); return; }
-
-  // Round ATM price to nearest step
-  const atm = Math.round(atmPrice / step) * step;
-  const types = optType === 'BOTH' ? ['CE','PE'] : [optType];
-  const strikes = [];
-  for (let i = -range; i <= range; i++) strikes.push(atm + i * step);
-
-  showAlert('opt_status', `⏳ Downloading ${strikes.length * types.length} files (ATM ${atm} ± ${range} strikes)...`, 'info');
-  let done = 0, failed = 0;
-  const total = strikes.length * types.length;
-
-  for (const strike of strikes) {
-    for (const ot of types) {
-      try {
-        const t = await optGetTok(u, exp, strike, ot);
-        const body = {
-          api_key: apiKey, access_token: accessToken,
-          instrument_token: t.instrument_token,
-          from_date: document.getElementById('opt_from').value,
-          to_date: document.getElementById('opt_to').value,
-          interval: document.getElementById('opt_interval').value,
-          oi: document.getElementById('opt_oi').checked,
-          continuous: false,
-          file_format: fmt
-        };
-        const r = await fetch('/api/historical', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-        if (!r.ok) { failed++; continue; }
-        dlBlob(await r.blob(), `${t.tradingsymbol}_${body.interval}_${body.from_date}_${body.to_date}.${fmt}`);
-        done++;
-      } catch(e) { failed++; }
-      showAlert('opt_status', `⏳ Downloaded ${done}/${total}... (${failed} not found)`, 'info');
-      await sleep(200); // small delay between downloads
-    }
-  }
-  showAlert('opt_status', `✓ Done! ${done} files downloaded. ${failed} strikes not found (normal for far OTM).`, 'ok');
-}
-
-
-// ══════════════════════════════════════════════════════════════
-// EXPIRED OPTIONS
-// ══════════════════════════════════════════════════════════════
-let expStrikeMode = 'atm';
-let expStopped = false;
-let expSelectedExpiry = '';
-
-// ── Find expiries in range ──────────────────────────────────
-function exp_findExpiries() {
-  const from  = document.getElementById('exp_from').value;
-  const to    = document.getElementById('exp_to').value;
-  const type  = document.getElementById('exp_type').value;
-  const index = document.getElementById('exp_index').value;
-
-  if (!from || !to) { showAlert('exp_status','✗ Select From and To dates first','err'); return; }
-
-  const expiries = exp_getExpiries(from, to, type, index);
-
-  if (!expiries.length) {
-    showAlert('exp_status', '✗ No expiries found in this date range. Try a wider range.', 'err');
-    document.getElementById('exp_step2_card').style.display = 'none';
-    return;
-  }
-
-  // Populate dropdown
-  const sel = document.getElementById('exp_expiry_select');
-  sel.innerHTML = '<option value="">— Select an expiry —</option>';
-  expiries.forEach(e => {
-    const dateStr = exp_fmtDate(e);
-    const opt = document.createElement('option');
-    opt.value = dateStr;
-    opt.textContent = dateStr;
-    sel.appendChild(opt);
+  ['CE','PE','BOTH'].forEach(function(x){
+    var el=document.getElementById('ot-'+x);
+    el.className='otype-b'+(x===t?' a-'+t.toLowerCase():'');
   });
-
-  document.getElementById('exp_expiry_count').textContent = expiries.length;
-  document.getElementById('exp_step2_card').style.display = 'block';
-  document.getElementById('exp_step3_card').style.display = 'none';
-  document.getElementById('exp_step4_card').style.display = 'none';
-  document.getElementById('exp_status') && (document.getElementById('exp_status').innerHTML = '');
-
-  // Listen for expiry selection
-  sel.onchange = function() {
-    expSelectedExpiry = this.value;
-    if (expSelectedExpiry) {
-      document.getElementById('exp_selected_info').style.display = 'block';
-      document.getElementById('exp_selected_date').textContent = expSelectedExpiry;
-      document.getElementById('exp_step3_card').style.display = 'block';
-      document.getElementById('exp_step4_card').style.display = 'block';
-      exp_updateEstimate();
-    } else {
-      document.getElementById('exp_selected_info').style.display = 'none';
-      document.getElementById('exp_step3_card').style.display = 'none';
-      document.getElementById('exp_step4_card').style.display = 'none';
-    }
-  };
 }
 
-// ── Generate expiry dates ──────────────────────────────────
-function exp_getExpiries(from, to, type, index) {
-  const expiries = [];
-  const start = new Date(from);
-  const end   = new Date(to);
+// Stock options search
+function optSearchStock(){
+  clearTimeout(optStockTimer);
+  var q=document.getElementById('opt_stock_search').value.trim();
+  if(q.length<2){document.getElementById('opt_stock_results').style.display='none';return;}
+  optStockTimer=setTimeout(function(){optDoStockSearch(q);},300);
+}
 
-  if (type === 'monthly') {
-    let d = new Date(start.getFullYear(), start.getMonth(), 1);
-    while (d <= end) {
-      const lastThur = getLastThursdayOfMonth(d.getFullYear(), d.getMonth());
-      if (lastThur >= start && lastThur <= end) expiries.push(new Date(lastThur));
-      d.setMonth(d.getMonth() + 1);
-    }
+async function optDoStockSearch(q){
+  var box=document.getElementById('opt_stock_results');
+  box.style.display='block';
+  box.innerHTML='<div style="padding:9px;color:var(--muted);font-family:var(--mono);font-size:12px;">Searching NFO...</div>';
+  try {
+    var res=await fetch('/api/instruments?api_key='+apiKey+'&access_token='+accessToken+'&exchange=NFO&search='+encodeURIComponent(q));
+    var data=await res.json();
+    var names=[...new Set(data.map(function(r){return r.name;}).filter(function(n){return n&&n!=='';}))] ;
+    if(!names.length){box.innerHTML='<div style="padding:9px;color:var(--muted);font-family:var(--mono);font-size:12px;">No F&O stocks found</div>';return;}
+    box.innerHTML=names.slice(0,20).map(function(n){return '<div class="sri" onclick="optPickStock(\''+n+'\')"><span class="sym">'+n+'</span><span class="meta">NFO</span></div>';}).join('');
+  } catch(e){box.innerHTML='<div style="padding:9px;color:var(--red);font-family:var(--mono);font-size:12px;">'+e.message+'</div>';}
+}
+
+function optPickStock(name){
+  optStockName=name;
+  document.getElementById('opt_stock_search').value=name;
+  document.getElementById('opt_stock_sym').textContent=name;
+  document.getElementById('opt_stock_chip').style.display='block';
+  document.getElementById('opt_stock_results').style.display='none';
+}
+
+function optClearStock(){
+  optStockName='';
+  document.getElementById('opt_stock_search').value='';
+  document.getElementById('opt_stock_chip').style.display='none';
+  resetExpiry();
+}
+
+async function optLoadStockExpiries(){
+  if(!optStockName){showAlert('opt_status','Search and select a stock first','err');return;}
+  var sel=document.getElementById('opt_expiry');
+  sel.innerHTML='<option>Loading...</option>'; sel.disabled=true;
+  document.getElementById('opt_strike').innerHTML='<option>—</option>'; document.getElementById('opt_strike').disabled=true;
+  try {
+    var res=await fetch('/api/options/expiries?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+encodeURIComponent(optStockName)+'&exchange=NFO');
+    var d=await res.json();
+    sel.innerHTML=d.expiries.length?d.expiries.map(function(e){return '<option value="'+e+'">'+e+'</option>';}).join(''):'<option>None found</option>';
+    sel.disabled=false; optLoadStrikes();
+  } catch(e){sel.innerHTML='<option>Error</option>';}
+}
+
+async function dlOptions(){
+  var u=optMode==='stock'?optStockName:document.getElementById('opt_ul').value;
+  var expDate=document.getElementById('opt_expiry').value;
+  var strike=document.getElementById('opt_strike').value;
+  if(!u){showAlert('opt_status','Select underlying','err');return;}
+  if(!expDate){showAlert('opt_status','Select expiry','err');return;}
+  if(!strike){showAlert('opt_status','Select strike','err');return;}
+  if(!document.getElementById('opt_from').value){showAlert('opt_status','Select date range','err');return;}
+  var ex=optMode==='stock'?'NFO':document.getElementById('opt_ex').value;
+  var fmt=document.getElementById('opt_fmt').value;
+  var types=optType==='BOTH'?['CE','PE']:[optType];
+  showAlert('opt_status','⏳ Downloading...','info');
+  var done=0;
+  for(var i=0;i<types.length;i++){
+    var ot=types[i];
+    try {
+      var tr=await fetch('/api/options/token?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+u+'&expiry='+expDate+'&strike='+strike+'&option_type='+ot+'&exchange='+ex);
+      if(!tr.ok){var td=await tr.json();throw new Error(td.detail);}
+      var tok=await tr.json();
+      var body={api_key:apiKey,access_token:accessToken,instrument_token:tok.instrument_token,from_date:document.getElementById('opt_from').value,to_date:document.getElementById('opt_to').value,interval:document.getElementById('opt_interval').value,oi:document.getElementById('opt_oi').checked,continuous:false,file_format:fmt};
+      var res=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      if(!res.ok){var d=await res.json();throw new Error(d.detail);}
+      dlBlob(await res.blob(),tok.tradingsymbol+'_'+body.interval+'_'+body.from_date+'_'+body.to_date+'.'+fmt);
+      done++;
+    } catch(e){showAlert('opt_status','✗ '+ot+': '+e.message,'err');}
+  }
+  if(done>0) showAlert('opt_status','✓ Downloaded '+done+' file(s)','ok');
+}
+
+// ── FUTURES ────────────────────────────────────────────────────
+function futToggleCont(){
+  var isCont=document.getElementById('fut_cont').checked;
+  var row=document.getElementById('fut_expiry_row');
+  if(row) row.style.display=isCont?'none':'';
+}
+
+async function futLoadExpiries(){
+  var u=document.getElementById('fut_ul').value.trim().toUpperCase();
+  if(!u){showAlert('fut_status','Enter underlying symbol','err');return;}
+  var ex=document.getElementById('fut_ex').value;
+  var sel=document.getElementById('fut_expiry');
+  sel.innerHTML='<option>Loading...</option>'; sel.disabled=true;
+  try {
+    var res=await fetch('/api/futures/expiries?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+u+'&exchange='+ex);
+    var d=await res.json();
+    if(!d.expiries.length){sel.innerHTML='<option>No contracts found</option>';return;}
+    sel.innerHTML=d.expiries.map(function(e){return '<option value="'+e+'">'+e+'</option>';}).join('');
+    sel.disabled=false; futLoadTok(); sel.onchange=futLoadTok;
+  } catch(e){sel.innerHTML='<option>Error</option>';}
+}
+
+async function futLoadTok(){
+  var u=document.getElementById('fut_ul').value.trim().toUpperCase();
+  var exp=document.getElementById('fut_expiry').value;
+  var ex=document.getElementById('fut_ex').value;
+  if(!u||!exp) return;
+  try {
+    var res=await fetch('/api/futures/token?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+u+'&expiry='+exp+'&exchange='+ex);
+    var d=await res.json();
+    futTok=d.instrument_token; futSym=d.tradingsymbol;
+    document.getElementById('fut_info').textContent='Symbol: '+d.tradingsymbol+' | Token: '+d.instrument_token;
+  } catch(e){document.getElementById('fut_info').textContent='Not found';}
+}
+
+async function dlFutures(){
+  if(!futTok){showAlert('fut_status','Load a futures contract first','err');return;}
+  if(!document.getElementById('fut_from').value){showAlert('fut_status','Select date range','err');return;}
+  showAlert('fut_status','⏳ Downloading...','info');
+  try {
+    var body={api_key:apiKey,access_token:accessToken,instrument_token:futTok,from_date:document.getElementById('fut_from').value,to_date:document.getElementById('fut_to').value,interval:document.getElementById('fut_interval').value,oi:true,continuous:document.getElementById('fut_cont').checked,file_format:document.getElementById('fut_fmt').value};
+    var res=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!res.ok){var d=await res.json();throw new Error(d.detail);}
+    dlBlob(await res.blob(),futSym+'_'+body.interval+'_'+body.from_date+'_'+body.to_date+'.'+body.file_format);
+    showAlert('fut_status','✓ Downloaded!','ok');
+  } catch(e){showAlert('fut_status','✗ '+e.message,'err');}
+}
+
+// ── EXPIRED OPTIONS ────────────────────────────────────────────
+function getLastThursday(year,month){
+  var d=new Date(year,month+1,0);
+  while(d.getDay()!==4) d.setDate(d.getDate()-1);
+  return new Date(d);
+}
+
+function getExpiries(from,to,type,index){
+  var expiries=[], start=new Date(from), end=new Date(to);
+  if(type==='monthly'){
+    var d=new Date(start.getFullYear(),start.getMonth(),1);
+    while(d<=end){ var lt=getLastThursday(d.getFullYear(),d.getMonth()); if(lt>=start&&lt<=end) expiries.push(new Date(lt)); d.setMonth(d.getMonth()+1); }
   } else {
-    // Weekly — expiry day varies by index
-    const dayMap = { NIFTY:4, BANKNIFTY:3, FINNIFTY:2, MIDCPNIFTY:1, SENSEX:5, BANKEX:1 };
-    const targetDay = dayMap[index] || 4;
-    let d = new Date(start);
-    while (d.getDay() !== targetDay) d.setDate(d.getDate() + 1);
-    while (d <= end) {
-      expiries.push(new Date(d));
-      d.setDate(d.getDate() + 7);
-    }
+    var dayMap={NIFTY:4,BANKNIFTY:3,FINNIFTY:2,MIDCPNIFTY:1,SENSEX:5,BANKEX:1};
+    var td=dayMap[index]||4;
+    var d=new Date(start);
+    while(d.getDay()!==td) d.setDate(d.getDate()+1);
+    while(d<=end){ expiries.push(new Date(d)); d.setDate(d.getDate()+7); }
   }
   return expiries;
 }
 
-function getLastThursdayOfMonth(year, month) {
-  let d = new Date(year, month + 1, 0);
-  while (d.getDay() !== 4) d.setDate(d.getDate() - 1);
-  return new Date(d);
+function fmtDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function fmtSymDate(d){ var m=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']; return String(d.getDate()).padStart(2,'0')+m[d.getMonth()]+String(d.getFullYear()).slice(-2); }
+
+function expFindExpiries(){
+  var from=document.getElementById('exp_from').value, to=document.getElementById('exp_to').value;
+  var type=document.getElementById('exp_type').value, index=document.getElementById('exp_index').value;
+  if(!from||!to){showAlert('exp_status','Select date range first','err');return;}
+  var expiries=getExpiries(from,to,type,index);
+  if(!expiries.length){showAlert('exp_status','No expiries found in this range','err');return;}
+  var sel=document.getElementById('exp_expiry_sel');
+  sel.innerHTML='<option value="">— Select an expiry —</option>';
+  expiries.forEach(function(e){ var ds=fmtDate(e); var opt=document.createElement('option'); opt.value=ds; opt.textContent=ds; sel.appendChild(opt); });
+  document.getElementById('exp_count').textContent=expiries.length;
+  document.getElementById('exp_step2').style.display='block';
+  document.getElementById('exp_step3').style.display='none';
+  document.getElementById('exp_step4').style.display='none';
+  sel.onchange=function(){
+    expSelExpiry=this.value;
+    document.getElementById('exp_sel_info').style.display=expSelExpiry?'block':'none';
+    document.getElementById('exp_sel_date').textContent=expSelExpiry;
+    document.getElementById('exp_step3').style.display=expSelExpiry?'block':'none';
+    document.getElementById('exp_step4').style.display=expSelExpiry?'block':'none';
+    if(expSelExpiry) expAutoFetchSpot(expSelExpiry);
+  };
 }
 
-function exp_fmtDate(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,'0');
-  const dd= String(d.getDate()).padStart(2,'0');
-  return `${y}-${m}-${dd}`;
-}
+async function expAutoFetchSpot(expDate){
+  // Auto-fetch spot price for the selected expiry date
+  var index = document.getElementById('exp_index').value;
+  var spotTokenMap = {NIFTY:'256265', BANKNIFTY:'260105', FINNIFTY:'257801', MIDCPNIFTY:'288009', SENSEX:'265', BANKEX:'274441'};
+  var token = spotTokenMap[index];
+  if(!token) return;
 
-function exp_fmtSymbolDate(d) {
-  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-  const dd = String(d.getDate()).padStart(2,'0');
-  return `${dd}${months[d.getMonth()]}${String(d.getFullYear()).slice(-2)}`;
-}
+  var atmEl = document.getElementById('exp_atm');
+  atmEl.placeholder = '⏳ Fetching spot price...';
+  atmEl.value = '';
 
-// ── Strike mode toggle ──────────────────────────────────────
-function exp_setStrikeMode(mode) {
-  expStrikeMode = mode;
-  const a = document.getElementById('emode-atm');
-  const s = document.getElementById('emode-specific');
-  if (mode === 'atm') {
-    a.style.cssText = 'flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:rgba(0,212,170,.12);border:1px solid var(--accent);color:var(--accent);';
-    s.style.cssText = 'flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--muted);';
-    document.getElementById('exp_atm_row').style.display = '';
-    document.getElementById('exp_specific_row').style.display = 'none';
-  } else {
-    s.style.cssText = 'flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:rgba(0,145,255,.12);border:1px solid var(--accent2);color:var(--accent2);';
-    a.style.cssText = 'flex:1;padding:9px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:var(--surface2);border:1px solid var(--border);color:var(--muted);';
-    document.getElementById('exp_atm_row').style.display = 'none';
-    document.getElementById('exp_specific_row').style.display = '';
-  }
-  exp_updateEstimate();
-}
-
-function exp_updateEstimate() {
-  const el = document.getElementById('exp_estimate');
-  if (!el) return;
-  const otype = document.getElementById('exp_otype').value;
-  const types = otype === 'BOTH' ? 2 : 1;
-  let strikes = 1;
-  if (expStrikeMode === 'atm') {
-    const range = parseInt(document.getElementById('exp_range')?.value || 5);
-    strikes = range * 2 + 1;
-  }
-  const total = strikes * types;
-  el.innerHTML = `📊 <strong style="color:var(--accent)">${strikes}</strong> strikes × <strong style="color:var(--accent)">${types}</strong> type(s) = <strong style="color:var(--accent)">${total}</strong> files for this expiry`;
-}
-
-// ── Stop ────────────────────────────────────────────────────
-function exp_stop() {
-  expStopped = true;
-  document.getElementById('exp_stopbtn').style.display = 'none';
-}
-
-// ── Download ────────────────────────────────────────────────
-async function exp_download() {
-  if (!expSelectedExpiry) { showAlert('exp_status','✗ Select an expiry first (Step 2)','err'); return; }
-  if (!apiKey || !accessToken) { showAlert('exp_status','✗ Connect token first','err'); return; }
-
-  const index  = document.getElementById('exp_index').value;
-  const otype  = document.getElementById('exp_otype').value;
-  const interval = document.getElementById('exp_interval').value;
-  const fmt    = document.getElementById('exp_fmt').value;
-  const exchange = ['SENSEX','BANKEX'].includes(index) ? 'BFO' : 'NFO';
-
-  // Build strikes list
-  let strikes = [];
-  if (expStrikeMode === 'atm') {
-    const atm = parseFloat(document.getElementById('exp_atm').value);
-    if (!atm || atm <= 0) {
-      showAlert('exp_status','✗ Enter ATM/Spot price in the field above','err');
-      document.getElementById('exp_atm').focus();
-      return;
+  try {
+    // Fetch day candle for the expiry date to get closing spot
+    var body = {
+      api_key: apiKey,
+      access_token: accessToken,
+      instrument_token: token,
+      from_date: expDate,
+      to_date: expDate,
+      interval: 'day',
+      continuous: false,
+      oi: false,
+      file_format: 'json'
+    };
+    var res = await fetch('/api/historical', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if(!res.ok) throw new Error('fetch failed');
+    var blob = await res.blob();
+    var text = await blob.text();
+    var rows = JSON.parse(text);
+    if(rows && rows.length > 0){
+      var closePrice = rows[rows.length-1].close;
+      // Round to nearest step
+      var stepEl = document.getElementById('exp_step');
+      var step = stepEl ? (parseFloat(stepEl.value)||50) : 50;
+      var rounded = Math.round(closePrice / step) * step;
+      atmEl.value = rounded;
+      atmEl.placeholder = 'e.g. 24500';
+      atmEl.style.borderColor = 'var(--grn)';
+      atmEl.title = 'Auto-fetched: '+index+' closed at '+closePrice+' on '+expDate+', rounded to '+rounded;
+    } else {
+      atmEl.placeholder = 'Could not fetch — enter manually';
     }
-    const step  = parseFloat(document.getElementById('exp_step').value) || 50;
-    const range = parseInt(document.getElementById('exp_range').value) || 5;
-    const rounded = Math.round(atm / step) * step;
-    for (let i = -range; i <= range; i++) strikes.push(rounded + i * step);
-  } else {
-    const s = parseFloat(document.getElementById('exp_strike').value);
-    if (!s) { showAlert('exp_status','✗ Enter a strike price','err'); return; }
-    strikes = [s];
+  } catch(e) {
+    atmEl.placeholder = 'Enter manually (e.g. 24500)';
   }
+}
 
-  const types = otype === 'BOTH' ? ['CE','PE'] : [otype];
-  const total = strikes.length * types.length;
-  const expDate = expSelectedExpiry;
+function expSetStrikeMode(mode){
+  expStrikeMode=mode;
+  var a=document.getElementById('emode-atm'), s=document.getElementById('emode-specific');
+  if(mode==='atm'){
+    a.style.cssText='flex:1;padding:8px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:rgba(0,212,170,.12);border:1px solid var(--grn);color:var(--grn);';
+    s.style.cssText='flex:1;padding:8px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:var(--surf2);border:1px solid var(--bdr);color:var(--muted);';
+    document.getElementById('exp_atm_row').style.display=''; document.getElementById('exp_specific_row').style.display='none';
+  } else {
+    s.style.cssText='flex:1;padding:8px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:rgba(0,145,255,.12);border:1px solid var(--blu);color:var(--blu);';
+    a.style.cssText='flex:1;padding:8px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:var(--surf2);border:1px solid var(--bdr);color:var(--muted);';
+    document.getElementById('exp_atm_row').style.display='none'; document.getElementById('exp_specific_row').style.display='';
+  }
+}
 
-  const log = document.getElementById('exp_log');
-  log.style.display = 'block';
-  log.innerHTML = '';
-  expStopped = false;
-  document.getElementById('exp_stopbtn').style.display = '';
-  document.getElementById('exp_dlbtn').disabled = true;
-  document.getElementById('exp_prog').style.width = '0%';
-  document.getElementById('exp_count').textContent = `0 / ${total} files`;
+function expStop(){ expStopped=true; document.getElementById('exp_stopbtn').style.display='none'; }
 
-  let done = 0, failed = 0;
-
-  for (const strike of strikes) {
-    for (const ot of types) {
-      if (expStopped) { logLine(log,'■ Stopped.','info'); break; }
-
-      let instrToken = null;
-      let tradingSym = '';
-
-      // Try instrument token lookup first (works for active + recently expired)
+async function expDownload(){
+  if(!expSelExpiry){showAlert('exp_status','Select an expiry (Step 2)','err');return;}
+  if(!apiKey||!accessToken){showAlert('exp_status','Connect token first','err');return;}
+  var index=document.getElementById('exp_index').value;
+  var otype=document.getElementById('exp_otype').value;
+  var interval=document.getElementById('exp_interval').value;
+  var fmt=document.getElementById('exp_fmt').value;
+  var exchange=['SENSEX','BANKEX'].includes(index)?'BFO':'NFO';
+  var strikes=[];
+  if(expStrikeMode==='atm'){
+    var atm=parseFloat(document.getElementById('exp_atm').value);
+    if(!atm){showAlert('exp_status','Enter ATM/Spot price above','err');document.getElementById('exp_atm').focus();return;}
+    var step=parseFloat(document.getElementById('exp_step').value)||50;
+    var range=parseInt(document.getElementById('exp_range').value)||5;
+    var rounded=Math.round(atm/step)*step;
+    for(var i=-range;i<=range;i++) strikes.push(rounded+i*step);
+  } else {
+    var s=parseFloat(document.getElementById('exp_strike').value);
+    if(!s){showAlert('exp_status','Enter strike price','err');return;}
+    strikes=[s];
+  }
+  var types=otype==='BOTH'?['CE','PE']:[otype];
+  var total=strikes.length*types.length;
+  var log=document.getElementById('exp_log'); log.style.display='block'; log.innerHTML='';
+  expStopped=false;
+  document.getElementById('exp_stopbtn').style.display='';
+  document.getElementById('exp_dlbtn').disabled=true;
+  document.getElementById('exp_prog').style.width='0%';
+  var done=0,failed=0;
+  for(var si=0;si<strikes.length;si++){
+    for(var ti=0;ti<types.length;ti++){
+      if(expStopped){logLine(log,'■ Stopped.','info');break;}
+      var strike=strikes[si], ot=types[ti];
+      var instrToken=null, tradingSym='';
       try {
-        const r = await fetch(`/api/options/token?api_key=${apiKey}&access_token=${accessToken}&underlying=${index}&expiry=${expDate}&strike=${strike}&option_type=${ot}&exchange=${exchange}`);
-        if (r.ok) {
-          const d = await r.json();
-          instrToken = d.instrument_token;
-          tradingSym = d.tradingsymbol;
-        }
-      } catch(e) {}
-
-      // Fallback: construct symbol and search
-      if (!instrToken) {
-        const expDateObj = new Date(expDate);
-        const symDate = exp_fmtSymbolDate(expDateObj);
-        tradingSym = `${index}${symDate}${parseInt(strike)}${ot}`;
-        logLine(log, `🔍 Searching: ${tradingSym}`, 'info');
+        var tr=await fetch('/api/options/token?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+index+'&expiry='+expSelExpiry+'&strike='+strike+'&option_type='+ot+'&exchange='+exchange);
+        if(tr.ok){var td=await tr.json();instrToken=td.instrument_token;tradingSym=td.tradingsymbol;}
+      } catch(e){}
+      if(!instrToken){
+        var expObj=new Date(expSelExpiry);
+        tradingSym=index+fmtSymDate(expObj)+parseInt(strike)+ot;
+        logLine(log,'🔍 '+tradingSym,'info');
         try {
-          const sr = await fetch(`/api/instruments?api_key=${apiKey}&access_token=${accessToken}&exchange=${exchange}&search=${encodeURIComponent(tradingSym)}`);
-          if (sr.ok) {
-            const sd = await sr.json();
-            if (sd.length > 0) { instrToken = sd[0].instrument_token; tradingSym = sd[0].tradingsymbol; }
-          }
-        } catch(e) {}
+          var sr=await fetch('/api/instruments?api_key='+apiKey+'&access_token='+accessToken+'&exchange='+exchange+'&search='+encodeURIComponent(tradingSym));
+          if(sr.ok){var sd=await sr.json();if(sd.length>0){instrToken=sd[0].instrument_token;tradingSym=sd[0].tradingsymbol;}}
+        } catch(e){}
       }
-
-      if (!instrToken) {
-        logLine(log, `⚠ ${index} ${strike}${ot} — not found (likely too old for instrument dump)`, 'info');
-        failed++;
-      } else {
+      if(!instrToken){logLine(log,'⚠ '+index+' '+strike+ot+' — not found','info');failed++;}
+      else {
         try {
-          const body = {
-            api_key: apiKey, access_token: accessToken,
-            instrument_token: instrToken,
-            from_date: expDate, to_date: expDate,
-            interval, oi: true, continuous: false, file_format: fmt
-          };
-          const r = await fetch('/api/historical', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-          if (!r.ok) {
-            const ed = await r.json().catch(() => ({detail:'No data'}));
-            logLine(log, `✗ ${tradingSym}: ${ed.detail}`, 'err');
-            failed++;
-          } else {
-            dlBlob(await r.blob(), `${tradingSym}_${interval}_${expDate}.${fmt}`);
-            logLine(log, `✓ ${tradingSym}`, 'ok');
-            done++;
-          }
-        } catch(e) { logLine(log, `✗ ${tradingSym}: ${e.message}`, 'err'); failed++; }
+          var body={api_key:apiKey,access_token:accessToken,instrument_token:instrToken,from_date:expSelExpiry,to_date:expSelExpiry,interval:interval,oi:true,continuous:false,file_format:fmt};
+          var res=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+          if(!res.ok){var ed=await res.json().catch(function(){return{detail:'No data'};});logLine(log,'✗ '+tradingSym+': '+ed.detail,'err');failed++;}
+          else{dlBlob(await res.blob(),tradingSym+'_'+interval+'_'+expSelExpiry+'.'+fmt);logLine(log,'✓ '+tradingSym,'ok');done++;}
+        } catch(e){logLine(log,'✗ '+tradingSym+': '+e.message,'err');failed++;}
       }
-
-      document.getElementById('exp_prog').style.width = Math.round((done+failed)/total*100) + '%';
-      document.getElementById('exp_count').textContent = `${done} downloaded, ${failed} not found — ${done+failed}/${total}`;
+      document.getElementById('exp_prog').style.width=Math.round((done+failed)/total*100)+'%';
+      document.getElementById('exp_cnt').textContent=done+' downloaded, '+failed+' not found — '+(done+failed)+'/'+total;
       await sleep(150);
     }
   }
-
-  document.getElementById('exp_stopbtn').style.display = 'none';
-  document.getElementById('exp_dlbtn').disabled = false;
-  showAlert('exp_status', `✓ Done! ${done} files downloaded. ${failed} not found.`, done > 0 ? 'ok' : 'err');
+  document.getElementById('exp_stopbtn').style.display='none';
+  document.getElementById('exp_dlbtn').disabled=false;
+  showAlert('exp_status','✓ Done! '+done+' files downloaded. '+failed+' not found.','ok');
 }
 
-// ══════════════════════════════════════════════════════════════
-// OPTIONS CHAIN TAB
-// ══════════════════════════════════════════════════════════════
-let chStopped = false;
+// ── CHAIN DOWNLOAD ─────────────────────────────────────────────
+var CH_WINDOWS={weekly:21,monthly:90,quarterly:270};
+var CH_INFO={weekly:'📅 <strong>Weekly:</strong> Each file = 3 weeks before expiry up to expiry date.',monthly:'📅 <strong>Monthly:</strong> Each file = 3 months before expiry up to expiry date.',quarterly:'📅 <strong>Quarterly (Mar/Jun/Sep/Dec):</strong> Each file = 9 months before expiry up to expiry date.'};
 
-// Data windows per contract type (days before expiry)
-const CH_DATA_WINDOWS = {
-  weekly:    21,   // 3 weeks
-  monthly:   90,   // 3 months
-  quarterly: 270,  // 9 months
-};
-
-const CH_WINDOW_INFO = {
-  weekly:    '📅 <strong>Weekly:</strong> Each file contains data from <strong>3 weeks before expiry</strong> up to expiry date.',
-  monthly:   '📅 <strong>Monthly:</strong> Each file contains data from <strong>3 months before expiry</strong> up to expiry date.',
-  quarterly: '📅 <strong>Quarterly (Mar/Jun/Sep/Dec):</strong> Each file contains data from <strong>9 months before expiry</strong> up to expiry date. Great for LEAPS backtesting.',
-};
-
-function ch_onExpiryTypeChange() {
-  const type = document.getElementById('ch_exptype').value;
-  document.getElementById('ch_window_info').innerHTML = CH_WINDOW_INFO[type];
-  ch_updateEstimate();
+function chOnExpiryChange(){
+  var type=document.getElementById('ch_exptype').value;
+  document.getElementById('ch_window_info').innerHTML=CH_INFO[type];
+  chUpdateEstimate();
 }
 
-function ch_getQuarterlyExpiries(from, to) {
-  // Quarterly = last Thursday of Mar, Jun, Sep, Dec
-  const expiries = [];
-  const start = new Date(from);
-  const end   = new Date(to);
-  const quarterMonths = [2, 5, 8, 11]; // Mar=2, Jun=5, Sep=8, Dec=11
-
-  let year = start.getFullYear();
-  while (year <= end.getFullYear() + 1) {
-    for (const month of quarterMonths) {
-      const lastThur = getLastThursdayOfMonth(year, month);
-      if (lastThur >= start && lastThur <= end) {
-        expiries.push(lastThur);
-      }
+function chGetExpiries(from,to,type){
+  var index=document.getElementById('ch_index').value;
+  if(type==='quarterly'){
+    var expiries=[],start=new Date(from),end=new Date(to);
+    var qMonths=[2,5,8,11];
+    for(var yr=start.getFullYear();yr<=end.getFullYear()+1;yr++){
+      qMonths.forEach(function(m){var lt=getLastThursday(yr,m);if(lt>=start&&lt<=end)expiries.push(new Date(lt));});
     }
-    year++;
+    return expiries.sort(function(a,b){return a-b;});
   }
-  return expiries.sort((a, b) => a - b);
+  return getExpiries(from,to,type,index);
 }
 
-function ch_getAllExpiries(from, to, type) {
-  if (type === 'quarterly') return ch_getQuarterlyExpiries(from, to);
-  // weekly and monthly reuse exp_getExpiries
-  return exp_getExpiries(from, to, type, document.getElementById('ch_index').value);
+function chCalcFrom(expDate,type){
+  var days=CH_WINDOWS[type]||21;
+  var d=new Date(expDate); d.setDate(d.getDate()-days);
+  return fmtDate(d);
 }
 
-function ch_calcFromDate(expDate, type) {
-  // Calculate data start date = expiry - data window
-  const days = CH_DATA_WINDOWS[type] || 21;
-  const d = new Date(expDate);
-  d.setDate(d.getDate() - days);
-  return exp_fmtDate(d);
+function chUpdateEstimate(){
+  var from=document.getElementById('ch_from').value, to=document.getElementById('ch_to').value;
+  var type=document.getElementById('ch_exptype').value;
+  var range=parseInt(document.getElementById('ch_strikes').value);
+  var interval=document.getElementById('ch_interval').value;
+  var index=document.getElementById('ch_index').value;
+  var el=document.getElementById('ch_estimate');
+  if(!from||!to){el.innerHTML='Select date range to see estimate.';return;}
+  var expiries=chGetExpiries(from,to,type);
+  var strikes=range*2+1;
+  var ex=''; if(expiries.length>0){var e0=expiries[0];var fd=chCalcFrom(e0,type);ex='<br><span style="color:var(--muted)">Example: expiry '+fmtDate(e0)+' → data from '+fd+' to '+fmtDate(e0)+'</span>';}
+  el.innerHTML='<strong style="color:var(--grn)">'+expiries.length+'</strong> expiries × <strong style="color:var(--grn)">'+strikes+' CE + '+strikes+' PE</strong> per file'+ex;
 }
 
-function ch_updateEstimate() {
-  const from     = document.getElementById('ch_from').value;
-  const to       = document.getElementById('ch_to').value;
-  const type     = document.getElementById('ch_exptype').value;
-  const range    = parseInt(document.getElementById('ch_strikes').value);
-  const interval = document.getElementById('ch_interval').value;
-  const index    = document.getElementById('ch_index').value;
-  const el       = document.getElementById('ch_estimate');
+function chStop(){chStopped=true;document.getElementById('ch_stopbtn').style.display='none';}
 
-  if (!from || !to) { el.innerHTML = 'Select date range to see estimate.'; return; }
-
-  const expiries = ch_getAllExpiries(from, to, type);
-  const strikes  = range * 2 + 1;
-  const files    = expiries.length;
-  const step     = index === 'BANKNIFTY' ? 100 : 50;
-
-  const windowDays = CH_DATA_WINDOWS[type];
-  const intervalWarnings = {
-    'minute':    '⚠ 1-min: very large files. Each file = ~375 candles/day × ' + strikes*2 + ' strikes.',
-    '3minute':   '⚠ 3-min: large files.',
-    '15minute':  '✓ 15-min: recommended. ~125 candles/day × ' + strikes*2 + ' strikes.',
-    '60minute':  '✓ 60-min: compact.',
-    '75minute':  '✓ 75-min: resampled from 15min on server.',
-    'day':       '✓ Daily: smallest files. ' + windowDays + ' rows max per strike.',
-  };
-  const warn = intervalWarnings[interval] || '';
-
-  // Sample first expiry to show data window
-  let exampleWindow = '';
-  if (expiries.length > 0) {
-    const ex = expiries[0];
-    const exStr = exp_fmtDate(ex);
-    const fromStr = ch_calcFromDate(ex, type);
-    exampleWindow = `<div style="margin-top:6px;color:var(--muted);">Example: expiry <strong style="color:var(--text);">${exStr}</strong> → data from <strong style="color:var(--text);">${fromStr}</strong> to <strong style="color:var(--text);">${exStr}</strong></div>`;
-  }
-
-  el.innerHTML = `
-    <div style="display:flex;gap:20px;flex-wrap:wrap;">
-      <div><span style="color:var(--muted);">Expiries:</span> <strong style="color:var(--accent);">${files}</strong></div>
-      <div><span style="color:var(--muted);">Strikes per file:</span> <strong style="color:var(--accent);">${strikes} CE + ${strikes} PE</strong></div>
-      <div><span style="color:var(--muted);">Files total:</span> <strong style="color:var(--accent);">${files}</strong></div>
-      <div><span style="color:var(--muted);">Step size:</span> <strong style="color:var(--accent);">₹${step}</strong></div>
-    </div>
-    <div style="margin-top:6px;color:var(--muted);">File name format: <strong style="color:var(--text);">${index}_${type.toUpperCase()}_YYYY-MM-DD_${interval.replace('minute','min')}.${document.getElementById('ch_fmt').value}</strong></div>
-    ${exampleWindow}
-    <div style="margin-top:8px;color:var(--warn);font-size:11px;">${warn}</div>
-  `;
-}
-
-function ch_stop() {
-  chStopped = true;
-  document.getElementById('ch_stopbtn').style.display = 'none';
-}
-
-async function ch_download() {
-  const from     = document.getElementById('ch_from').value;
-  const to       = document.getElementById('ch_to').value;
-  const index    = document.getElementById('ch_index').value;
-  const type     = document.getElementById('ch_exptype').value;
-  const range    = parseInt(document.getElementById('ch_strikes').value);
-  const interval = document.getElementById('ch_interval').value;
-  const fmt      = document.getElementById('ch_fmt').value;
-
-  if (!from || !to)            { showAlert('ch_status','✗ Select expiry date range first','err'); return; }
-  if (!apiKey || !accessToken) { showAlert('ch_status','✗ Connect your token first','err'); return; }
-
-  const expiries = ch_getAllExpiries(from, to, type);
-  if (!expiries.length) { showAlert('ch_status', 'No expiries found in this date range', 'err'); return; }
-
-  const log = document.getElementById('ch_log');
-  log.style.display = 'block';
-  log.innerHTML = '';
-  chStopped = false;
-
-  document.getElementById('ch_dlbtn').disabled = true;
-  document.getElementById('ch_stopbtn').style.display = '';
-  document.getElementById('ch_prog').style.width = '0%';
-  document.getElementById('ch_count').textContent = `0 / ${expiries.length} expiries`;
-
-  let done = 0, failed = 0;
-
-  for (let i = 0; i < expiries.length; i++) {
-    if (chStopped) { logLine(log, '■ Stopped.', 'info'); break; }
-
-    const expDate   = exp_fmtDate(expiries[i]);
-    const dataFrom  = ch_calcFromDate(expiries[i], type);  // auto data window
-    const expNum    = i + 1;
-
-    logLine(log, `⏳ [${i+1}/${expiries.length}] ${index} ${type} exp:${expDate} | data: ${dataFrom} → ${expDate}`, 'info');
-
+async function chDownload(){
+  var from=document.getElementById('ch_from').value, to=document.getElementById('ch_to').value;
+  var index=document.getElementById('ch_index').value, type=document.getElementById('ch_exptype').value;
+  var range=parseInt(document.getElementById('ch_strikes').value);
+  var interval=document.getElementById('ch_interval').value, fmt=document.getElementById('ch_fmt').value;
+  if(!from||!to){showAlert('ch_status','Select expiry date range','err');return;}
+  if(!apiKey||!accessToken){showAlert('ch_status','Connect token first','err');return;}
+  var expiries=chGetExpiries(from,to,type);
+  if(!expiries.length){showAlert('ch_status','No expiries found in this range','err');return;}
+  var log=document.getElementById('ch_log'); log.style.display='block'; log.innerHTML='';
+  chStopped=false;
+  document.getElementById('ch_dlbtn').disabled=true;
+  document.getElementById('ch_stopbtn').style.display='';
+  document.getElementById('ch_prog').style.width='0%';
+  document.getElementById('ch_cnt').textContent='0 / '+expiries.length+' expiries';
+  var done=0,failed=0;
+  for(var i=0;i<expiries.length;i++){
+    if(chStopped){logLine(log,'■ Stopped.','info');break;}
+    var expDate=fmtDate(expiries[i]);
+    var dataFrom=chCalcFrom(expiries[i],type);
+    logLine(log,'⏳ ['+(i+1)+'/'+expiries.length+'] '+index+' '+type+' exp:'+expDate+' data:'+dataFrom+'→'+expDate,'info');
     try {
-      const body = {
-        api_key:       apiKey,
-        access_token:  accessToken,
-        index:         index,
-        expiry_date:   expDate,
-        expiry_number: expNum,
-        expiry_type:   type,
-        strike_range:  range,
-        interval:      interval,
-        from_date:     dataFrom,   // ← correct data window per contract type
-        to_date:       expDate,
-        file_format:   fmt,
-      };
-
-      const res = await fetch('/api/options-chain', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({ detail: 'Unknown error' }));
-        logLine(log, `✗ ${expDate}: ${d.detail}`, 'err');
-        failed++;
-      } else {
-        const blob = await res.blob();
-        const intervalLabel = interval === 'day' ? 'day' : interval.replace('minute','min');
-        const fname = `${index}_${type.toUpperCase()}_${expDate}_${intervalLabel}.${fmt}`;
-        dlBlob(blob, fname);
-        logLine(log, `✓ ${fname}`, 'ok');
-        done++;
+      var body={api_key:apiKey,access_token:accessToken,index:index,expiry_date:expDate,expiry_number:i+1,expiry_type:type,strike_range:range,interval:interval,from_date:dataFrom,to_date:expDate,file_format:fmt};
+      var res=await fetch('/api/options-chain',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      if(!res.ok){var d=await res.json().catch(function(){return{detail:'Unknown error'};});logLine(log,'✗ '+expDate+': '+d.detail,'err');failed++;}
+      else {
+        var il=interval==='day'?'day':interval.replace('minute','min');
+        var fn=index+'_'+type.toUpperCase()+'_'+expDate+'_'+il+'.'+fmt;
+        dlBlob(await res.blob(),fn); logLine(log,'✓ '+fn,'ok'); done++;
       }
-    } catch(e) {
-      logLine(log, `✗ ${expDate}: ${e.message}`, 'err');
-      failed++;
-    }
-
-    document.getElementById('ch_prog').style.width = Math.round((done+failed)/expiries.length*100) + '%';
-    document.getElementById('ch_count').textContent = `${done} downloaded, ${failed} failed — ${done+failed}/${expiries.length}`;
+    } catch(e){logLine(log,'✗ '+expDate+': '+e.message,'err');failed++;}
+    document.getElementById('ch_prog').style.width=Math.round((done+failed)/expiries.length*100)+'%';
+    document.getElementById('ch_cnt').textContent=done+' downloaded, '+failed+' failed — '+(done+failed)+'/'+expiries.length;
     await sleep(300);
   }
-
-  document.getElementById('ch_dlbtn').disabled = false;
-  document.getElementById('ch_stopbtn').style.display = 'none';
-  showAlert('ch_status',
-    `✓ Done! ${done} files downloaded${failed ? `, ${failed} failed` : ''}.`,
-    done > 0 ? 'ok' : 'err'
-  );
+  document.getElementById('ch_dlbtn').disabled=false;
+  document.getElementById('ch_stopbtn').style.display='none';
+  showAlert('ch_status','✓ Done! '+done+' files'+(failed?' ('+failed+' failed)':''),'ok');
 }
 
+// ── HELPERS ────────────────────────────────────────────────────
 function showAlert(id,msg,type){
-  const el=document.getElementById(id);if(!el)return;
-  const c=type==='ok'?'alert-ok':type==='err'?'alert-err':'alert-info';
-  el.innerHTML=`<div class="alert ${c}">${msg}</div>`;
+  var el=document.getElementById(id); if(!el)return;
+  var c=type==='ok'?'alert-ok':type==='err'?'alert-err':'alert-info';
+  el.innerHTML='<div class="alert '+c+'">'+msg+'</div>';
 }
-function mkTable(rows,total){
-  if(!rows||!rows.length)return'<div style="color:var(--muted);font-size:13px;margin-top:10px;">No data</div>';
-  const keys=Object.keys(rows[0]);
-  return`<div class="tbl-wrap"><table><tr>${keys.map(k=>`<th>${k}</th>`).join('')}</tr>${rows.map(r=>`<tr>${keys.map(k=>`<td>${r[k]}</td>`).join('')}</tr>`).join('')}</table><div style="color:var(--muted);font-size:11px;font-family:var(--mono);margin-top:6px;">Showing 5 of ${total} rows</div></div>`;
-}
+
 function dlBlob(blob,fname){
-  const url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download=fname;document.body.appendChild(a);a.click();document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  var url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url; a.download=fname; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},1000);
 }
-function logLine(el,msg,type){el.innerHTML+=`<div class="log-${type}">${msg}</div>`;el.scrollTop=el.scrollHeight;}
-function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
-function parseCSV(text){
-  const lines=text.trim().split('\n'),headers=lines[0].split(',').map(h=>h.trim());
-  return lines.slice(1).map(line=>{const v=line.split(','),o={};headers.forEach((h,i)=>o[h]=v[i]?.trim()||'');return o;});
-}
+
+function logLine(el,msg,type){el.innerHTML+='<div class="log-'+type+'">'+msg+'</div>';el.scrollTop=el.scrollHeight;}
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+
 function setDates(){
-  const t=new Date(),p=n=>String(n).padStart(2,'0');
-  const td=`${t.getFullYear()}-${p(t.getMonth()+1)}-${p(t.getDate())}`;
-  const a=new Date(t);a.setMonth(a.getMonth()-1);
-  const fd=`${a.getFullYear()}-${p(a.getMonth()+1)}-${p(a.getDate())}`;
-  ['fromDate','opt_from','fut_from','exp_from','ch_from'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=fd;});
-  ['toDate','opt_to','fut_to','exp_to','ch_to'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=td;});
+  var t=new Date(), p=function(n){return String(n).padStart(2,'0');};
+  var td=t.getFullYear()+'-'+p(t.getMonth()+1)+'-'+p(t.getDate());
+  var a=new Date(t); a.setMonth(a.getMonth()-1);
+  var fd=a.getFullYear()+'-'+p(a.getMonth()+1)+'-'+p(a.getDate());
+  ['fromDate','opt_from','fut_from','exp_from','ch_from'].forEach(function(id){var el=document.getElementById(id);if(el)el.value=fd;});
+  ['toDate','opt_to','fut_to','exp_to','ch_to'].forEach(function(id){var el=document.getElementById(id);if(el)el.value=td;});
 }
 </script>
 </body>
