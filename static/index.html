@@ -886,7 +886,20 @@ function getExpiries(from,to,type,index){
 }
 
 function fmtDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-function fmtSymDate(d){ var m=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']; return String(d.getDate()).padStart(2,'0')+m[d.getMonth()]+String(d.getFullYear()).slice(-2); }
+function fmtSymDateMonthly(d){
+  // Zerodha monthly format: YYMMON e.g. 25JUL (no day)
+  var m=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  return String(d.getFullYear()).slice(-2)+m[d.getMonth()];
+}
+function fmtSymDateWeekly(d){
+  // Zerodha weekly format: YY + month(no pad) + DD e.g. 25604 for Jun 4 2025
+  return String(d.getFullYear()).slice(-2)+String(d.getMonth()+1)+String(d.getDate()).padStart(2,'0');
+}
+function fmtSymDate(d){ 
+  // Keep for backward compat - returns monthly format
+  var m=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  return String(d.getFullYear()).slice(-2)+m[d.getMonth()];
+}
 
 function expFindExpiries(){
   var from=document.getElementById('exp_from').value, to=document.getElementById('exp_to').value;
@@ -1018,7 +1031,9 @@ async function expDownload(){
       } catch(e){}
       if(!instrToken){
         var expObj=new Date(expSelExpiry);
-        tradingSym=index+fmtSymDate(expObj)+parseInt(strike)+ot;
+        var expType=document.getElementById('exp_type').value;
+        var datePart = expType==='weekly' ? fmtSymDateWeekly(expObj) : fmtSymDateMonthly(expObj);
+        tradingSym=index+datePart+parseInt(strike)+ot;
         logLine(log,'🔍 '+tradingSym,'info');
         try {
           var sr=await fetch('/api/instruments?api_key='+apiKey+'&access_token='+accessToken+'&exchange='+exchange+'&search='+encodeURIComponent(tradingSym));
