@@ -759,15 +759,15 @@ function logLine(msg,cls) {
 // ── Utility ────────────────────────────────────────────────────
 async function post(url, body) {
   const r = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  const d = await r.json();
-  if (!r.ok) throw new Error(d.detail||r.statusText);
+  let d; try { d = await r.json(); } catch(_) { d = {}; }
+  if (!r.ok) throw new Error(String(d.detail||d.message||r.statusText||'Unknown error'));
   return d;
 }
 async function postRaw(url, body) { return post(url, body); }
 async function get(url) {
   const r = await fetch(url);
-  const d = await r.json();
-  if (!r.ok) throw new Error(d.detail||r.statusText);
+  let d; try { d = await r.json(); } catch(_) { d = {}; }
+  if (!r.ok) throw new Error(String(d.detail||d.message||r.statusText||'Unknown error'));
   return d;
 }
 
