@@ -13,20 +13,26 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;min-height:100vh;}
-  header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:12px;}
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:12px;}
   header h1{font-size:20px;font-weight:700;letter-spacing:-.5px;}
   header h1 span{color:var(--accent);}
   .badge{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--muted);}
-  .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:4px;transition:background .3s;}
-  .dot.on{background:var(--accent2);box-shadow:0 0 6px var(--accent2);}
+  .conn-pill{margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 14px;font-size:12px;color:var(--muted);transition:all .3s;}
+  .conn-pill.on{border-color:rgba(62,207,142,.5);background:rgba(62,207,142,.08);color:var(--accent2);}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--muted);transition:all .3s;}
+  .conn-pill.on .dot{background:var(--accent2);box-shadow:0 0 5px var(--accent2);}
+  /* ── Tabs ── */
   .tabs{display:flex;gap:2px;padding:12px 24px 0;background:var(--bg);border-bottom:1px solid var(--border);}
-  .tab{padding:10px 20px;cursor:pointer;border-radius:var(--radius) var(--radius) 0 0;color:var(--muted);font-weight:500;transition:all .2s;border:1px solid transparent;border-bottom:none;}
-  .tab:hover{color:var(--text);background:var(--surface2);}
+  .tab{padding:10px 20px;cursor:pointer;border-radius:var(--radius) var(--radius) 0 0;color:var(--muted);font-weight:500;font-size:13px;transition:all .2s;border:1px solid transparent;border-bottom:none;display:flex;align-items:center;gap:6px;}
+  .tab:hover:not(.tab-locked){color:var(--text);background:var(--surface2);}
   .tab.active{background:var(--surface);color:var(--accent);border-color:var(--border);}
+  .tab.tab-locked{cursor:not-allowed;opacity:.35;}
+  .tab-lock-icon{font-size:11px;}
+  /* ── Layout ── */
   .content{max-width:880px;margin:0 auto;padding:24px;}
   .panel{display:none;} .panel.active{display:block;}
   .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;}
-  .card-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:14px;}
+  .card-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;}
   label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:500;}
   input,select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:9px 12px;font-size:13px;outline:none;transition:border .2s;font-family:var(--font);}
   input:focus,select:focus{border-color:var(--accent);}
@@ -48,26 +54,31 @@
   .btn:disabled{opacity:.4;cursor:not-allowed;filter:none;}
   .btn-sm{padding:6px 13px;font-size:12px;}
   .btn-group{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
-  .alert{border-radius:7px;padding:10px 14px;font-size:13px;margin-top:10px;}
+  .alert{border-radius:7px;padding:10px 14px;font-size:13px;margin-top:10px;line-height:1.5;}
   .alert-info{background:rgba(79,142,247,.12);border:1px solid rgba(79,142,247,.3);color:#9dc4ff;}
   .alert-success{background:rgba(62,207,142,.12);border:1px solid rgba(62,207,142,.3);color:#7de8be;}
   .alert-error{background:rgba(247,95,95,.12);border:1px solid rgba(247,95,95,.3);color:#ffadad;}
   .alert-warn{background:rgba(247,185,85,.12);border:1px solid rgba(247,185,85,.3);color:#ffd88a;}
+  /* ── Instrument tabs ── */
   .inst-tabs{display:flex;gap:8px;margin-bottom:16px;}
   .inst-tab{padding:7px 16px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:12px;font-weight:600;font-family:var(--font);transition:all .2s;}
   .inst-tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
-  .token-chip{background:var(--surface2);border:1px solid rgba(62,207,142,.4);border-radius:7px;padding:8px 12px;font-size:12px;color:var(--muted);font-family:monospace;margin-top:10px;display:flex;align-items:center;gap:8px;}
+  /* ── Token chip ── */
+  .token-chip{background:var(--surface2);border:1px solid rgba(62,207,142,.4);border-radius:7px;padding:9px 13px;font-size:12px;color:var(--muted);font-family:monospace;margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
   .token-chip .sym{color:var(--accent2);font-weight:700;font-size:13px;}
-  .token-chip .tok{color:var(--muted);}
+  /* ── Fetch bar ── */
   .fetch-bar{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
   .count-chip{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:3px 9px;font-size:11px;}
   .count-chip b{color:var(--accent2);}
-  .lock-warn{background:rgba(247,185,85,.1);border:1px solid rgba(247,185,85,.3);border-radius:7px;padding:9px 13px;font-size:12px;color:var(--warn);margin-bottom:12px;}
+  /* ── Lock overlay ── */
+  .lock-warn{background:rgba(247,185,85,.08);border:1px solid rgba(247,185,85,.3);border-radius:7px;padding:10px 14px;font-size:12px;color:var(--warn);margin-bottom:12px;}
+  /* ── Preview table ── */
   .preview-wrap{overflow-x:auto;margin-top:12px;}
   table{width:100%;border-collapse:collapse;font-size:12px;}
   th{background:var(--surface2);color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:.5px;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);}
   td{padding:7px 10px;border-bottom:1px solid var(--border);}
   tr:last-child td{border-bottom:none;}
+  /* ── Progress ── */
   .pbar-wrap{background:var(--surface2);border-radius:4px;height:6px;margin-top:8px;overflow:hidden;}
   .pbar{height:100%;background:var(--accent);border-radius:4px;transition:width .3s;}
   .blog{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:10px 12px;font-family:monospace;font-size:12px;max-height:200px;overflow-y:auto;margin-top:10px;}
@@ -75,6 +86,8 @@
   @keyframes spin{to{transform:rotate(360deg);}}
   .spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;}
   hr.div{border:none;border-top:1px solid var(--border);margin:14px 0;}
+  /* ── OI hint ── */
+  .oi-note{font-size:11px;color:var(--muted);margin-top:4px;}
   @media(max-width:600px){
     .col3,.col4{grid-template-columns:1fr 1fr;}
     .col2{grid-template-columns:1fr;}
@@ -87,26 +100,31 @@
 <header>
   <h1>Zeta<span>Pull</span></h1>
   <span class="badge">Zerodha Kite Connect</span>
-  <div style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">
-    <span class="dot" id="connDot"></span>
+  <div class="conn-pill" id="connPill">
+    <span class="dot"></span>
     <span id="connLabel">Not connected</span>
   </div>
 </header>
 
+<!-- Tabs: Tab 2 & 3 locked until connected -->
 <div class="tabs">
-  <div class="tab active" onclick="switchTab('login')">🔑 Login &amp; Token</div>
-  <div class="tab" onclick="switchTab('download')">📥 Download Data</div>
-  <div class="tab" onclick="switchTab('bulk')">📦 Bulk Download</div>
+  <div class="tab active" id="tab-btn-login" onclick="switchTab('login')">🔑 Login &amp; Token</div>
+  <div class="tab tab-locked" id="tab-btn-download" onclick="guardedTab('download')">
+    📥 Download Data <span class="tab-lock-icon" id="lock-download">🔒</span>
+  </div>
+  <div class="tab tab-locked" id="tab-btn-bulk" onclick="guardedTab('bulk')">
+    📦 Bulk Download <span class="tab-lock-icon" id="lock-bulk">🔒</span>
+  </div>
 </div>
 
 <div class="content">
 
-<!-- ══════════════════════════ LOGIN TAB ══════════════════════════ -->
+<!-- ══════════════════ LOGIN TAB ══════════════════ -->
 <div id="tab-login" class="panel active">
 
-  <!-- Auto-detected token banner -->
-  <div id="autoTokenBanner" style="display:none" class="alert alert-success" style="margin-bottom:12px">
-    ⚡ <strong>request_token detected from URL!</strong> Your API Key + Secret are prefilled. Click <strong>Generate Access Token</strong> below.
+  <div id="autoTokenBanner" style="display:none" class="alert alert-success">
+    ⚡ <strong>request_token auto-captured from redirect URL!</strong>
+    Your API credentials are pre-filled. Click <strong>⚡ Generate Access Token</strong> below.
   </div>
 
   <div class="card">
@@ -125,10 +143,12 @@
 
   <div class="card">
     <div class="card-title">Step 1 — Login to Kite</div>
-    <p style="color:var(--muted);font-size:13px;margin-bottom:12px">Click the button below → login with your Zerodha credentials → you will be redirected back here automatically with the token.</p>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:12px">
+      Click the button → login with Zerodha credentials → you are redirected back here automatically with the token captured.
+    </p>
     <button class="btn btn-outline" onclick="openKiteLogin()">🌐 Open Kite Login Page</button>
     <div class="alert alert-info" style="margin-top:10px;font-size:12px">
-      After login, the page auto-fills your request token. If it doesn't, copy <code>request_token=XXXX</code> from the URL and paste below.
+      After login, the <code>request_token</code> is auto-filled below. If it doesn't appear, copy it manually from the redirect URL.
     </div>
   </div>
 
@@ -136,25 +156,25 @@
     <div class="card-title">Step 2 — Generate Access Token</div>
     <div class="row col2" style="margin-bottom:12px">
       <div class="field">
-        <label>Request Token <span id="reqTokenSource" style="color:var(--accent2);font-size:11px"></span></label>
-        <input id="reqToken" type="text" placeholder="paste request_token here (or auto-filled above)" />
+        <label>Request Token <span id="reqTokenSource" style="color:var(--accent2);font-size:11px;margin-left:4px"></span></label>
+        <input id="reqToken" type="text" placeholder="auto-filled or paste manually" />
       </div>
       <div class="field" style="justify-content:flex-end">
-        <button class="btn btn-primary" onclick="generateToken()">⚡ Generate Access Token</button>
+        <button class="btn btn-primary" onclick="generateToken()" style="margin-top:22px">⚡ Generate Access Token</button>
       </div>
     </div>
     <div id="tokenStatus"></div>
   </div>
 
   <div class="card">
-    <div class="card-title">— Or — Already have today's token?</div>
+    <div class="card-title">— Or — Already have today's Access Token?</div>
     <div class="row col2">
       <div class="field">
-        <label>Access Token (paste directly)</label>
+        <label>Paste Access Token directly</label>
         <input id="accessTokenInput" type="text" placeholder="paste access_token here" />
       </div>
       <div class="field" style="justify-content:flex-end">
-        <button class="btn btn-success" onclick="setAccessToken()">✅ Use This Token</button>
+        <button class="btn btn-success" onclick="setAccessToken()" style="margin-top:22px">✅ Use This Token</button>
       </div>
     </div>
     <div id="pasteTokenStatus"></div>
@@ -162,28 +182,28 @@
 
 </div>
 
-<!-- ══════════════════════════ DOWNLOAD TAB ══════════════════════════ -->
+<!-- ══════════════════ DOWNLOAD TAB ══════════════════ -->
 <div id="tab-download" class="panel">
 
-  <!-- Fetch bar -->
+  <!-- Fetch Instruments bar -->
   <div class="fetch-bar">
-    <div>
+    <div style="flex:1;min-width:200px">
       <div style="font-weight:600;font-size:13px">📡 Instrument Database</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:2px" id="cacheInfo">Not fetched — click button to load</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px" id="cacheInfo">Not fetched yet — click to load all exchanges</div>
     </div>
     <button class="btn btn-primary btn-sm" id="fetchBtn" onclick="fetchInstruments()">
       <span class="spinner" id="fetchSpinner" style="display:none"></span>
       Fetch Instruments (NFO+BFO+NSE+BSE)
     </button>
-    <div style="display:flex;gap:8px;flex-wrap:wrap" id="fetchCounts"></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap" id="fetchCounts"></div>
   </div>
 
-  <!-- Instrument selector card -->
+  <!-- Instrument Selector -->
   <div class="card">
     <div class="card-title">Select Instrument</div>
 
-    <!-- Lock warning shown until instruments fetched -->
-    <div class="lock-warn" id="lockWarn">⚠ Fetch instruments first (button above) before selecting any instrument.</div>
+    <!-- Lock until instruments fetched -->
+    <div class="lock-warn" id="lockWarn">⚠ Click <strong>Fetch Instruments</strong> above first. Dropdowns will unlock after loading.</div>
 
     <div id="instSelectorWrap" style="display:none">
       <div class="inst-tabs">
@@ -203,22 +223,20 @@
             </select>
           </div>
           <div class="field">
-            <label>Underlying (type symbol e.g. NIFTY, BANKNIFTY, RELIANCE)</label>
-            <input id="opt-underlying" type="text" placeholder="e.g. NIFTY" oninput="debounce('opt', loadOptExpiries, 500)" />
+            <label>Underlying (e.g. NIFTY, BANKNIFTY, RELIANCE)</label>
+            <input id="opt-underlying" type="text" placeholder="type symbol..." oninput="debounce('opt',loadOptExpiries,500)" />
           </div>
         </div>
         <div class="row col3" style="margin-bottom:12px">
           <div class="field">
             <label>Expiry Date</label>
             <select id="opt-expiry" onchange="loadOptStrikes()">
-              <option value="">— type underlying first —</option>
+              <option>— type underlying first —</option>
             </select>
           </div>
           <div class="field">
             <label>Strike Price</label>
-            <select id="opt-strike">
-              <option value="">— select expiry first —</option>
-            </select>
+            <select id="opt-strike"><option>— select expiry first —</option></select>
           </div>
           <div class="field">
             <label>Option Type</label>
@@ -243,15 +261,13 @@
           </div>
           <div class="field">
             <label>Underlying (e.g. NIFTY, RELIANCE)</label>
-            <input id="fut-underlying" type="text" placeholder="e.g. NIFTY" oninput="debounce('fut', loadFutExpiries, 500)" />
+            <input id="fut-underlying" type="text" placeholder="type symbol..." oninput="debounce('fut',loadFutExpiries,500)" />
           </div>
         </div>
         <div class="row col2" style="margin-bottom:12px">
           <div class="field">
             <label>Expiry Date</label>
-            <select id="fut-expiry">
-              <option value="">— type underlying first —</option>
-            </select>
+            <select id="fut-expiry"><option>— type underlying first —</option></select>
           </div>
           <div class="field" style="justify-content:flex-end">
             <button class="btn btn-outline btn-sm" onclick="resolveFutures()" style="margin-top:22px">🔍 Resolve Token</button>
@@ -259,8 +275,11 @@
         </div>
       </div>
 
-      <!-- EQUITY -->
+      <!-- EQUITY / ETF -->
       <div id="sect-equity" style="display:none">
+        <div class="alert alert-info" style="margin-bottom:12px;font-size:12px">
+          ℹ OI (Open Interest) is <strong>not available</strong> for Equity/ETF — it is automatically disabled below.
+        </div>
         <div class="row col2" style="margin-bottom:12px">
           <div class="field">
             <label>Exchange</label>
@@ -271,26 +290,26 @@
           </div>
           <div class="field">
             <label>Symbol (exact — e.g. RELIANCE, INFY, GOLDBEES, NIFTYBEES)</label>
-            <input id="eq-symbol" type="text" placeholder="e.g. RELIANCE" />
+            <input id="eq-symbol" type="text" placeholder="exact symbol..." />
           </div>
         </div>
         <button class="btn btn-outline btn-sm" onclick="resolveEquity()">🔍 Resolve Token</button>
       </div>
 
-      <!-- Resolved result -->
+      <!-- Resolved token display -->
       <div id="resolvedWrap" style="display:none">
         <div class="token-chip">
           <span>✅</span>
           <span class="sym" id="resolvedSym"></span>
-          <span class="tok">Token: <span id="resolvedTok"></span></span>
-          <span id="resolvedLot" style="color:var(--muted);font-size:11px"></span>
+          <span style="color:var(--muted)">Token: <span id="resolvedTok" style="color:var(--text)"></span></span>
+          <span id="resolvedExtra" style="color:var(--muted);font-size:11px"></span>
         </div>
       </div>
       <div id="resolveErr"></div>
     </div>
   </div>
 
-  <!-- Download params card -->
+  <!-- Download Parameters -->
   <div class="card">
     <div class="card-title">Download Parameters</div>
     <div class="row col2" style="margin-bottom:12px">
@@ -318,13 +337,19 @@
           <option value="json">JSON</option>
         </select>
       </div>
-      <div class="field" style="flex-direction:row;align-items:center;gap:8px;padding-top:22px">
-        <input type="checkbox" id="includeOI" checked style="width:auto" />
-        <label for="includeOI" style="margin:0">Include OI</label>
+      <div class="field" style="justify-content:center">
+        <label style="margin-bottom:8px">Include OI</label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="checkbox" id="includeOI" checked style="width:auto" />
+          <span class="oi-note" id="oiNote"></span>
+        </div>
       </div>
-      <div class="field" style="flex-direction:row;align-items:center;gap:8px;padding-top:22px">
-        <input type="checkbox" id="continuous" style="width:auto" />
-        <label for="continuous" style="margin:0">Continuous</label>
+      <div class="field" style="justify-content:center">
+        <label style="margin-bottom:8px">Continuous</label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="checkbox" id="continuous" style="width:auto" />
+          <span class="oi-note" id="contNote"></span>
+        </div>
       </div>
     </div>
     <hr class="div" />
@@ -338,7 +363,7 @@
 
 </div>
 
-<!-- ══════════════════════════ BULK TAB ══════════════════════════ -->
+<!-- ══════════════════ BULK TAB ══════════════════ -->
 <div id="tab-bulk" class="panel">
   <div class="card">
     <div class="card-title">Bulk Download via CSV</div>
@@ -350,7 +375,7 @@
       <button class="btn btn-outline btn-sm" onclick="dlTemplate()">📄 Download Template CSV</button>
     </div>
     <div class="field" style="margin-bottom:12px">
-      <label>Upload your CSV</label>
+      <label>Upload your CSV file</label>
       <input type="file" id="bulkFile" accept=".csv" onchange="loadBulkCSV()" style="padding:7px" />
     </div>
     <div id="bulkPreview"></div>
@@ -372,55 +397,114 @@
 
 <script>
 'use strict';
-// ── State ──────────────────────────────────────────────────────
+
+// ── App State ──────────────────────────────────────────────────────────────
 const S = {
   apiKey: '', accessToken: '',
-  instrumentToken: '', tradingsymbol: '',
-  instType: 'options',
+  instrumentToken: '', tradingsymbol: '', instType: 'options',
+  isConnected: false,
   instrumentsFetched: false,
 };
 let _debounceTimers = {};
 let bulkItems = [], bulkPaused = false, bulkRunning = false, bulkIndex = 0;
 
-// ── Init ───────────────────────────────────────────────────────
+// ── Init ───────────────────────────────────────────────────────────────────
 window.onload = () => {
-  // Restore saved creds
+  // Restore saved credentials
   try {
     const saved = JSON.parse(localStorage.getItem('zp_creds') || '{}');
-    if (saved.apiKey)    { document.getElementById('apiKey').value    = saved.apiKey;    S.apiKey = saved.apiKey; }
-    if (saved.apiSecret) { document.getElementById('apiSecret').value = saved.apiSecret; }
-    if (saved.accessToken) { S.accessToken = saved.accessToken; setConnected(true); }
+    if (saved.apiKey)      { document.getElementById('apiKey').value    = saved.apiKey;    S.apiKey = saved.apiKey; }
+    if (saved.apiSecret)   { document.getElementById('apiSecret').value = saved.apiSecret; }
+    if (saved.accessToken) { S.accessToken = saved.accessToken; markConnected(true); }
   } catch(e) {}
 
-  // ── BUG #1 FIX: Auto-capture request_token from URL ──
+  // Auto-capture request_token from redirect URL
   try {
     const params = new URLSearchParams(window.location.search);
     const reqTok = params.get('request_token');
-    const status = params.get('status');
+    const status  = params.get('status');
     if (reqTok && status === 'success') {
-      // Clean URL so it doesn't re-trigger on refresh
       window.history.replaceState({}, document.title, window.location.pathname);
-      // Fill in the token field
       document.getElementById('reqToken').value = reqTok;
-      document.getElementById('reqTokenSource').textContent = '⚡ auto-filled from redirect';
-      // Show banner
-      const banner = document.getElementById('autoTokenBanner');
-      banner.style.display = 'block';
-      // Switch to login tab (already there on first load)
+      document.getElementById('reqTokenSource').textContent = '⚡ auto-captured';
+      document.getElementById('autoTokenBanner').style.display = 'block';
       switchTab('login');
-      // Scroll to step 2
-      setTimeout(() => document.getElementById('reqToken').scrollIntoView({behavior:'smooth', block:'center'}), 200);
+      setTimeout(() => document.getElementById('reqToken').scrollIntoView({behavior:'smooth', block:'center'}), 300);
     }
   } catch(e) {}
 
-  // Default dates
-  const today = new Date();
-  const monthAgo = new Date(); monthAgo.setDate(today.getDate() - 30);
-  document.getElementById('toDate').value   = fmt(today);
-  document.getElementById('fromDate').value = fmt(monthAgo);
+  // Default date range: last 30 days
+  const today = new Date(), monthAgo = new Date();
+  monthAgo.setDate(today.getDate() - 30);
+  document.getElementById('toDate').value   = fmtDate(today);
+  document.getElementById('fromDate').value = fmtDate(monthAgo);
 };
 
-const fmt = d => d.toISOString().slice(0,10);
+// ── Connection state ───────────────────────────────────────────────────────
+// FIX: Tabs 2 & 3 only unlock after verified connection
+function markConnected(on) {
+  S.isConnected = on;
+  const pill = document.getElementById('connPill');
+  pill.className = 'conn-pill' + (on ? ' on' : '');
+  document.getElementById('connLabel').textContent = on ? 'Connected ✓' : 'Not connected';
+
+  // Unlock or lock Download & Bulk tabs
+  ['download','bulk'].forEach(name => {
+    const btn  = document.getElementById('tab-btn-' + name);
+    const lock = document.getElementById('lock-' + name);
+    if (on) {
+      btn.classList.remove('tab-locked');
+      if (lock) lock.style.display = 'none';
+    } else {
+      btn.classList.add('tab-locked');
+      if (lock) lock.style.display = '';
+    }
+  });
+
+  // If disconnected and user is on a locked tab, send them back to login
+  if (!on && (isActiveTab('download') || isActiveTab('bulk'))) switchTab('login');
+}
+
+function isActiveTab(name) {
+  return document.getElementById('tab-' + name)?.classList.contains('active');
+}
+
+// FIX: Tab click guard — locked tabs show a toast, not a blank page
+function guardedTab(name) {
+  if (!S.isConnected) {
+    showToast('🔒 Connect first — generate your access token in the Login tab.');
+    return;
+  }
+  switchTab(name);
+}
+
+// ── Toast notification ─────────────────────────────────────────────────────
+let _toastTimer;
+function showToast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+      background:#1a1d27;border:1px solid rgba(247,185,85,.5);color:#ffd88a;
+      padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;
+      box-shadow:0 4px 20px rgba(0,0,0,.5);transition:opacity .3s;`;
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 3000);
+}
+
+// ── Tab switching ──────────────────────────────────────────────────────────
+function switchTab(name) {
+  ['login','download','bulk'].forEach(n => {
+    document.getElementById('tab-btn-' + n)?.classList.toggle('active', n === name);
+    const panel = document.getElementById('tab-' + n);
+    if (panel) panel.classList.toggle('active', n === name);
+  });
+}
 
 function saveCreds() {
   S.apiKey = document.getElementById('apiKey').value.trim();
@@ -428,23 +512,12 @@ function saveCreds() {
   localStorage.setItem('zp_creds', JSON.stringify({ apiKey: S.apiKey, apiSecret: secret, accessToken: S.accessToken }));
 }
 
-function setConnected(on) {
-  document.getElementById('connDot').className = 'dot' + (on ? ' on' : '');
-  document.getElementById('connLabel').textContent = on ? 'Connected ✓' : 'Not connected';
-}
+const fmtDate = d => d.toISOString().slice(0, 10);
 
-// ── Tabs ───────────────────────────────────────────────────────
-function switchTab(name) {
-  const names = ['login','download','bulk'];
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', names[i]===name));
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('tab-'+name).classList.add('active');
-}
-
-// ── Auth ───────────────────────────────────────────────────────
+// ── Auth ───────────────────────────────────────────────────────────────────
 function openKiteLogin() {
   const key = document.getElementById('apiKey').value.trim();
-  if (!key) { alert('Enter your API Key first.'); return; }
+  if (!key) { showToast('Enter your API Key first.'); return; }
   window.open(`https://kite.zerodha.com/connect/login?api_key=${key}&v=3`, '_blank');
 }
 
@@ -452,64 +525,107 @@ async function generateToken() {
   const key    = document.getElementById('apiKey').value.trim();
   const secret = document.getElementById('apiSecret').value.trim();
   const reqTok = document.getElementById('reqToken').value.trim();
-  if (!key)    { showAlert('tokenStatus','error','Enter your API Key.'); return; }
-  if (!secret) { showAlert('tokenStatus','error','Enter your API Secret.'); return; }
-  if (!reqTok) { showAlert('tokenStatus','error','Paste the request_token from the redirect URL.'); return; }
-  showAlert('tokenStatus','info','<span class="spinner"></span> Generating token...');
+  if (!key)    { showAlert('tokenStatus', 'error', 'Enter your API Key.'); return; }
+  if (!secret) { showAlert('tokenStatus', 'error', 'Enter your API Secret.'); return; }
+  if (!reqTok) { showAlert('tokenStatus', 'error', 'Paste or capture the request_token.'); return; }
+
+  showAlert('tokenStatus', 'info', '<span class="spinner"></span> Verifying with Zerodha...');
   try {
-    const r = await post('/api/generate-token', {api_key:key, api_secret:secret, request_token:reqTok});
+    const r = await post('/api/generate-token', { api_key: key, api_secret: secret, request_token: reqTok });
     S.accessToken = r.access_token;
     S.apiKey = key;
-    setConnected(true);
-    localStorage.setItem('zp_creds', JSON.stringify({apiKey:key, apiSecret:secret, accessToken:r.access_token}));
-    showAlert('tokenStatus','success','✅ Access token generated and saved! Switch to Download Data tab.');
+    localStorage.setItem('zp_creds', JSON.stringify({ apiKey: key, apiSecret: secret, accessToken: r.access_token }));
+    markConnected(true);
+    showAlert('tokenStatus', 'success', '✅ Access token verified and saved! Tabs 2 & 3 are now unlocked. Click <strong>Download Data</strong> tab next.');
   } catch(e) {
-    showAlert('tokenStatus','error','❌ ' + e.message);
+    // FIX: Show clean error — expired token, wrong key etc
+    markConnected(false);
+    const msg = e.message.includes('TokenException') || e.message.includes('api_key')
+      ? 'Invalid or expired credentials. Re-login with Kite and generate a fresh token.'
+      : e.message;
+    showAlert('tokenStatus', 'error', '❌ ' + msg);
   }
 }
 
-function setAccessToken() {
+async function setAccessToken() {
   const key = document.getElementById('apiKey').value.trim();
   const tok = document.getElementById('accessTokenInput').value.trim();
-  if (!key || !tok) { showAlert('pasteTokenStatus','error','Enter both API Key and Access Token.'); return; }
+  if (!key || !tok) { showAlert('pasteTokenStatus', 'error', 'Enter both API Key and Access Token.'); return; }
+  // Optimistically set — will fail at download time if wrong
   S.apiKey = key; S.accessToken = tok;
-  setConnected(true);
-  localStorage.setItem('zp_creds', JSON.stringify({apiKey:key, apiSecret:document.getElementById('apiSecret').value.trim(), accessToken:tok}));
-  showAlert('pasteTokenStatus','success','✅ Token saved. Switch to Download Data tab.');
+  localStorage.setItem('zp_creds', JSON.stringify({ apiKey: key, apiSecret: document.getElementById('apiSecret').value.trim(), accessToken: tok }));
+  markConnected(true);
+  showAlert('pasteTokenStatus', 'success', '✅ Token saved. Download & Bulk tabs unlocked.');
 }
 
-// ── Fetch Instruments ──────────────────────────────────────────
+// ── Fetch Instruments ──────────────────────────────────────────────────────
 async function fetchInstruments() {
-  if (!S.apiKey || !S.accessToken) { alert('Connect first — go to Login & Token tab.'); return; }
+  if (!S.apiKey || !S.accessToken) { showToast('Connect first — Login tab.'); return; }
   const btn = document.getElementById('fetchBtn');
   const sp  = document.getElementById('fetchSpinner');
   btn.disabled = true; sp.style.display = 'inline-block';
-  document.getElementById('cacheInfo').textContent = 'Fetching NFO + BFO + NSE + BSE... (takes ~15 sec)';
+  document.getElementById('cacheInfo').textContent = 'Fetching all exchanges... (~15 seconds)';
   document.getElementById('fetchCounts').innerHTML = '';
   try {
-    const d = await post('/api/fetch-instruments', {api_key:S.apiKey, access_token:S.accessToken});
-    document.getElementById('cacheInfo').textContent = `✅ ${d.total.toLocaleString()} instruments loaded at ${d.fetched_at}`;
+    const d = await post('/api/fetch-instruments', { api_key: S.apiKey, access_token: S.accessToken });
+    document.getElementById('cacheInfo').innerHTML = `✅ <strong>${d.total.toLocaleString()}</strong> instruments loaded at ${d.fetched_at}`;
     document.getElementById('fetchCounts').innerHTML = Object.entries(d.counts)
-      .map(([ex,n]) => `<div class="count-chip">${ex}: <b>${n.toLocaleString()}</b></div>`).join('');
-    // ── BUG #3 FIX: Unlock the selector ──
+      .map(([ex, n]) => `<div class="count-chip">${ex}: <b>${n.toLocaleString()}</b></div>`).join('');
+    // Unlock instrument selector
     S.instrumentsFetched = true;
     document.getElementById('lockWarn').style.display = 'none';
     document.getElementById('instSelectorWrap').style.display = '';
   } catch(e) {
-    document.getElementById('cacheInfo').textContent = '❌ Failed: ' + e.message;
+    const msg = String(e.message||e);
+    // FIX: If fetch-instruments fails due to bad token, disconnect
+    if (msg.includes('TokenException') || msg.includes('api_key') || msg.includes('access_token')) {
+      markConnected(false);
+      document.getElementById('cacheInfo').textContent = '❌ Token expired — re-login and generate a new token.';
+    } else {
+      document.getElementById('cacheInfo').textContent = '❌ Failed: ' + msg;
+    }
   } finally {
     btn.disabled = false; sp.style.display = 'none';
   }
 }
 
-// ── Instrument type ────────────────────────────────────────────
+// ── Instrument type ────────────────────────────────────────────────────────
 function setInstType(type) {
   S.instType = type;
-  document.querySelectorAll('.inst-tab').forEach((t,i) =>
-    t.classList.toggle('active', ['options','futures','equity'][i]===type));
+  document.querySelectorAll('.inst-tab').forEach((t, i) =>
+    t.classList.toggle('active', ['options','futures','equity'][i] === type));
   ['options','futures','equity'].forEach(s =>
-    document.getElementById('sect-'+s).style.display = s===type ? '' : 'none');
+    document.getElementById('sect-' + s).style.display = s === type ? '' : 'none');
   clearResolved();
+  applyOIAndContRules(type);
+}
+
+// FIX: OI not available for equity; Continuous only for futures
+function applyOIAndContRules(type) {
+  const oiBox   = document.getElementById('includeOI');
+  const oiNote  = document.getElementById('oiNote');
+  const contBox = document.getElementById('continuous');
+  const contNote= document.getElementById('contNote');
+
+  if (type === 'equity') {
+    oiBox.checked = false;
+    oiBox.disabled = true;
+    oiNote.textContent = 'N/A for equity';
+    contBox.checked = false;
+    contBox.disabled = true;
+    contNote.textContent = 'N/A for equity';
+  } else if (type === 'options') {
+    oiBox.disabled = false; oiBox.checked = true;
+    oiNote.textContent = '';
+    contBox.checked = false;
+    contBox.disabled = true;
+    contNote.textContent = 'Only for futures';
+  } else { // futures
+    oiBox.disabled = false; oiBox.checked = true;
+    oiNote.textContent = '';
+    contBox.disabled = false;
+    contNote.textContent = '';
+  }
 }
 
 function clearResolved() {
@@ -518,13 +634,13 @@ function clearResolved() {
   document.getElementById('resolveErr').innerHTML = '';
 }
 
-// ── Debounce helper ────────────────────────────────────────────
+// ── Debounce ───────────────────────────────────────────────────────────────
 function debounce(key, fn, ms) {
   clearTimeout(_debounceTimers[key]);
   _debounceTimers[key] = setTimeout(fn, ms);
 }
 
-// ── Options ────────────────────────────────────────────────────
+// ── Options ────────────────────────────────────────────────────────────────
 async function loadOptExpiries() {
   const und = document.getElementById('opt-underlying').value.trim().toUpperCase();
   const ex  = document.getElementById('opt-exchange').value;
@@ -533,11 +649,11 @@ async function loadOptExpiries() {
   sel.innerHTML = '<option>Loading...</option>';
   document.getElementById('opt-strike').innerHTML = '<option>— select expiry first —</option>';
   try {
-    const d = await get(`/api/instruments/expiries?underlying=${und}&exchange=${ex}`);
-    if (!d.expiries.length) { sel.innerHTML = '<option>— none found —</option>'; return; }
+    const d = await get(`/api/instruments/expiries?underlying=${encodeURIComponent(und)}&exchange=${ex}`);
+    if (!d.expiries.length) { sel.innerHTML = '<option>— none found for ' + und + ' —</option>'; return; }
     sel.innerHTML = d.expiries.map(e => `<option value="${e}">${e}</option>`).join('');
     loadOptStrikes();
-  } catch(e) { sel.innerHTML = '<option>— error —</option>'; }
+  } catch(e) { sel.innerHTML = '<option>— error loading —</option>'; }
 }
 
 async function loadOptStrikes() {
@@ -545,12 +661,13 @@ async function loadOptStrikes() {
   const ex     = document.getElementById('opt-exchange').value;
   const expiry = document.getElementById('opt-expiry').value;
   const sel    = document.getElementById('opt-strike');
-  if (!expiry) return;
+  if (!expiry || expiry.startsWith('—')) return;
   sel.innerHTML = '<option>Loading...</option>';
   try {
-    const d = await get(`/api/instruments/strikes?underlying=${und}&expiry=${expiry}&exchange=${ex}`);
-    if (!d.strikes.length) { sel.innerHTML = '<option>— none found —</option>'; return; }
-    sel.innerHTML = d.strikes.map(s => `<option value="${s}">${s}</option>`).join('');
+    const d = await get(`/api/instruments/strikes?underlying=${encodeURIComponent(und)}&expiry=${expiry}&exchange=${ex}`);
+    sel.innerHTML = d.strikes.length
+      ? d.strikes.map(s => `<option value="${s}">${s}</option>`).join('')
+      : '<option>— none found —</option>';
   } catch(e) { sel.innerHTML = '<option>— error —</option>'; }
 }
 
@@ -560,14 +677,16 @@ async function resolveOption() {
   const expiry = document.getElementById('opt-expiry').value;
   const strike = document.getElementById('opt-strike').value;
   const otype  = document.getElementById('opt-type').value;
-  if (!und || !expiry || !strike) { showAlert('resolveErr','error','Select underlying, expiry and strike first.'); return; }
+  if (!und || !expiry || !strike || expiry.startsWith('—') || strike.startsWith('—')) {
+    showAlert('resolveErr', 'error', 'Select underlying, expiry and strike price first.'); return;
+  }
   try {
-    const d = await get(`/api/instruments/resolve?underlying=${und}&expiry=${expiry}&strike=${strike}&option_type=${otype}&exchange=${ex}`);
-    setResolved(d.instrument_token, d.tradingsymbol, d.lot_size ? `Lot: ${d.lot_size}` : '');
-  } catch(e) { showAlert('resolveErr','error','❌ ' + e.message); }
+    const d = await get(`/api/instruments/resolve?underlying=${encodeURIComponent(und)}&expiry=${expiry}&strike=${strike}&option_type=${otype}&exchange=${ex}`);
+    setResolved(d.instrument_token, d.tradingsymbol, d.lot_size ? `Lot size: ${d.lot_size}` : '');
+  } catch(e) { showAlert('resolveErr', 'error', '❌ ' + String(e.message||e)); }
 }
 
-// ── Futures ────────────────────────────────────────────────────
+// ── Futures ────────────────────────────────────────────────────────────────
 async function loadFutExpiries() {
   const und = document.getElementById('fut-underlying').value.trim().toUpperCase();
   const ex  = document.getElementById('fut-exchange').value;
@@ -575,7 +694,7 @@ async function loadFutExpiries() {
   if (und.length < 2) { sel.innerHTML = '<option>— type at least 2 chars —</option>'; return; }
   sel.innerHTML = '<option>Loading...</option>';
   try {
-    const d = await get(`/api/instruments/expiries?underlying=${und}&exchange=${ex}`);
+    const d = await get(`/api/instruments/expiries?underlying=${encodeURIComponent(und)}&exchange=${ex}`);
     sel.innerHTML = d.expiries.length
       ? d.expiries.map(e => `<option value="${e}">${e}</option>`).join('')
       : '<option>— none found —</option>';
@@ -586,24 +705,26 @@ async function resolveFutures() {
   const und    = document.getElementById('fut-underlying').value.trim().toUpperCase();
   const ex     = document.getElementById('fut-exchange').value;
   const expiry = document.getElementById('fut-expiry').value;
-  if (!und || !expiry) { showAlert('resolveErr','error','Select underlying and expiry.'); return; }
+  if (!und || !expiry || expiry.startsWith('—')) {
+    showAlert('resolveErr', 'error', 'Select underlying and expiry.'); return;
+  }
   try {
-    const d = await get(`/api/instruments/resolve-futures?underlying=${und}&expiry=${expiry}&exchange=${ex}`);
-    setResolved(d.instrument_token, d.tradingsymbol, d.lot_size ? `Lot: ${d.lot_size}` : '');
-  } catch(e) { showAlert('resolveErr','error','❌ ' + e.message); }
+    const d = await get(`/api/instruments/resolve-futures?underlying=${encodeURIComponent(und)}&expiry=${expiry}&exchange=${ex}`);
+    setResolved(d.instrument_token, d.tradingsymbol, d.lot_size ? `Lot size: ${d.lot_size}` : '');
+  } catch(e) { showAlert('resolveErr', 'error', '❌ ' + String(e.message||e)); }
 }
 
-// ── Equity ─────────────────────────────────────────────────────
-// BUG #2 FIX: Equity resolve — exact symbol match, EQ preferred, ETFs also work
+// ── Equity ─────────────────────────────────────────────────────────────────
 async function resolveEquity() {
   const sym = document.getElementById('eq-symbol').value.trim().toUpperCase();
   const ex  = document.getElementById('eq-exchange').value;
-  if (!sym) { showAlert('resolveErr','error','Enter a symbol.'); return; }
+  if (!sym) { showAlert('resolveErr', 'error', 'Enter a symbol.'); return; }
   try {
     const d = await get(`/api/instruments/resolve-equity?symbol=${encodeURIComponent(sym)}&exchange=${ex}`);
-    setResolved(d.instrument_token, d.tradingsymbol, d.instrument_type || '');
+    setResolved(d.instrument_token, d.tradingsymbol, d.instrument_type || 'EQ');
   } catch(e) {
-    showAlert('resolveErr','error',`❌ "${sym}" not found on ${ex}. Check spelling — use exact NSE symbol (e.g. GOLDBEES, NIFTYBEES, RELIANCE).`);
+    showAlert('resolveErr', 'error',
+      `❌ "${sym}" not found on ${ex}. Use exact NSE trading symbol (e.g. RELIANCE, INFY, GOLDBEES, NIFTYBEES).`);
   }
 }
 
@@ -611,15 +732,15 @@ function setResolved(token, sym, extra) {
   S.instrumentToken = token; S.tradingsymbol = sym;
   document.getElementById('resolvedSym').textContent = sym;
   document.getElementById('resolvedTok').textContent = token;
-  document.getElementById('resolvedLot').textContent = extra;
+  document.getElementById('resolvedExtra').textContent = extra;
   document.getElementById('resolvedWrap').style.display = '';
   document.getElementById('resolveErr').innerHTML = '';
 }
 
-// ── Download / Preview ─────────────────────────────────────────
+// ── Download / Preview ─────────────────────────────────────────────────────
 function buildPayload() {
-  if (!S.apiKey || !S.accessToken) throw new Error('Not connected — go to Login & Token tab first.');
-  if (!S.instrumentToken) throw new Error('No instrument resolved — select and click Resolve Token first.');
+  if (!S.apiKey || !S.accessToken) throw new Error('Not connected — go to Login tab.');
+  if (!S.instrumentToken)          throw new Error('No instrument resolved — resolve a token first.');
   if (!document.getElementById('fromDate').value) throw new Error('Select a From Date.');
   if (!document.getElementById('toDate').value)   throw new Error('Select a To Date.');
   return {
@@ -628,51 +749,61 @@ function buildPayload() {
     from_date: document.getElementById('fromDate').value,
     to_date: document.getElementById('toDate').value,
     interval: document.getElementById('interval').value,
-    oi: document.getElementById('includeOI').checked,
-    continuous: document.getElementById('continuous').checked,
+    oi: document.getElementById('includeOI').checked && !document.getElementById('includeOI').disabled,
+    continuous: document.getElementById('continuous').checked && !document.getElementById('continuous').disabled,
     file_format: document.getElementById('fileFormat').value,
   };
 }
 
 async function previewData() {
-  let p; try { p = buildPayload(); } catch(e) { showAlert('downloadStatus','error',e.message); return; }
-  showAlert('downloadStatus','info','<span class="spinner"></span> Fetching preview...');
+  let p; try { p = buildPayload(); } catch(e) { showAlert('downloadStatus','error', String(e.message||e)); return; }
+  showAlert('downloadStatus', 'info', '<span class="spinner"></span> Fetching preview...');
   document.getElementById('previewWrap').style.display = 'none';
   try {
-    const d = await postRaw('/api/preview', p);
-    if (!d.rows.length) { showAlert('downloadStatus','warn','No data returned for this range.'); return; }
-    showAlert('downloadStatus','success',`✅ Showing first 5 of ${d.total} candles`);
+    const d = await post('/api/preview', p);
+    if (!d.rows.length) { showAlert('downloadStatus','warn','No data for this range.'); return; }
+    showAlert('downloadStatus','success', `✅ Showing first 5 of ${d.total} candles`);
     document.getElementById('previewWrap').style.display = '';
     document.getElementById('previewWrap').innerHTML = mkTable(d.rows);
-  } catch(e) { showAlert('downloadStatus','error','❌ '+e.message); }
+  } catch(e) { handleDownloadError('downloadStatus', e); }
 }
 
 async function downloadData() {
-  let p; try { p = buildPayload(); } catch(e) { showAlert('downloadStatus','error',e.message); return; }
-  showAlert('downloadStatus','info','<span class="spinner"></span> Downloading...');
+  let p; try { p = buildPayload(); } catch(e) { showAlert('downloadStatus','error', String(e.message||e)); return; }
+  showAlert('downloadStatus', 'info', '<span class="spinner"></span> Downloading...');
   try {
-    const r = await fetch('/api/historical', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
-    if (!r.ok) { const d=await r.json(); throw new Error(d.detail); }
-    const blob = await r.blob();
-    const cd = r.headers.get('content-disposition')||'';
+    const r = await fetch('/api/historical', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(p) });
+    if (!r.ok) { const d = await r.json().catch(()=>({})); throw new Error(String(d.detail||r.statusText)); }
+    const blob  = await r.blob();
+    const cd    = r.headers.get('content-disposition') || '';
     const fname = cd.match(/filename="(.+?)"/)?.[1] || `${S.tradingsymbol}.${p.file_format}`;
     dlBlob(blob, fname);
-    showAlert('downloadStatus','success',`✅ Downloaded: ${fname}`);
-  } catch(e) { showAlert('downloadStatus','error','❌ '+e.message); }
+    showAlert('downloadStatus','success', `✅ Downloaded: ${fname}`);
+  } catch(e) { handleDownloadError('downloadStatus', e); }
+}
+
+// FIX: Detect token expiry on download and disconnect
+function handleDownloadError(id, e) {
+  const msg = String(e.message||e);
+  if (msg.includes('TokenException') || msg.includes('api_key') || msg.includes('access_token') || msg.includes('Incorrect')) {
+    markConnected(false);
+    showAlert(id, 'error', '❌ Token expired or invalid. Please re-login and generate a fresh token today.');
+  } else {
+    showAlert(id, 'error', '❌ ' + msg);
+  }
 }
 
 function mkTable(rows) {
   if (!rows.length) return '';
   const cols = Object.keys(rows[0]);
-  return `<table><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>
-    ${rows.map(r=>`<tr>${cols.map(c=>`<td>${r[c]??''}</td>`).join('')}</tr>`).join('')}
-  </tbody></table>`;
+  return `<table><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+  <tbody>${rows.map(r=>`<tr>${cols.map(c=>`<td>${r[c]??''}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 }
 
-// ── Bulk ───────────────────────────────────────────────────────
+// ── Bulk ───────────────────────────────────────────────────────────────────
 function dlTemplate() {
-  const csv = `instrument_token,tradingsymbol,from_date,to_date,interval,oi,continuous,file_format\n256265,NIFTY50-INDEX,2024-01-01,2024-12-31,day,1,0,csv\n260105,NIFTY BANK,2024-01-01,2024-12-31,day,1,0,csv`;
-  dlBlob(new Blob([csv],{type:'text/csv'}), 'zetapull_bulk_template.csv');
+  const csv = `instrument_token,tradingsymbol,from_date,to_date,interval,oi,continuous,file_format\n256265,NIFTY50-INDEX,2024-01-01,2024-12-31,day,0,0,csv\n738561,RELIANCE,2024-01-01,2024-12-31,day,0,0,csv`;
+  dlBlob(new Blob([csv], {type:'text/csv'}), 'zetapull_bulk_template.csv');
 }
 
 function loadBulkCSV() {
@@ -681,13 +812,13 @@ function loadBulkCSV() {
   const reader = new FileReader();
   reader.onload = e => {
     const lines = e.target.result.trim().split('\n');
-    const hdrs = lines[0].split(',').map(h=>h.trim());
+    const hdrs  = lines[0].split(',').map(h => h.trim());
     bulkItems = lines.slice(1).map(line => {
-      const vals = line.split(',').map(v=>v.trim());
-      const obj = {}; hdrs.forEach((h,i)=>obj[h]=vals[i]||''); return obj;
-    }).filter(r=>r.instrument_token);
+      const vals = line.split(',').map(v => v.trim());
+      const obj = {}; hdrs.forEach((h,i) => obj[h] = vals[i]||''); return obj;
+    }).filter(r => r.instrument_token);
     document.getElementById('bulkPreview').innerHTML =
-      `<div class="alert alert-info">${bulkItems.length} rows loaded.</div>`;
+      `<div class="alert alert-info">${bulkItems.length} instruments loaded from CSV.</div>`;
     document.getElementById('bulkStartBtn').disabled = !bulkItems.length;
     bulkIndex = 0;
   };
@@ -695,92 +826,98 @@ function loadBulkCSV() {
 }
 
 async function startBulk() {
-  if (!S.apiKey||!S.accessToken) { alert('Connect first.'); return; }
+  if (!S.apiKey || !S.accessToken) { showToast('Connect first.'); return; }
   if (!bulkItems.length) return;
-  bulkRunning=true; bulkPaused=false;
-  document.getElementById('bulkStartBtn').disabled=true;
-  document.getElementById('bulkPauseBtn').disabled=false;
-  document.getElementById('bulkProgressWrap').style.display='';
-  document.getElementById('bulkLog').style.display='';
-  for (;bulkIndex<bulkItems.length;bulkIndex++) {
+  bulkRunning = true; bulkPaused = false;
+  document.getElementById('bulkStartBtn').disabled = true;
+  document.getElementById('bulkPauseBtn').disabled = false;
+  document.getElementById('bulkProgressWrap').style.display = '';
+  document.getElementById('bulkLog').style.display = '';
+
+  for (; bulkIndex < bulkItems.length; bulkIndex++) {
     while (bulkPaused) await sleep(300);
     if (!bulkRunning) break;
     const item = bulkItems[bulkIndex];
-    updBulkProg(bulkIndex+1, bulkItems.length);
-    logLine(`[${bulkIndex+1}/${bulkItems.length}] ${item.tradingsymbol||item.instrument_token}...`,'info');
+    updBulkProg(bulkIndex + 1, bulkItems.length);
+    logLine(`[${bulkIndex+1}/${bulkItems.length}] ${item.tradingsymbol || item.instrument_token}...`, 'info');
     try {
-      const p = {api_key:S.apiKey, access_token:S.accessToken,
-        instrument_token:item.instrument_token, tradingsymbol:item.tradingsymbol||'',
-        from_date:item.from_date, to_date:item.to_date,
-        interval:item.interval||'day', oi:item.oi!=='0', continuous:item.continuous==='1',
-        file_format:item.file_format||'csv'};
-      const r = await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
-      if (!r.ok) { const d=await r.json(); throw new Error(d.detail); }
-      const blob=await r.blob();
-      const cd=r.headers.get('content-disposition')||'';
-      const fname=cd.match(/filename="(.+?)"/)?.[1]||`${item.tradingsymbol}.${item.file_format||'csv'}`;
-      dlBlob(blob,fname); logLine('✅ '+fname,'ok');
-    } catch(e) { logLine('❌ '+(item.tradingsymbol||item.instrument_token)+': '+e.message,'err'); }
+      const p = {
+        api_key: S.apiKey, access_token: S.accessToken,
+        instrument_token: item.instrument_token, tradingsymbol: item.tradingsymbol || '',
+        from_date: item.from_date, to_date: item.to_date,
+        interval: item.interval || 'day',
+        oi: item.oi !== '0', continuous: item.continuous === '1',
+        file_format: item.file_format || 'csv',
+      };
+      const r = await fetch('/api/historical', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(p) });
+      if (!r.ok) { const d = await r.json().catch(()=>({})); throw new Error(String(d.detail||r.statusText)); }
+      const blob  = await r.blob();
+      const cd    = r.headers.get('content-disposition') || '';
+      const fname = cd.match(/filename="(.+?)"/)?.[1] || `${item.tradingsymbol}.${item.file_format||'csv'}`;
+      dlBlob(blob, fname); logLine('✅ ' + fname, 'ok');
+    } catch(e) { logLine('❌ ' + (item.tradingsymbol||item.instrument_token) + ': ' + String(e.message||e), 'err'); }
     await sleep(400);
   }
-  updBulkProg(bulkItems.length,bulkItems.length);
-  logLine('— Done —','info');
-  document.getElementById('bulkStartBtn').disabled=false;
-  document.getElementById('bulkPauseBtn').disabled=true;
-  bulkRunning=false;
+  updBulkProg(bulkItems.length, bulkItems.length);
+  logLine('— All done —', 'info');
+  document.getElementById('bulkStartBtn').disabled = false;
+  document.getElementById('bulkPauseBtn').disabled = true;
+  bulkRunning = false;
 }
 
 function pauseBulk() {
-  bulkPaused=!bulkPaused;
-  document.getElementById('bulkPauseBtn').textContent = bulkPaused?'▶ Resume':'⏸ Pause';
+  bulkPaused = !bulkPaused;
+  document.getElementById('bulkPauseBtn').textContent = bulkPaused ? '▶ Resume' : '⏸ Pause';
 }
 
 function clearBulk() {
-  bulkItems=[]; bulkIndex=0; bulkRunning=false; bulkPaused=false;
-  ['bulkPreview','bulkLog'].forEach(id=>document.getElementById(id).innerHTML='');
-  document.getElementById('bulkLog').style.display='none';
-  document.getElementById('bulkProgressWrap').style.display='none';
-  document.getElementById('bulkStartBtn').disabled=true;
-  document.getElementById('bulkPauseBtn').disabled=true;
-  document.getElementById('bulkFile').value='';
+  bulkItems = []; bulkIndex = 0; bulkRunning = false; bulkPaused = false;
+  ['bulkPreview','bulkLog'].forEach(id => document.getElementById(id).innerHTML = '');
+  document.getElementById('bulkLog').style.display = 'none';
+  document.getElementById('bulkProgressWrap').style.display = 'none';
+  document.getElementById('bulkStartBtn').disabled = true;
+  document.getElementById('bulkPauseBtn').disabled = true;
+  document.getElementById('bulkFile').value = '';
 }
 
-function updBulkProg(done,total) {
-  document.getElementById('bulkProgressLabel').textContent=`${done} / ${total}`;
-  document.getElementById('bulkBar').style.width=`${Math.round(done/total*100)}%`;
+function updBulkProg(done, total) {
+  document.getElementById('bulkProgressLabel').textContent = `${done} / ${total}`;
+  document.getElementById('bulkBar').style.width = `${Math.round(done/total*100)}%`;
 }
 
-function logLine(msg,cls) {
-  const el=document.getElementById('bulkLog');
-  el.innerHTML+=`<div class="log-${cls}">${msg}</div>`;
-  el.scrollTop=el.scrollHeight;
+function logLine(msg, cls) {
+  const el = document.getElementById('bulkLog');
+  el.innerHTML += `<div class="log-${cls}">${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
 }
 
-// ── Utility ────────────────────────────────────────────────────
+// ── HTTP helpers ───────────────────────────────────────────────────────────
 async function post(url, body) {
-  const r = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
   let d; try { d = await r.json(); } catch(_) { d = {}; }
-  if (!r.ok) throw new Error(String(d.detail||d.message||r.statusText||'Unknown error'));
+  if (!r.ok) throw new Error(String(d.detail || d.message || r.statusText || 'Unknown error'));
   return d;
 }
-async function postRaw(url, body) { return post(url, body); }
+
 async function get(url) {
   const r = await fetch(url);
   let d; try { d = await r.json(); } catch(_) { d = {}; }
-  if (!r.ok) throw new Error(String(d.detail||d.message||r.statusText||'Unknown error'));
+  if (!r.ok) throw new Error(String(d.detail || d.message || r.statusText || 'Unknown error'));
   return d;
 }
 
 function showAlert(id, type, msg) {
-  document.getElementById(id).innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
 }
 
 function dlBlob(blob, fname) {
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = fname; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
-function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
 </body>
 </html>
