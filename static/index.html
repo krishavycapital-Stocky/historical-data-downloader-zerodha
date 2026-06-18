@@ -410,15 +410,19 @@ let bulkItems = [], bulkPaused = false, bulkRunning = false, bulkIndex = 0;
 
 // ── Init ───────────────────────────────────────────────────────────────────
 window.onload = () => {
-  // Restore saved credentials
+  // Restore saved credentials — VERIFY with Zerodha before going green
   try {
     const saved = JSON.parse(localStorage.getItem('zp_creds') || '{}');
-    if (saved.apiKey)      { document.getElementById('apiKey').value    = saved.apiKey;    S.apiKey = saved.apiKey; }
-    if (saved.apiSecret)   { document.getElementById('apiSecret').value = saved.apiSecret; }
-    if (saved.accessToken) { S.accessToken = saved.accessToken; markConnected(true); }
+    if (saved.apiKey)    { document.getElementById('apiKey').value    = saved.apiKey;    S.apiKey = saved.apiKey; }
+    if (saved.apiSecret) { document.getElementById('apiSecret').value = saved.apiSecret; }
+    if (saved.accessToken && saved.apiKey) {
+      S.accessToken = saved.accessToken;
+      document.getElementById('connLabel').textContent = 'Verifying...';
+      verifyStoredToken(saved.apiKey, saved.accessToken);  // async — non-blocking
+    }
   } catch(e) {}
 
-  // Auto-capture request_token from redirect URL
+  // Auto-capture request_token from redirect URL (Bug #1 fix)
   try {
     const params = new URLSearchParams(window.location.search);
     const reqTok = params.get('request_token');
@@ -440,13 +444,36 @@ window.onload = () => {
   document.getElementById('fromDate').value = fmtDate(monthAgo);
 };
 
+// ── Token verification (surgical fix for stale token) ─────────────────────
+async function verifyStoredToken(apiKey, accessToken) {
+  try {
+    const r = await fetch(`/api/verify-token?api_key=${encodeURIComponent(apiKey)}&access_token=${encodeURIComponent(accessToken)}`);
+    const d = await r.json();
+    if (d.valid) {
+      S.apiKey = apiKey; S.accessToken = accessToken;
+      markConnected(true, d.user_name || '');
+    } else {
+      // Token expired — clear it, force re-login
+      S.accessToken = '';
+      localStorage.removeItem('zp_creds');
+      markConnected(false);
+      showAlert('tokenStatus', 'warn',
+        '⚠ Your saved token has expired (Zerodha tokens reset daily). Please re-login to Kite and generate a fresh token.');
+    }
+  } catch(e) {
+    // Network error — can't verify, stay disconnected to be safe
+    markConnected(false);
+  }
+}
+
 // ── Connection state ───────────────────────────────────────────────────────
 // FIX: Tabs 2 & 3 only unlock after verified connection
-function markConnected(on) {
+function markConnected(on, userName) {
   S.isConnected = on;
   const pill = document.getElementById('connPill');
   pill.className = 'conn-pill' + (on ? ' on' : '');
-  document.getElementById('connLabel').textContent = on ? 'Connected ✓' : 'Not connected';
+  const label = on ? (userName ? `${userName} ✓` : 'Connected ✓') : 'Not connected';
+  document.getElementById('connLabel').textContent = label;
 
   // Unlock or lock Download & Bulk tabs
   ['download','bulk'].forEach(name => {
@@ -535,8 +562,11 @@ async function generateToken() {
     S.accessToken = r.access_token;
     S.apiKey = key;
     localStorage.setItem('zp_creds', JSON.stringify({ apiKey: key, apiSecret: secret, accessToken: r.access_token }));
-    markConnected(true);
-    showAlert('tokenStatus', 'success', '✅ Access token verified and saved! Tabs 2 & 3 are now unlocked. Click <strong>Download Data</strong> tab next.');
+    // Verify with Zerodha to get user name and confirm token is live
+    const vr = await fetch(`/api/verify-token?api_key=${encodeURIComponent(key)}&access_token=${encodeURIComponent(r.access_token)}`);
+    const vd = await vr.json();
+    markConnected(true, vd.user_name || '');
+    showAlert('tokenStatus', 'success', `✅ Token verified! Welcome ${vd.user_name || ''}. Download & Bulk tabs are now unlocked.`);
   } catch(e) {
     // FIX: Show clean error — expired token, wrong key etc
     markConnected(false);
@@ -551,11 +581,22 @@ async function setAccessToken() {
   const key = document.getElementById('apiKey').value.trim();
   const tok = document.getElementById('accessTokenInput').value.trim();
   if (!key || !tok) { showAlert('pasteTokenStatus', 'error', 'Enter both API Key and Access Token.'); return; }
-  // Optimistically set — will fail at download time if wrong
-  S.apiKey = key; S.accessToken = tok;
-  localStorage.setItem('zp_creds', JSON.stringify({ apiKey: key, apiSecret: document.getElementById('apiSecret').value.trim(), accessToken: tok }));
-  markConnected(true);
-  showAlert('pasteTokenStatus', 'success', '✅ Token saved. Download & Bulk tabs unlocked.');
+  showAlert('pasteTokenStatus', 'info', '<span class="spinner"></span> Verifying token with Zerodha...');
+  try {
+    const r = await fetch(`/api/verify-token?api_key=${encodeURIComponent(key)}&access_token=${encodeURIComponent(tok)}`);
+    const d = await r.json();
+    if (!d.valid) {
+      showAlert('pasteTokenStatus', 'error', '❌ Token invalid or expired: ' + (d.error || 'Please re-login to Kite.'));
+      markConnected(false);
+      return;
+    }
+    S.apiKey = key; S.accessToken = tok;
+    localStorage.setItem('zp_creds', JSON.stringify({ apiKey: key, apiSecret: document.getElementById('apiSecret').value.trim(), accessToken: tok }));
+    markConnected(true, d.user_name || '');
+    showAlert('pasteTokenStatus', 'success', `✅ Token verified! Welcome ${d.user_name || ''}. Download & Bulk tabs unlocked.`);
+  } catch(e) {
+    showAlert('pasteTokenStatus', 'error', '❌ Could not verify token: ' + String(e.message||e));
+  }
 }
 
 // ── Fetch Instruments ──────────────────────────────────────────────────────

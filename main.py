@@ -266,3 +266,35 @@ async def preview_historical(req: HistoricalRequest):
 
 # ── Serve frontend ─────────────────────────────────────────────────────────────
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
+
+
+# ── Token Verification ─────────────────────────────────────────────────────────
+
+@app.get("/api/verify-token")
+async def verify_token(api_key: str, access_token: str):
+    """
+    Ping Zerodha /user/profile to confirm token is valid right now.
+    Returns {valid: true, user_name: "..."} or {valid: false, error: "..."}
+    Never raises — always returns JSON so frontend can handle gracefully.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(
+                f"{KITE_BASE}/user/profile",
+                headers={
+                    "X-Kite-Version": "3",
+                    "Authorization": f"token {api_key}:{access_token}",
+                },
+            )
+        if resp.status_code == 200:
+            data = resp.json().get("data", {})
+            return {
+                "valid": True,
+                "user_name": data.get("user_name", ""),
+                "user_id": data.get("user_id", ""),
+                "email": data.get("email", ""),
+            }
+        else:
+            return {"valid": False, "error": "Token expired or invalid — please re-login."}
+    except Exception as e:
+        return {"valid": False, "error": str(e)}
