@@ -448,21 +448,28 @@ window.onload = () => {
 async function verifyStoredToken(apiKey, accessToken) {
   try {
     const r = await fetch(`/api/verify-token?api_key=${encodeURIComponent(apiKey)}&access_token=${encodeURIComponent(accessToken)}`);
+    if (!r.ok) {
+      // Server error (cold start, 500, etc.) — benefit of the doubt, stay connected
+      S.apiKey = apiKey; S.accessToken = accessToken;
+      markConnected(true, '');
+      return;
+    }
     const d = await r.json();
     if (d.valid) {
       S.apiKey = apiKey; S.accessToken = accessToken;
       markConnected(true, d.user_name || '');
     } else {
-      // Token expired — clear it, force re-login
+      // Zerodha explicitly said invalid — only then disconnect
       S.accessToken = '';
       localStorage.removeItem('zp_creds');
       markConnected(false);
       showAlert('tokenStatus', 'warn',
-        '⚠ Your saved token has expired (Zerodha tokens reset daily). Please re-login to Kite and generate a fresh token.');
+        '⚠ Saved token has expired (Zerodha tokens reset daily). Re-login to Kite and generate a fresh token.');
     }
   } catch(e) {
-    // Network error — can't verify, stay disconnected to be safe
-    markConnected(false);
+    // Network/fetch error — server may be cold starting. Benefit of the doubt.
+    S.apiKey = apiKey; S.accessToken = accessToken;
+    markConnected(true, '');
   }
 }
 
@@ -584,9 +591,18 @@ async function setAccessToken() {
   showAlert('pasteTokenStatus', 'info', '<span class="spinner"></span> Verifying token with Zerodha...');
   try {
     const r = await fetch(`/api/verify-token?api_key=${encodeURIComponent(key)}&access_token=${encodeURIComponent(tok)}`);
+    if (!r.ok) {
+      // Server error — accept the token, can't verify right now
+      S.apiKey = key; S.accessToken = tok;
+      localStorage.setItem('zp_creds', JSON.stringify({ apiKey: key, apiSecret: document.getElementById('apiSecret').value.trim(), accessToken: tok }));
+      markConnected(true, '');
+      showAlert('pasteTokenStatus', 'warn', '⚠ Could not verify with Zerodha right now (server starting up) — token accepted. If downloads fail, re-login.');
+      return;
+    }
     const d = await r.json();
     if (!d.valid) {
-      showAlert('pasteTokenStatus', 'error', '❌ Token invalid or expired: ' + (d.error || 'Please re-login to Kite.'));
+      // Zerodha explicitly rejected — only case we refuse
+      showAlert('pasteTokenStatus', 'error', '❌ Zerodha says this token is invalid or expired. Please re-login to Kite and generate a fresh token today.');
       markConnected(false);
       return;
     }
@@ -595,7 +611,11 @@ async function setAccessToken() {
     markConnected(true, d.user_name || '');
     showAlert('pasteTokenStatus', 'success', `✅ Token verified! Welcome ${d.user_name || ''}. Download & Bulk tabs unlocked.`);
   } catch(e) {
-    showAlert('pasteTokenStatus', 'error', '❌ Could not verify token: ' + String(e.message||e));
+    // Network error — accept anyway, Zerodha will reject at download time if wrong
+    S.apiKey = key; S.accessToken = tok;
+    localStorage.setItem('zp_creds', JSON.stringify({ apiKey: key, apiSecret: document.getElementById('apiSecret').value.trim(), accessToken: tok }));
+    markConnected(true, '');
+    showAlert('pasteTokenStatus', 'warn', '⚠ Verification timed out — token saved. If downloads fail, regenerate your token.');
   }
 }
 
