@@ -1,1173 +1,841 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>ZetaPull — Zerodha Historical Data</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;}
-:root{--bg:#0a0e14;--surf:#111720;--surf2:#18202e;--bdr:#1e2d44;--grn:#00d4aa;--blu:#0091ff;--red:#ff4d6d;--ylw:#ffb347;--txt:#e0eaf8;--muted:#5a7a9a;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;}
-body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:14px;min-height:100vh;}
-.page{display:none;min-height:100vh;flex-direction:column;}
-.page.active{display:flex;}
-.center-page{align-items:center;justify-content:center;padding:40px 20px;}
-.box{background:var(--surf);border:1px solid var(--bdr);border-radius:12px;padding:40px;width:100%;max-width:480px;}
-.logo{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--grn);margin-bottom:4px;}
-.logo span{color:var(--muted);font-weight:400;}
-.tagline{color:var(--muted);font-size:13px;margin-bottom:24px;}
-.lbl{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:5px;display:block;}
-.inp{width:100%;background:var(--surf2);border:1px solid var(--bdr);border-radius:6px;color:var(--txt);font-family:var(--mono);font-size:13px;padding:10px 13px;outline:none;margin-bottom:5px;transition:border-color .2s;}
-.inp:focus{border-color:var(--blu);}
-.hint{font-size:11px;color:var(--muted);margin-bottom:14px;font-family:var(--mono);}
-.hint a{color:var(--blu);text-decoration:none;}
-.btn-big{width:100%;padding:12px;border:none;border-radius:6px;font-family:var(--mono);font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;transition:opacity .2s;}
-.btn-big:hover{opacity:.85;}
-.btn-big.grn{background:var(--grn);color:#000;}
-.btn-big.blu{background:var(--blu);color:#fff;}
-.divider{display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--muted);font-size:12px;font-family:var(--mono);}
-.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--bdr);}
-.saved-badge{display:none;align-items:center;gap:6px;background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);border-radius:4px;padding:5px 10px;font-family:var(--mono);font-size:11px;color:var(--grn);margin-bottom:16px;}
-/* Token page */
-.token-box{background:var(--surf);border:1px solid var(--bdr);border-radius:12px;padding:36px;width:100%;max-width:520px;}
-.step-row{display:flex;gap:14px;margin-bottom:20px;align-items:flex-start;}
-.step-num{width:28px;height:28px;border-radius:50%;background:var(--surf2);border:1px solid var(--bdr);font-family:var(--mono);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);}
-.step-num.done{background:rgba(0,212,170,.15);border-color:var(--grn);color:var(--grn);}
-.step-num.active{background:rgba(0,145,255,.15);border-color:var(--blu);color:var(--blu);}
-.step-title{font-size:14px;font-weight:500;margin-bottom:3px;}
-.step-desc{font-size:12px;color:var(--muted);font-family:var(--mono);}
-.tok-display{background:var(--surf2);border:1px solid var(--bdr);border-radius:6px;padding:9px 13px;font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:8px;word-break:break-all;min-height:38px;}
-.tok-display.filled{color:var(--grn);border-color:rgba(0,212,170,.4);}
-.autofill-badge{display:none;background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);border-radius:20px;padding:2px 9px;font-family:var(--mono);font-size:10px;color:var(--grn);margin-left:8px;vertical-align:middle;}
-.back-link{font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;text-align:center;margin-top:14px;}
-.back-link:hover{color:var(--txt);}
-/* App header */
-header{background:var(--surf);border-bottom:1px solid var(--bdr);padding:11px 22px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;flex-shrink:0;}
-.hlogo{font-family:var(--mono);font-size:17px;font-weight:600;color:var(--grn);}
-.hlogo span{color:var(--muted);font-weight:400;}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--grn);box-shadow:0 0 6px var(--grn);}
-.conn{font-size:12px;color:var(--grn);font-family:var(--mono);}
-.hright{margin-left:auto;display:flex;align-items:center;gap:10px;}
-.pill{background:var(--surf2);border:1px solid var(--bdr);border-radius:20px;padding:3px 11px;font-family:var(--mono);font-size:11px;color:var(--muted);}
-.relogin-btn{font-family:var(--mono);font-size:11px;color:var(--muted);background:none;border:1px solid var(--bdr);border-radius:4px;padding:4px 10px;cursor:pointer;}
-.relogin-btn:hover{color:var(--ylw);border-color:var(--ylw);}
-/* Tabs */
-.tabs{display:flex;padding:0 22px;border-bottom:1px solid var(--bdr);background:var(--surf);overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
-.tabs::-webkit-scrollbar{display:none;}
-.tab{padding:11px 15px;border:none;background:transparent;color:var(--muted);font-family:var(--mono);font-size:11px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;text-transform:uppercase;letter-spacing:.4px;transition:color .2s,border-color .2s;}
-.tab:hover{color:var(--txt);}
-.tab.active{color:var(--grn);border-bottom-color:var(--grn);}
-/* Main */
-main{padding:22px;max-width:880px;}
-.panel{display:none;}
-.panel.active{display:block;}
-.card{background:var(--surf);border:1px solid var(--bdr);border-radius:8px;padding:18px;margin-bottom:14px;}
-.sh{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--blu);margin-bottom:12px;padding-bottom:5px;border-bottom:1px solid var(--bdr);}
-.row{display:flex;gap:11px;flex-wrap:wrap;margin-bottom:12px;}
-.field{display:flex;flex-direction:column;gap:5px;flex:1;min-width:150px;}
-.field label{font-size:11px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.4px;}
-input,select{background:var(--surf2);border:1px solid var(--bdr);border-radius:5px;color:var(--txt);font-family:var(--mono);font-size:13px;padding:8px 11px;width:100%;outline:none;transition:border-color .2s;}
-input:focus,select:focus{border-color:var(--blu);}
-select option{background:var(--surf2);}
-.btn{padding:8px 16px;border-radius:5px;border:none;font-family:var(--mono);font-size:12px;font-weight:600;cursor:pointer;transition:opacity .2s;white-space:nowrap;}
-.btn:hover{opacity:.85;}
-.btn:disabled{opacity:.4;cursor:not-allowed;}
-.btn-p{background:var(--grn);color:#000;}
-.btn-g{background:var(--surf2);color:var(--txt);border:1px solid var(--bdr);}
-.btn-d{background:var(--red);color:#fff;}
-.alert{padding:9px 13px;border-radius:5px;font-family:var(--mono);font-size:12px;margin-top:10px;}
-.alert-ok{background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);color:var(--grn);}
-.alert-err{background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.3);color:var(--red);}
-.alert-info{background:rgba(0,145,255,.1);border:1px solid rgba(0,145,255,.3);color:var(--blu);}
-.search-wrap{position:relative;}
-.search-results{position:absolute;top:100%;left:0;right:0;max-height:220px;overflow-y:auto;background:var(--surf2);border:1px solid var(--bdr);border-top:none;border-radius:0 0 5px 5px;display:none;z-index:50;}
-.sri{padding:8px 11px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bdr);font-family:var(--mono);font-size:12px;}
-.sri:hover{background:var(--bdr);}
-.sri .sym{color:var(--grn);font-weight:600;}
-.sri .meta{color:var(--muted);font-size:11px;}
-.chip{display:inline-flex;align-items:center;gap:7px;background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.4);border-radius:4px;padding:5px 11px;font-family:var(--mono);font-size:12px;color:var(--grn);margin-top:7px;}
-.chip .x{cursor:pointer;color:var(--muted);}
-.chip .x:hover{color:var(--red);}
-.trow{display:flex;align-items:center;gap:9px;margin-bottom:9px;}
-.trow label{font-size:13px;cursor:pointer;}
-input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--grn);}
-.otype-g{display:flex;gap:5px;}
-.otype-b{flex:1;padding:7px;border:1px solid var(--bdr);background:var(--surf2);color:var(--muted);font-family:var(--mono);font-size:12px;font-weight:600;border-radius:4px;cursor:pointer;text-align:center;transition:all .2s;}
-.otype-b.a-ce{border-color:var(--grn);color:var(--grn);background:rgba(0,212,170,.08);}
-.otype-b.a-pe{border-color:var(--red);color:var(--red);background:rgba(255,77,109,.08);}
-.otype-b.a-both{border-color:var(--ylw);color:var(--ylw);background:rgba(255,179,71,.08);}
-.pbar{background:var(--surf2);border-radius:3px;height:4px;overflow:hidden;margin-top:8px;}
-.pbar-fill{height:100%;background:var(--grn);border-radius:3px;transition:width .3s;}
-.blog{background:var(--surf2);border:1px solid var(--bdr);border-radius:5px;padding:11px;font-family:var(--mono);font-size:11px;max-height:240px;overflow-y:auto;line-height:1.8;margin-top:10px;}
-.log-ok{color:var(--grn);}.log-err{color:var(--red);}.log-info{color:var(--muted);}
-.mode-btn{flex:1;padding:8px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;transition:all .2s;}
-.info-box{border-radius:5px;padding:10px 13px;font-family:var(--mono);font-size:11px;margin-top:8px;}
-.info-grn{background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.2);color:var(--grn);}
-.info-blu{background:rgba(0,145,255,.08);border:1px solid rgba(0,145,255,.2);color:var(--blu);}
-.info-ylw{background:rgba(255,179,71,.08);border:1px solid rgba(255,179,71,.3);color:var(--ylw);}
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #4f8ef7;
+    --accent2: #3ecf8e;
+    --danger: #f75f5f;
+    --warn: #f7b955;
+    --text: #e4e6f0;
+    --muted: #7b82a8;
+    --radius: 10px;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; }
+
+  /* ── Header ── */
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+  header h1 span { color: var(--accent); }
+  .badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; font-size: 11px; color: var(--muted); }
+  .connected-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 4px; transition: background .3s; }
+  .connected-dot.on { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 2px; padding: 12px 24px 0; background: var(--bg); border-bottom: 1px solid var(--border); }
+  .tab { padding: 10px 20px; cursor: pointer; border-radius: var(--radius) var(--radius) 0 0; color: var(--muted); font-weight: 500; transition: all .2s; border: 1px solid transparent; border-bottom: none; }
+  .tab:hover { color: var(--text); background: var(--surface2); }
+  .tab.active { background: var(--surface); color: var(--accent); border-color: var(--border); }
+
+  /* ── Main layout ── */
+  .content { max-width: 860px; margin: 0 auto; padding: 28px 24px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── Cards ── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 14px; }
+
+  /* ── Form elements ── */
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; font-weight: 500; }
+  input, select { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 9px 12px; font-size: 13px; outline: none; transition: border .2s; font-family: var(--font); }
+  input:focus, select:focus { border-color: var(--accent); }
+  input[type="password"] { letter-spacing: 2px; }
+  input::placeholder { color: var(--muted); letter-spacing: normal; }
+  select option { background: var(--surface2); }
+
+  .row { display: grid; gap: 14px; }
+  .row.col2 { grid-template-columns: 1fr 1fr; }
+  .row.col3 { grid-template-columns: 1fr 1fr 1fr; }
+  .row.col4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+
+  /* ── Buttons ── */
+  .btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px; border-radius: 7px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; font-family: var(--font); transition: all .15s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { filter: brightness(1.1); }
+  .btn-success { background: var(--accent2); color: #0f1117; }
+  .btn-success:hover { filter: brightness(1.1); }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { filter: brightness(1.1); }
+  .btn-warn { background: var(--warn); color: #0f1117; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; filter: none; }
+  .btn-sm { padding: 6px 13px; font-size: 12px; }
+  .btn-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  /* ── Status / Alerts ── */
+  .alert { border-radius: 7px; padding: 10px 14px; font-size: 13px; margin-top: 10px; }
+  .alert-info { background: rgba(79,142,247,.12); border: 1px solid rgba(79,142,247,.3); color: #9dc4ff; }
+  .alert-success { background: rgba(62,207,142,.12); border: 1px solid rgba(62,207,142,.3); color: #7de8be; }
+  .alert-error { background: rgba(247,95,95,.12); border: 1px solid rgba(247,95,95,.3); color: #ffadad; }
+  .alert-warn { background: rgba(247,185,85,.12); border: 1px solid rgba(247,185,85,.3); color: #ffd88a; }
+
+  /* ── Instrument selector ── */
+  .inst-type-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .inst-tab { padding: 7px 16px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 600; font-family: var(--font); transition: all .2s; }
+  .inst-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ── Token badge ── */
+  .token-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 11px; color: var(--muted); font-family: monospace; word-break: break-all; margin-top: 6px; }
+  .token-chip span { color: var(--accent2); }
+
+  /* ── Preview table ── */
+  .preview-wrap { overflow-x: auto; margin-top: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: var(--surface2); color: var(--muted); text-transform: uppercase; font-size: 10px; letter-spacing: .5px; padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--border); color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+
+  /* ── Progress ── */
+  .progress-bar-wrap { background: var(--surface2); border-radius: 4px; height: 6px; margin-top: 8px; overflow: hidden; }
+  .progress-bar { height: 100%; background: var(--accent); border-radius: 4px; transition: width .3s; }
+
+  /* ── Bulk log ── */
+  .bulk-log { background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 10px 12px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; margin-top: 10px; }
+  .log-ok { color: var(--accent2); }
+  .log-err { color: var(--danger); }
+  .log-info { color: var(--muted); }
+
+  /* ── Fetch bar ── */
+  .fetch-bar { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .fetch-bar .counts { display: flex; gap: 10px; flex-wrap: wrap; }
+  .count-chip { background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 3px 9px; font-size: 11px; }
+  .count-chip b { color: var(--accent); }
+
+  /* ── Spinner ── */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.2); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; display: inline-block; }
+
+  /* ── Divider ── */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .row.col3, .row.col4 { grid-template-columns: 1fr 1fr; }
+    .row.col2 { grid-template-columns: 1fr; }
+    .content { padding: 16px 12px; }
+  }
 </style>
 </head>
 <body>
 
-<!-- ═══════ PAGE: LOGIN ═══════ -->
-<div class="page center-page" id="page-login">
-  <div class="box">
-    <div class="logo">Zeta<span>Pull</span></div>
-    <div class="tagline">Zerodha Historical Data Downloader</div>
-    <div class="saved-badge" id="savedBadge">✓ Credentials saved — just click Login</div>
-    <label class="lbl">API Key</label>
-    <input class="inp" type="text" id="apiKey" placeholder="Your Kite API Key"/>
-    <div class="hint">From <a href="https://developers.kite.trade/apps" target="_blank">developers.kite.trade/apps</a></div>
-    <label class="lbl">API Secret</label>
-    <input class="inp" type="password" id="apiSecret" placeholder="Your Kite API Secret"/>
-    <div class="hint">Same page — keep private</div>
-    <button class="btn-big grn" onclick="doKiteLogin()">🔐 Login with Zerodha Kite →</button>
-    <div class="divider">or paste today's token directly</div>
-    <label class="lbl">Access Token (if you already have it)</label>
-    <input class="inp" type="text" id="directToken" placeholder="Paste access_token here"/>
-    <button class="btn-big blu" onclick="useDirectToken()">Use This Token</button>
-    <div id="loginMsg" style="margin-top:12px;"></div>
+<header>
+  <h1>Zeta<span>Pull</span></h1>
+  <span class="badge">Zerodha Kite Connect</span>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">
+    <span class="connected-dot" id="connDot"></span>
+    <span id="connLabel">Not connected</span>
   </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('login')">🔑 Login &amp; Token</div>
+  <div class="tab" onclick="switchTab('download')">📥 Download Data</div>
+  <div class="tab" onclick="switchTab('bulk')">📦 Bulk Download</div>
 </div>
 
-<!-- ═══════ PAGE: TOKEN ═══════ -->
-<div class="page center-page" id="page-token">
-  <div class="token-box">
-    <div class="logo">Zeta<span>Pull</span></div>
-    <p style="color:var(--muted);font-size:13px;margin-bottom:24px;">Daily Token Setup — do this once every morning</p>
-    <div class="step-row">
-      <div class="step-num done">✓</div>
-      <div><div class="step-title">Logged in to Zerodha Kite</div><div class="step-desc" id="step1desc">Login successful</div></div>
-    </div>
-    <div class="step-row">
-      <div class="step-num active">2</div>
-      <div style="flex:1">
-        <div class="step-title">Request Token <span class="autofill-badge" id="autofillBadge">⚡ Auto-filled</span></div>
-        <div class="step-desc">Zerodha sends this after login</div>
-        <div class="tok-display" id="reqTokenDisplay">Waiting...</div>
-        <input class="inp" type="text" id="reqTokenManual" placeholder="Or paste request_token manually here" style="margin-top:7px;"/>
+<!-- ════════════════════════════════════════════════════════ LOGIN TAB -->
+<div class="content">
+<div id="tab-login" class="panel active">
+
+  <div class="card">
+    <div class="card-title">API Credentials</div>
+    <div class="row col2">
+      <div class="field">
+        <label>API Key</label>
+        <input id="apiKey" type="text" placeholder="your_api_key" oninput="saveCreds()" />
+      </div>
+      <div class="field">
+        <label>API Secret</label>
+        <input id="apiSecret" type="password" placeholder="your_api_secret" oninput="saveCreds()" />
       </div>
     </div>
-    <div class="step-row">
-      <div class="step-num" id="step3num">3</div>
-      <div>
-        <div class="step-title">Access Token</div>
-        <div class="step-desc">Valid until midnight</div>
-        <div class="tok-display" id="accessTokenDisplay">Will appear here after Generate</div>
-      </div>
-    </div>
-    <button class="btn-big grn" id="generateBtn" onclick="generateToken()" style="margin-top:4px;">⚡ Generate Access Token</button>
-    <button class="btn-big" onclick="retryKiteLogin()" style="background:transparent;color:var(--blu);border:1px solid var(--blu);margin-top:8px;">↩ Go back to Kite Login</button>
-    <div id="tokenMsg" style="margin-top:12px;"></div>
-    <div class="back-link" onclick="showPage('login')">← Change API credentials</div>
   </div>
+
+  <div class="card">
+    <div class="card-title">Step 1 — Login to Kite</div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:12px">Click the button, login with your Zerodha credentials, then copy the <code style="color:var(--accent)">request_token</code> from the redirected URL.</p>
+    <button class="btn btn-outline" onclick="openKiteLogin()">🌐 Open Kite Login Page</button>
+    <div class="alert alert-info" style="margin-top:10px;font-size:12px">After login, the URL will look like: <code>https://your-redirect/?request_token=<b>XXXXXX</b>&action=login&status=success</code></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Step 2 — Generate Access Token</div>
+    <div class="row col2" style="margin-bottom:12px">
+      <div class="field">
+        <label>Request Token (from URL)</label>
+        <input id="reqToken" type="text" placeholder="paste request_token here" />
+      </div>
+      <div class="field" style="justify-content:flex-end">
+        <button class="btn btn-primary" onclick="generateToken()">⚡ Generate Access Token</button>
+      </div>
+    </div>
+    <div id="tokenStatus"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Or — Paste Existing Access Token</div>
+    <div class="row col2">
+      <div class="field">
+        <label>Access Token</label>
+        <input id="accessTokenInput" type="text" placeholder="paste access token directly" />
+      </div>
+      <div class="field" style="justify-content:flex-end">
+        <button class="btn btn-success" onclick="setAccessToken()">✅ Use This Token</button>
+      </div>
+    </div>
+    <div id="pasteTokenStatus"></div>
+  </div>
+
 </div>
 
-<!-- ═══════ PAGE: APP ═══════ -->
-<div class="page" id="page-app">
-  <header>
-    <div class="hlogo">Zeta<span>Pull</span></div>
-    <div class="dot"></div>
-    <div class="conn">Connected</div>
-    <div class="hright">
-      <div class="pill" id="userPill">—</div>
-      <button class="relogin-btn" onclick="doRelogin()">↻ New Token</button>
+<!-- ════════════════════════════════════════════════════════ DOWNLOAD TAB -->
+<div id="tab-download" class="panel">
+
+  <!-- Fetch instruments bar -->
+  <div class="fetch-bar">
+    <div>
+      <div style="font-weight:600;font-size:13px">Instrument Database</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px" id="cacheInfo">Not fetched yet</div>
     </div>
-  </header>
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('download',this)">Equity</button>
-    <button class="tab" onclick="switchTab('options',this)">Options</button>
-    <button class="tab" onclick="switchTab('expired',this)">Exp. Options</button>
-    <button class="tab" onclick="switchTab('futures',this)">Futures</button>
-    <button class="tab" onclick="switchTab('chain',this)">Chain Download</button>
+    <button class="btn btn-primary btn-sm" id="fetchBtn" onclick="fetchInstruments()">
+      <span class="spinner" id="fetchSpinner" style="display:none"></span>
+      📡 Fetch Instruments
+    </button>
+    <div class="counts" id="fetchCounts"></div>
   </div>
-  <main>
 
-    <!-- EQUITY TAB -->
-    <div class="panel active" id="panel-download">
-      <div class="card">
-        <div class="sh">Step 1 — Date Range & Interval</div>
-        <div class="row">
-          <div class="field"><label>From Date</label><input type="date" id="fromDate"/></div>
-          <div class="field"><label>To Date</label><input type="date" id="toDate"/></div>
-          <div class="field"><label>Interval</label>
-            <select id="interval"><option value="minute">1 min</option><option value="3minute">3 min</option><option value="5minute">5 min</option><option value="10minute">10 min</option><option value="15minute">15 min</option><option value="30minute">30 min</option><option value="60minute">60 min</option><option value="day" selected>Day</option></select>
-          </div>
-          <div class="field"><label>Format</label>
-            <select id="fileFormat"><option value="csv">CSV</option><option value="json">JSON</option><option value="parquet">Parquet</option></select>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="sh">Step 2 — Select Instrument</div>
-        <div class="row">
-          <div class="field"><label>Exchange</label>
-            <select id="exchange" onchange="clearSel()"><option value="NSE">NSE (Stocks &amp; ETFs)</option><option value="BSE">BSE (Stocks &amp; ETFs)</option></select>
-          </div>
-          <div class="field" style="flex:2"><label>Search Symbol</label>
-            <div class="search-wrap">
-              <input type="text" id="symbolSearch" placeholder="Type e.g. RELIANCE, NIFTY 50, GOLDBEES..." oninput="searchInst()" autocomplete="off"/>
-              <div class="search-results" id="searchResults"></div>
-            </div>
-          </div>
-        </div>
-        <div id="selDiv" style="display:none">
-          <div class="chip"><span id="selSym"></span><span class="x" onclick="clearSel()">✕</span></div>
-          <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:5px;">Token: <span id="selTok"></span></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="sh">Step 3 — Download</div>
-        <button class="btn btn-p" onclick="dlEquity()">⬇ Download</button>
-        <div id="dlStatus"></div>
-      </div>
+  <!-- Instrument type selector -->
+  <div class="card">
+    <div class="card-title">Instrument Type</div>
+    <div class="inst-type-tabs">
+      <button class="inst-tab active" onclick="setInstType('options')">Options (CE/PE)</button>
+      <button class="inst-tab" onclick="setInstType('futures')">Futures (FUT)</button>
+      <button class="inst-tab" onclick="setInstType('equity')">Equity / ETF</button>
     </div>
 
-    <!-- OPTIONS TAB -->
-    <div class="panel" id="panel-options">
-      <div class="card">
-        <div class="sh">Step 1 — Date Range & Interval</div>
-        <div class="row">
-          <div class="field"><label>From Date</label><input type="date" id="opt_from"/></div>
-          <div class="field"><label>To Date</label><input type="date" id="opt_to"/></div>
-          <div class="field"><label>Interval</label>
-            <select id="opt_interval"><option value="minute">1 min</option><option value="3minute">3 min</option><option value="5minute">5 min</option><option value="15minute">15 min</option><option value="30minute">30 min</option><option value="60minute">60 min</option><option value="day" selected>Day</option></select>
-          </div>
-          <div class="field"><label>Format</label>
-            <select id="opt_fmt"><option value="csv">CSV</option><option value="json">JSON</option><option value="parquet">Parquet</option></select>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="sh">Step 2 — Select Option Contract</div>
-        <div style="display:flex;gap:7px;margin-bottom:14px;">
-          <div class="mode-btn" id="optmode-index" onclick="optSetMode('index')" style="background:rgba(0,212,170,.12);border:1px solid var(--grn);color:var(--grn);">📊 Index Options</div>
-          <div class="mode-btn" id="optmode-stock" onclick="optSetMode('stock')" style="background:var(--surf2);border:1px solid var(--bdr);color:var(--muted);">🏢 Stock Options</div>
-        </div>
-        <!-- Index mode -->
-        <div id="opt_index_row">
-          <div class="row">
-            <div class="field"><label>Exchange</label>
-              <select id="opt_ex" onchange="optFilterUL()"><option value="NFO">NFO</option><option value="BFO">BFO</option></select>
-            </div>
-            <div class="field"><label>Underlying</label>
-              <select id="opt_ul" onchange="optLoadExpiries()">
-                <option value="">— Select —</option><option value="NIFTY">NIFTY</option><option value="BANKNIFTY">BANKNIFTY</option><option value="FINNIFTY">FINNIFTY</option><option value="MIDCPNIFTY">MIDCPNIFTY</option>
-              </select>
-            </div>
-          </div>
-        </div>
-        <!-- Stock mode -->
-        <div id="opt_stock_row" style="display:none">
-          <div class="row">
-            <div class="field"><label>Search Stock</label>
-              <div class="search-wrap">
-                <input type="text" id="opt_stock_search" placeholder="e.g. RELIANCE, TCS, INFY..." oninput="optSearchStock()" autocomplete="off"/>
-                <div class="search-results" id="opt_stock_results"></div>
-              </div>
-            </div>
-          </div>
-          <div id="opt_stock_chip" style="display:none;margin-bottom:10px;">
-            <div class="chip"><span id="opt_stock_sym"></span><span class="x" onclick="optClearStock()">✕</span></div>
-          </div>
-          <button class="btn btn-g" onclick="optLoadStockExpiries()">Load Expiries →</button>
-        </div>
-        <div class="row" style="margin-top:12px;">
-          <div class="field"><label>Expiry Date</label>
-            <select id="opt_expiry" onchange="optLoadStrikes()" disabled><option>— select underlying first —</option></select>
-          </div>
-          <div class="field"><label>Strike Price</label>
-            <select id="opt_strike" disabled><option>— select expiry first —</option></select>
-          </div>
-        </div>
-        <div class="field" style="margin-bottom:10px;"><label>Option Type</label>
-          <div class="otype-g">
-            <div class="otype-b a-ce" id="ot-CE" onclick="optSetType('CE')">CE</div>
-            <div class="otype-b" id="ot-PE" onclick="optSetType('PE')">PE</div>
-            <div class="otype-b" id="ot-BOTH" onclick="optSetType('BOTH')">CE + PE</div>
-          </div>
-        </div>
-        <div class="trow"><input type="checkbox" id="opt_oi" checked/><label for="opt_oi">Include OI</label></div>
-        <div id="opt_info" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;"></div>
-      </div>
-      <div class="card">
-        <div class="sh">Step 3 — Download</div>
-        <button class="btn btn-p" onclick="dlOptions()">⬇ Download</button>
-        <div id="opt_status"></div>
-      </div>
-    </div>
-
-    <!-- EXPIRED OPTIONS TAB -->
-    <div class="panel" id="panel-expired">
-      <div class="info-box info-ylw" style="margin-bottom:14px;">⚡ Find all expiries in a date range → pick one → download all strikes for that expiry.</div>
-      <div class="card">
-        <div class="sh">Step 1 — Date Range & Type</div>
-        <div class="row">
-          <div class="field"><label>Index</label>
-            <select id="exp_index"><option value="NIFTY">NIFTY</option><option value="BANKNIFTY">BANKNIFTY</option><option value="FINNIFTY">FINNIFTY</option><option value="MIDCPNIFTY">MIDCPNIFTY</option><option value="SENSEX">SENSEX</option><option value="BANKEX">BANKEX</option></select>
-          </div>
-          <div class="field"><label>Expiry Type</label>
-            <select id="exp_type"><option value="weekly">Weekly</option><option value="monthly" selected>Monthly</option></select>
-          </div>
-          <div class="field"><label>Option Type</label>
-            <select id="exp_otype"><option value="CE">CE</option><option value="PE">PE</option><option value="BOTH" selected>Both</option></select>
-          </div>
-        </div>
-        <div class="row">
-          <div class="field"><label>From Date</label><input type="date" id="exp_from"/></div>
-          <div class="field"><label>To Date</label><input type="date" id="exp_to"/></div>
-        </div>
-        <button class="btn btn-g" onclick="expFindExpiries()">🔍 Find Expiries in This Range</button>
-      </div>
-      <div class="card" id="exp_step2" style="display:none">
-        <div class="sh">Step 2 — Select Expiry (<span id="exp_count">0</span> found)</div>
+    <!-- OPTIONS -->
+    <div id="sect-options">
+      <div class="row col2" style="margin-bottom:12px">
         <div class="field">
-          <select id="exp_expiry_sel" style="font-family:var(--mono);"><option value="">— Select an expiry —</option></select>
+          <label>Exchange</label>
+          <select id="opt-exchange" onchange="onOptExchangeChange()">
+            <option value="NFO">NFO (NSE F&O)</option>
+            <option value="BFO">BFO (BSE F&O)</option>
+          </select>
         </div>
-        <div id="exp_sel_info" style="display:none;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;">Selected: <strong id="exp_sel_date" style="color:var(--grn);"></strong></div>
-      </div>
-      <div class="card" id="exp_step3" style="display:none">
-        <div class="sh">Step 3 — Strike Selection</div>
-        <div style="display:flex;gap:7px;margin-bottom:14px;">
-          <div class="mode-btn" id="emode-atm" onclick="expSetStrikeMode('atm')" style="background:rgba(0,212,170,.12);border:1px solid var(--grn);color:var(--grn);">ATM Range</div>
-          <div class="mode-btn" id="emode-specific" onclick="expSetStrikeMode('specific')" style="background:var(--surf2);border:1px solid var(--bdr);color:var(--muted);">Specific Strike</div>
-        </div>
-        <div id="exp_atm_row">
-          <div class="row">
-            <div class="field"><label>Spot / ATM Price</label><input type="number" id="exp_atm" placeholder="e.g. 24500" step="50"/></div>
-            <div class="field"><label>Step Size</label>
-              <select id="exp_step"><option value="50">50 (NIFTY/FINNIFTY)</option><option value="100">100 (BANKNIFTY)</option><option value="500">500 (SENSEX/BANKEX)</option></select>
-            </div>
-            <div class="field"><label>Range</label>
-              <select id="exp_range"><option value="3">ATM ± 3</option><option value="5" selected>ATM ± 5</option><option value="10">ATM ± 10</option></select>
-            </div>
-          </div>
-        </div>
-        <div id="exp_specific_row" style="display:none">
-          <div class="field"><label>Strike Price</label><input type="number" id="exp_strike" placeholder="e.g. 24000" step="50"/></div>
-        </div>
-        <div class="row" style="margin-top:8px;">
-          <div class="field"><label>Interval</label>
-            <select id="exp_interval"><option value="minute">1 min</option><option value="3minute">3 min</option><option value="15minute">15 min</option><option value="60minute">60 min</option><option value="day" selected>Day</option></select>
-          </div>
-          <div class="field"><label>Format</label>
-            <select id="exp_fmt"><option value="csv">CSV</option><option value="json">JSON</option><option value="parquet">Parquet</option></select>
-          </div>
+        <div class="field">
+          <label>Underlying (e.g. NIFTY, BANKNIFTY, RELIANCE)</label>
+          <input id="opt-underlying" type="text" placeholder="Type symbol..." oninput="debounceOptUnderlying()" />
         </div>
       </div>
-      <div class="card" id="exp_step4" style="display:none">
-        <div class="sh">Step 4 — Download</div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-p" onclick="expDownload()" id="exp_dlbtn">⬇ Download All Strikes</button>
-          <button class="btn btn-d" onclick="expStop()" id="exp_stopbtn" style="display:none;">■ Stop</button>
+      <div class="row col3" style="margin-bottom:12px">
+        <div class="field">
+          <label>Expiry</label>
+          <select id="opt-expiry" onchange="onOptExpiryChange()">
+            <option value="">— select underlying first —</option>
+          </select>
         </div>
-        <div class="pbar"><div class="pbar-fill" id="exp_prog" style="width:0%"></div></div>
-        <div id="exp_cnt" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:5px;"></div>
-        <div id="exp_status"></div>
-        <div class="blog" id="exp_log" style="display:none;"></div>
+        <div class="field">
+          <label>Strike Price</label>
+          <select id="opt-strike">
+            <option value="">— select expiry first —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Option Type</label>
+          <select id="opt-type">
+            <option value="CE">CE — Call</option>
+            <option value="PE">PE — Put</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="resolveOptionToken()">🔍 Resolve Token</button>
+    </div>
+
+    <!-- FUTURES -->
+    <div id="sect-futures" style="display:none">
+      <div class="row col2" style="margin-bottom:12px">
+        <div class="field">
+          <label>Exchange</label>
+          <select id="fut-exchange">
+            <option value="NFO">NFO</option>
+            <option value="BFO">BFO</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Underlying</label>
+          <input id="fut-underlying" type="text" placeholder="e.g. NIFTY, RELIANCE" oninput="debounceFutUnderlying()" />
+        </div>
+      </div>
+      <div class="row col2" style="margin-bottom:12px">
+        <div class="field">
+          <label>Expiry</label>
+          <select id="fut-expiry">
+            <option value="">— select underlying first —</option>
+          </select>
+        </div>
+        <div class="field" style="justify-content:flex-end">
+          <button class="btn btn-outline btn-sm" onclick="resolveFutToken()" style="margin-top:22px">🔍 Resolve Token</button>
+        </div>
       </div>
     </div>
 
-    <!-- FUTURES TAB -->
-    <div class="panel" id="panel-futures">
-      <div class="card">
-        <div class="sh">Step 1 — Date Range & Interval</div>
-        <div class="row">
-          <div class="field"><label>From Date</label><input type="date" id="fut_from"/></div>
-          <div class="field"><label>To Date</label><input type="date" id="fut_to"/></div>
-          <div class="field"><label>Interval</label>
-            <select id="fut_interval"><option value="minute">1 min</option><option value="3minute">3 min</option><option value="5minute">5 min</option><option value="15minute">15 min</option><option value="30minute">30 min</option><option value="60minute">60 min</option><option value="day" selected>Day</option></select>
-          </div>
-          <div class="field"><label>Format</label>
-            <select id="fut_fmt"><option value="csv">CSV</option><option value="json">JSON</option><option value="parquet">Parquet</option></select>
-          </div>
+    <!-- EQUITY -->
+    <div id="sect-equity" style="display:none">
+      <div class="row col2" style="margin-bottom:12px">
+        <div class="field">
+          <label>Exchange</label>
+          <select id="eq-exchange">
+            <option value="NSE">NSE</option>
+            <option value="BSE">BSE</option>
+          </select>
         </div>
-        <div class="trow"><input type="checkbox" id="fut_cont" onchange="futToggleCont()"/><label for="fut_cont">Continuous (stitches all expiries automatically)</label></div>
-      </div>
-      <div class="card">
-        <div class="sh">Step 2 — Select Futures Contract</div>
-        <div class="row">
-          <div class="field"><label>Exchange</label>
-            <select id="fut_ex"><option value="NFO">NFO</option><option value="BFO">BFO</option><option value="MCX">MCX</option></select>
-          </div>
-          <div class="field"><label>Underlying Symbol</label>
-            <input type="text" id="fut_ul" placeholder="e.g. NIFTY, BANKNIFTY, RELIANCE"/>
-          </div>
-          <div class="field" style="align-self:flex-end">
-            <button class="btn btn-g" onclick="futLoadExpiries()" style="width:100%">Load Expiries</button>
-          </div>
+        <div class="field">
+          <label>Symbol (e.g. RELIANCE, INFY, GOLDBEES)</label>
+          <input id="eq-symbol" type="text" placeholder="Type exact symbol..." />
         </div>
-        <div id="fut_expiry_row" class="row">
-          <div class="field"><label>Expiry Date</label>
-            <select id="fut_expiry" disabled><option>— load expiries first —</option></select>
-          </div>
-        </div>
-        <div id="fut_info" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:5px;"></div>
       </div>
-      <div class="card">
-        <div class="sh">Step 3 — Download</div>
-        <button class="btn btn-p" onclick="dlFutures()">⬇ Download</button>
-        <div id="fut_status"></div>
-      </div>
+      <button class="btn btn-outline btn-sm" onclick="resolveEquityToken()">🔍 Resolve Token</button>
     </div>
 
-    <!-- CHAIN DOWNLOAD TAB -->
-    <div class="panel" id="panel-chain">
-      <div class="info-box info-blu" style="margin-bottom:14px;">📊 Downloads <strong>all strikes merged into one file per expiry</strong> — with spot price, ATM labels. Perfect for backtesting.</div>
-      <div class="card">
-        <div class="sh">Step 1 — Index & Expiry Type</div>
-        <div class="row">
-          <div class="field"><label>Index</label>
-            <select id="ch_index" onchange="chUpdateEstimate()"><option value="NIFTY">NIFTY</option><option value="BANKNIFTY">BANKNIFTY</option></select>
-          </div>
-          <div class="field"><label>Expiry Type</label>
-            <select id="ch_exptype" onchange="chOnExpiryChange()">
-              <option value="weekly">Weekly (3 weeks data per file)</option>
-              <option value="monthly">Monthly (3 months data per file)</option>
-              <option value="quarterly">Quarterly Mar/Jun/Sep/Dec (9 months data per file)</option>
-            </select>
-          </div>
-        </div>
-        <div class="info-box info-blu" id="ch_window_info">📅 <strong>Weekly:</strong> Each file = 3 weeks before expiry up to expiry date.</div>
-        <div class="sh" style="margin-top:14px;">Step 2 — Which Expiries</div>
-        <div class="row">
-          <div class="field"><label>Expiries From</label><input type="date" id="ch_from" onchange="chUpdateEstimate()"/></div>
-          <div class="field"><label>Expiries To</label><input type="date" id="ch_to" onchange="chUpdateEstimate()"/></div>
-        </div>
-        <div class="sh" style="margin-top:4px;">Step 3 — Strike Range & Interval</div>
-        <div class="row">
-          <div class="field"><label>Strike Range</label>
-            <select id="ch_strikes" onchange="chUpdateEstimate()"><option value="5">± 5 strikes</option><option value="10" selected>± 10 strikes</option></select>
-          </div>
-          <div class="field"><label>Interval</label>
-            <select id="ch_interval" onchange="chUpdateEstimate()"><option value="minute">1 min</option><option value="3minute">3 min</option><option value="15minute" selected>15 min</option><option value="60minute">60 min</option><option value="75minute">75 min (resampled)</option><option value="day">Day</option></select>
-          </div>
-          <div class="field"><label>Format</label>
-            <select id="ch_fmt"><option value="parquet" selected>Parquet</option><option value="csv">CSV</option></select>
-          </div>
-        </div>
-        <div class="info-box info-grn" id="ch_estimate">Select options above to see estimate.</div>
+    <!-- Resolved token display -->
+    <div id="resolvedTokenWrap" style="display:none;margin-top:14px">
+      <div class="token-chip">Resolved: <span id="resolvedSymbol"></span> — Token: <span id="resolvedToken"></span></div>
+    </div>
+    <div id="resolveError"></div>
+  </div>
+
+  <!-- Download parameters -->
+  <div class="card">
+    <div class="card-title">Download Parameters</div>
+    <div class="row col2" style="margin-bottom:12px">
+      <div class="field">
+        <label>From Date</label>
+        <input id="fromDate" type="date" />
       </div>
-      <div class="card">
-        <div class="sh">Step 4 — Download Chain</div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-p" onclick="chDownload()" id="ch_dlbtn">⬇ Download All Expiries</button>
-          <button class="btn btn-d" onclick="chStop()" id="ch_stopbtn" style="display:none;">■ Stop</button>
-        </div>
-        <div class="pbar"><div class="pbar-fill" id="ch_prog" style="width:0%"></div></div>
-        <div id="ch_cnt" style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:5px;"></div>
-        <div id="ch_status"></div>
-        <div class="blog" id="ch_log" style="display:none;"></div>
+      <div class="field">
+        <label>To Date</label>
+        <input id="toDate" type="date" />
       </div>
     </div>
+    <div class="row col4" style="margin-bottom:12px">
+      <div class="field">
+        <label>Interval</label>
+        <select id="interval">
+          <option value="minute">1 min</option>
+          <option value="3minute">3 min</option>
+          <option value="5minute">5 min</option>
+          <option value="10minute">10 min</option>
+          <option value="15minute" selected>15 min</option>
+          <option value="30minute">30 min</option>
+          <option value="60minute">60 min</option>
+          <option value="day">Day</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>File Format</label>
+        <select id="fileFormat">
+          <option value="csv">CSV</option>
+          <option value="json">JSON</option>
+        </select>
+      </div>
+      <div class="field" style="justify-content:center;align-items:center;flex-direction:row;gap:8px;padding-top:20px">
+        <input type="checkbox" id="includeOI" checked style="width:auto" />
+        <label for="includeOI" style="margin:0">Include OI</label>
+      </div>
+      <div class="field" style="justify-content:center;align-items:center;flex-direction:row;gap:8px;padding-top:20px">
+        <input type="checkbox" id="continuous" style="width:auto" />
+        <label for="continuous" style="margin:0">Continuous</label>
+      </div>
+    </div>
+    <hr class="divider" />
+    <div class="btn-group">
+      <button class="btn btn-outline" onclick="previewData()">👁 Preview (5 rows)</button>
+      <button class="btn btn-primary" onclick="downloadData()">⬇ Download</button>
+    </div>
+    <div id="downloadStatus"></div>
+    <div id="previewWrap" class="preview-wrap" style="display:none"></div>
+  </div>
 
-  </main>
 </div>
+
+<!-- ════════════════════════════════════════════════════════ BULK TAB -->
+<div id="tab-bulk" class="panel">
+
+  <div class="card">
+    <div class="card-title">Bulk Download via CSV</div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:14px">
+      Upload a CSV file with columns: <code style="color:var(--accent)">instrument_token, tradingsymbol, from_date, to_date, interval</code>.<br>
+      Optional columns: <code>oi</code> (1/0), <code>continuous</code> (1/0), <code>file_format</code> (csv/json)
+    </p>
+    <div class="btn-group" style="margin-bottom:12px">
+      <button class="btn btn-outline btn-sm" onclick="downloadTemplate()">📄 Download Template CSV</button>
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Upload CSV</label>
+      <input type="file" id="bulkFile" accept=".csv" onchange="loadBulkCSV()" style="padding:7px" />
+    </div>
+    <div id="bulkPreview"></div>
+    <hr class="divider" />
+    <div class="btn-group">
+      <button class="btn btn-primary" id="bulkStartBtn" onclick="startBulk()" disabled>▶ Start Download</button>
+      <button class="btn btn-warn" id="bulkPauseBtn" onclick="pauseBulk()" disabled>⏸ Pause</button>
+      <button class="btn btn-outline btn-sm" onclick="clearBulk()">🗑 Clear</button>
+    </div>
+    <div id="bulkProgressWrap" style="display:none;margin-top:10px">
+      <div style="font-size:12px;color:var(--muted)" id="bulkProgressLabel">0 / 0</div>
+      <div class="progress-bar-wrap"><div class="progress-bar" id="bulkBar" style="width:0%"></div></div>
+    </div>
+    <div class="bulk-log" id="bulkLog" style="display:none"></div>
+  </div>
+
+</div>
+</div><!-- /content -->
 
 <script>
-'use strict';
-// ── State ──────────────────────────────────────────────────────
-var apiKey='', apiSecret='', accessToken='';
-var selTok='', selSym='';
-var searchTimer=null;
-var optMode='index', optType='CE', optStockName='', optStockTimer=null;
-var futTok='', futSym='';
-var expStrikeMode='atm', expSelExpiry='', expStopped=false;
-var chStopped=false;
+// ── State ──────────────────────────────────────────────────────────────────
+const API = '';  // relative — same origin
+let state = {
+  apiKey: '',
+  accessToken: '',
+  instrumentToken: '',
+  tradingsymbol: '',
+  instType: 'options',  // options | futures | equity
+};
+let bulkItems = [];
+let bulkPaused = false;
+let bulkRunning = false;
+let bulkIndex = 0;
 
-// ── Page system ────────────────────────────────────────────────
-function showPage(n){
-  document.querySelectorAll('.page').forEach(function(p){
-    p.classList.remove('active');
-    p.style.display='none';
+// ── Init ───────────────────────────────────────────────────────────────────
+window.onload = () => {
+  const saved = JSON.parse(localStorage.getItem('zetapull_creds') || '{}');
+  if (saved.apiKey) { document.getElementById('apiKey').value = saved.apiKey; state.apiKey = saved.apiKey; }
+  if (saved.apiSecret) document.getElementById('apiSecret').value = saved.apiSecret;
+  if (saved.accessToken) {
+    state.accessToken = saved.accessToken;
+    updateConnected(true);
+  }
+  // set default dates
+  const today = new Date();
+  const monthAgo = new Date(); monthAgo.setDate(today.getDate() - 30);
+  document.getElementById('toDate').value = fmtDate(today);
+  document.getElementById('fromDate').value = fmtDate(monthAgo);
+};
+
+function fmtDate(d) {
+  return d.toISOString().slice(0, 10);
+}
+
+function saveCreds() {
+  state.apiKey = document.getElementById('apiKey').value.trim();
+  const secret = document.getElementById('apiSecret').value.trim();
+  localStorage.setItem('zetapull_creds', JSON.stringify({ apiKey: state.apiKey, apiSecret: secret, accessToken: state.accessToken }));
+}
+
+function updateConnected(on) {
+  document.getElementById('connDot').className = 'connected-dot' + (on ? ' on' : '');
+  document.getElementById('connLabel').textContent = on ? 'Connected ✓' : 'Not connected';
+}
+
+// ── Tabs ───────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const names = ['login', 'download', 'bulk'];
+    t.classList.toggle('active', names[i] === name);
   });
-  var el=document.getElementById('page-'+n);
-  if(el){ el.classList.add('active'); el.style.display='flex'; }
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
 }
 
-function switchTab(n,el){
-  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
-  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
-  document.getElementById('panel-'+n).classList.add('active');
-  el.classList.add('active');
+// ── Auth ───────────────────────────────────────────────────────────────────
+function openKiteLogin() {
+  const key = document.getElementById('apiKey').value.trim();
+  if (!key) { alert('Enter your API Key first.'); return; }
+  window.open(`https://kite.zerodha.com/connect/login?api_key=${key}&v=3`, '_blank');
 }
 
-// ── Storage helpers ────────────────────────────────────────────
-function lsGet(k){ try{return localStorage.getItem(k)||'';}catch(e){return '';} }
-function lsSet(k,v){ try{localStorage.setItem(k,v);}catch(e){} }
-function lsDel(k){ try{localStorage.removeItem(k);}catch(e){} }
+async function generateToken() {
+  const key = document.getElementById('apiKey').value.trim();
+  const secret = document.getElementById('apiSecret').value.trim();
+  const reqToken = document.getElementById('reqToken').value.trim();
+  if (!key || !secret || !reqToken) { showAlert('tokenStatus', 'error', 'Fill API Key, Secret and Request Token.'); return; }
 
-// ── On load ────────────────────────────────────────────────────
-window.addEventListener('load', function(){
-  // Load saved credentials first
-  apiKey      = lsGet('zp_k');
-  apiSecret   = lsGet('zp_s');
-  accessToken = lsGet('zp_t');
-
-  // Set default dates
-  try { setDates(); } catch(e){}
-
-  // Check if returning from Kite login
-  var reqTok = '';
+  showAlert('tokenStatus', 'info', '<span class="spinner"></span> Generating token...');
   try {
-    var params = new URLSearchParams(window.location.search);
-    reqTok = params.get('request_token') || '';
-    if(reqTok) window.history.replaceState({},'',window.location.pathname);
-  } catch(e){}
-
-  if(reqTok){
-    showPage('token');
-    try {
-      document.getElementById('reqTokenDisplay').textContent = reqTok;
-      document.getElementById('reqTokenDisplay').classList.add('filled');
-      document.getElementById('reqTokenManual').value = reqTok;
-      document.getElementById('autofillBadge').style.display = 'inline-flex';
-      document.getElementById('step1desc').textContent = apiKey ? 'API Key: '+apiKey : 'Login successful';
-    } catch(e){}
-    return;
-  }
-
-  if(accessToken && apiKey){
-    showPage('app');
-    try{ document.getElementById('userPill').textContent=apiKey.substring(0,8)+'...'; }catch(e){}
-    return;
-  }
-
-  showPage('login');
-  try {
-    if(apiKey){ document.getElementById('apiKey').value=apiKey; document.getElementById('savedBadge').style.display='flex'; }
-    if(apiSecret) document.getElementById('apiSecret').value=apiSecret;
-  } catch(e){}
-});
-
-// ── LOGIN ──────────────────────────────────────────────────────
-function doKiteLogin(){
-  var k=document.getElementById('apiKey').value.trim();
-  var s=document.getElementById('apiSecret').value.trim();
-  if(!k){ showAlert('loginMsg','Enter your API Key','err'); return; }
-  if(!s){ showAlert('loginMsg','Enter your API Secret','err'); return; }
-  apiKey=k; apiSecret=s;
-  lsSet('zp_k',k); lsSet('zp_s',s);
-  window.location.href='https://kite.zerodha.com/connect/login?api_key='+k+'&v=3';
-}
-
-function useDirectToken(){
-  var k=document.getElementById('apiKey').value.trim();
-  var t=document.getElementById('directToken').value.trim();
-  if(!k||!t){ showAlert('loginMsg','Enter API Key and Access Token','err'); return; }
-  apiKey=k; accessToken=t;
-  lsSet('zp_k',k); lsSet('zp_t',t);
-  enterApp();
-}
-
-// ── TOKEN ──────────────────────────────────────────────────────
-function retryKiteLogin(){
-  if(!apiKey){ showPage('login'); return; }
-  window.location.href='https://kite.zerodha.com/connect/login?api_key='+apiKey+'&v=3';
-}
-
-async function generateToken(){
-  var k=apiKey||lsGet('zp_k');
-  var s=apiSecret||lsGet('zp_s');
-  var r=document.getElementById('reqTokenManual').value.trim()||document.getElementById('reqTokenDisplay').textContent.trim();
-  if(!k||!s){ showAlert('tokenMsg','API Key/Secret missing. Go back.','err'); return; }
-  if(!r||r==='Waiting...'){ showAlert('tokenMsg','No request token found. Paste it manually above.','err'); return; }
-  var btn=document.getElementById('generateBtn');
-  btn.disabled=true; btn.textContent='⏳ Generating...';
-  showAlert('tokenMsg','Generating...','info');
-  try {
-    var res=await fetch('/api/generate-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:k,request_token:r,api_secret:s})});
-    var data=await res.json();
-    if(!res.ok) throw new Error(data.detail||'Failed');
-    accessToken=data.access_token; apiKey=k; apiSecret=s;
-    lsSet('zp_t',accessToken); lsSet('zp_k',k); lsSet('zp_s',s);
-    document.getElementById('accessTokenDisplay').textContent=accessToken.substring(0,20)+'...';
-    document.getElementById('accessTokenDisplay').classList.add('filled');
-    document.getElementById('step3num').className='step-num done';
-    document.getElementById('step3num').textContent='✓';
-    showAlert('tokenMsg','✓ Token generated! Entering app...','ok');
-    btn.textContent='✓ Done!';
-    setTimeout(enterApp, 1200);
-  } catch(e){
-    showAlert('tokenMsg','✗ '+e.message,'err');
-    btn.disabled=false; btn.textContent='⚡ Generate Access Token';
+    const r = await fetch(`${API}/api/generate-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_key: key, api_secret: secret, request_token: reqToken }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || r.statusText);
+    state.accessToken = d.access_token;
+    state.apiKey = key;
+    updateConnected(true);
+    localStorage.setItem('zetapull_creds', JSON.stringify({ apiKey: key, apiSecret: secret, accessToken: state.accessToken }));
+    showAlert('tokenStatus', 'success', `✅ Token generated! Saved in browser.`);
+  } catch(e) {
+    showAlert('tokenStatus', 'error', '❌ ' + e.message);
   }
 }
 
-function enterApp(){
-  showPage('app');
-  try{ document.getElementById('userPill').textContent=apiKey.substring(0,8)+'...'; }catch(e){}
+function setAccessToken() {
+  const key = document.getElementById('apiKey').value.trim();
+  const tok = document.getElementById('accessTokenInput').value.trim();
+  if (!key || !tok) { showAlert('pasteTokenStatus', 'error', 'Enter API Key and Access Token.'); return; }
+  state.apiKey = key;
+  state.accessToken = tok;
+  updateConnected(true);
+  localStorage.setItem('zetapull_creds', JSON.stringify({ apiKey: key, apiSecret: document.getElementById('apiSecret').value.trim(), accessToken: tok }));
+  showAlert('pasteTokenStatus', 'success', '✅ Token saved.');
 }
 
-function doRelogin(){
-  lsDel('zp_t'); accessToken='';
-  showPage('login');
+// ── Fetch Instruments ──────────────────────────────────────────────────────
+async function fetchInstruments() {
+  if (!state.apiKey || !state.accessToken) { alert('Connect first (Login & Token tab).'); return; }
+  const btn = document.getElementById('fetchBtn');
+  const sp = document.getElementById('fetchSpinner');
+  btn.disabled = true; sp.style.display = 'inline-block';
+  document.getElementById('cacheInfo').textContent = 'Fetching NFO + BFO + NSE + BSE...';
+  document.getElementById('fetchCounts').innerHTML = '';
   try {
-    if(apiKey){ document.getElementById('apiKey').value=apiKey; document.getElementById('savedBadge').style.display='flex'; }
-    if(apiSecret) document.getElementById('apiSecret').value=apiSecret;
-  } catch(e){}
-}
-
-// ── INSTRUMENT SEARCH (Equity) ─────────────────────────────────
-function searchInst(){
-  clearTimeout(searchTimer);
-  var q=document.getElementById('symbolSearch').value.trim();
-  if(q.length<2){ document.getElementById('searchResults').style.display='none'; return; }
-  searchTimer=setTimeout(function(){ doSearch(q); }, 300);
-}
-
-async function doSearch(q){
-  var ex=document.getElementById('exchange').value;
-  var box=document.getElementById('searchResults');
-  box.style.display='block';
-  box.innerHTML='<div style="padding:9px;color:var(--muted);font-family:var(--mono);font-size:12px;">Searching '+ex+'...</div>';
-  try {
-    var res=await fetch('/api/instruments?api_key='+apiKey+'&access_token='+accessToken+'&exchange='+ex+'&search='+encodeURIComponent(q));
-    var data; try{data=await res.json();}catch(e){box.innerHTML='<div style="padding:9px;color:var(--red);font-family:var(--mono);font-size:12px;">Server error — check token</div>';return;}
-    if(!res.ok){box.innerHTML='<div style="padding:9px;color:var(--red);font-family:var(--mono);font-size:12px;">'+(data.detail||'Error')+'</div>';return;}
-    if(!Array.isArray(data)||!data.length){box.innerHTML='<div style="padding:9px;color:var(--muted);font-family:var(--mono);font-size:12px;">No results in '+ex+'</div>';return;}
-    box.innerHTML=data.map(function(r){return '<div class="sri" onclick="pickInst(\''+r.instrument_token+'\',\''+r.tradingsymbol+'\',\''+(r.name||'')+'\')"><span class="sym">'+r.tradingsymbol+'</span><span class="meta">'+(r.instrument_type||'')+' '+(r.expiry?'· '+r.expiry:'')+' '+(r.strike?'· ₹'+r.strike:'')+'</span></div>';}).join('');
-  } catch(e){box.innerHTML='<div style="padding:9px;color:var(--red);font-family:var(--mono);font-size:12px;">'+e.message+'</div>';}
-}
-
-function pickInst(tok,sym,name){
-  selTok=tok; selSym=sym;
-  document.getElementById('selSym').textContent=sym+(name?' ('+name+')':'');
-  document.getElementById('selTok').textContent=tok;
-  document.getElementById('selDiv').style.display='block';
-  document.getElementById('searchResults').style.display='none';
-  document.getElementById('symbolSearch').value=sym;
-}
-
-function clearSel(){
-  selTok=''; selSym='';
-  document.getElementById('selDiv').style.display='none';
-  document.getElementById('symbolSearch').value='';
-  document.getElementById('searchResults').style.display='none';
-}
-
-document.addEventListener('click',function(e){
-  if(!e.target.closest('#symbolSearch')&&!e.target.closest('#searchResults')) document.getElementById('searchResults').style.display='none';
-  if(!e.target.closest('#opt_stock_search')&&!e.target.closest('#opt_stock_results')){ var el=document.getElementById('opt_stock_results'); if(el) el.style.display='none'; }
-});
-
-// ── EQUITY DOWNLOAD ────────────────────────────────────────────
-async function dlEquity(){
-  if(!selTok){ showAlert('dlStatus','Select an instrument first','err'); return; }
-  if(!document.getElementById('fromDate').value){ showAlert('dlStatus','Select date range','err'); return; }
-  showAlert('dlStatus','⏳ Downloading...','info');
-  try {
-    var body={api_key:apiKey,access_token:accessToken,instrument_token:selTok,from_date:document.getElementById('fromDate').value,to_date:document.getElementById('toDate').value,interval:document.getElementById('interval').value,continuous:false,oi:false,file_format:document.getElementById('fileFormat').value};
-    var res=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    if(!res.ok){var d=await res.json();throw new Error(d.detail);}
-    var blob=await res.blob();
-    var cd=res.headers.get('Content-Disposition')||'';
-    var fn=cd.match(/filename="(.+)"/)?.[1]||selSym+'_'+body.interval+'.'+body.file_format;
-    dlBlob(blob,fn); showAlert('dlStatus','✓ Downloaded: '+fn,'ok');
-  } catch(e){showAlert('dlStatus','✗ '+e.message,'err');}
-}
-
-// ── OPTIONS ────────────────────────────────────────────────────
-function optSetMode(mode){
-  optMode=mode;
-  var ia=document.getElementById('optmode-index'), sa=document.getElementById('optmode-stock');
-  var ir=document.getElementById('opt_index_row'), sr=document.getElementById('opt_stock_row');
-  if(mode==='index'){
-    ia.style.cssText='flex:1;padding:8px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:rgba(0,212,170,.12);border:1px solid var(--grn);color:var(--grn);';
-    sa.style.cssText='flex:1;padding:8px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:var(--surf2);border:1px solid var(--bdr);color:var(--muted);';
-    ir.style.display=''; sr.style.display='none';
-  } else {
-    sa.style.cssText='flex:1;padding:8px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:rgba(0,145,255,.12);border:1px solid var(--blu);color:var(--blu);';
-    ia.style.cssText='flex:1;padding:8px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:var(--surf2);border:1px solid var(--bdr);color:var(--muted);';
-    ir.style.display='none'; sr.style.display='';
+    const r = await fetch(`${API}/api/fetch-instruments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_key: state.apiKey, access_token: state.accessToken }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || r.statusText);
+    document.getElementById('cacheInfo').textContent = `✅ ${d.total.toLocaleString()} instruments fetched at ${d.fetched_at}`;
+    const html = Object.entries(d.counts).map(([ex, n]) =>
+      `<div class="count-chip">${ex}: <b>${n.toLocaleString()}</b></div>`
+    ).join('');
+    document.getElementById('fetchCounts').innerHTML = html;
+  } catch(e) {
+    document.getElementById('cacheInfo').textContent = '❌ Fetch failed: ' + e.message;
+  } finally {
+    btn.disabled = false; sp.style.display = 'none';
   }
-  resetExpiry();
 }
 
-function optFilterUL(){
-  var ex=document.getElementById('opt_ex').value;
-  var sel=document.getElementById('opt_ul');
-  if(ex==='BFO') sel.innerHTML='<option value="">— Select —</option><option value="SENSEX">SENSEX</option><option value="BANKEX">BANKEX</option>';
-  else sel.innerHTML='<option value="">— Select —</option><option value="NIFTY">NIFTY</option><option value="BANKNIFTY">BANKNIFTY</option><option value="FINNIFTY">FINNIFTY</option><option value="MIDCPNIFTY">MIDCPNIFTY</option>';
-  resetExpiry();
-}
-
-function resetExpiry(){
-  document.getElementById('opt_expiry').innerHTML='<option>— select underlying first —</option>';
-  document.getElementById('opt_expiry').disabled=true;
-  document.getElementById('opt_strike').innerHTML='<option>— select expiry first —</option>';
-  document.getElementById('opt_strike').disabled=true;
-}
-
-async function optLoadExpiries(){
-  var u=document.getElementById('opt_ul').value;
-  if(!u) return;
-  var ex=document.getElementById('opt_ex').value;
-  var sel=document.getElementById('opt_expiry');
-  sel.innerHTML='<option>Loading...</option>'; sel.disabled=true;
-  document.getElementById('opt_strike').innerHTML='<option>—</option>'; document.getElementById('opt_strike').disabled=true;
-  try {
-    var res=await fetch('/api/options/expiries?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+u+'&exchange='+ex);
-    var d=await res.json();
-    sel.innerHTML=d.expiries.length?d.expiries.map(function(e){return '<option value="'+e+'">'+e+'</option>';}).join(''):'<option>None found</option>';
-    sel.disabled=false; optLoadStrikes();
-  } catch(e){sel.innerHTML='<option>Error</option>';}
-}
-
-async function optLoadStrikes(){
-  var u=optMode==='stock'?optStockName:document.getElementById('opt_ul').value;
-  var expDate=document.getElementById('opt_expiry').value;
-  if(!u||!expDate) return;
-  var ex=optMode==='stock'?'NFO':document.getElementById('opt_ex').value;
-  var sel=document.getElementById('opt_strike');
-  sel.innerHTML='<option>Loading...</option>'; sel.disabled=true;
-  try {
-    var res=await fetch('/api/options/strikes?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+u+'&expiry='+expDate+'&exchange='+ex);
-    var d=await res.json();
-    sel.innerHTML=d.strikes.length?d.strikes.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join(''):'<option>None</option>';
-    sel.disabled=false;
-  } catch(e){sel.innerHTML='<option>Error</option>';}
-}
-
-function optSetType(t){
-  optType=t;
-  ['CE','PE','BOTH'].forEach(function(x){
-    var el=document.getElementById('ot-'+x);
-    el.className='otype-b'+(x===t?' a-'+t.toLowerCase():'');
+// ── Instrument type toggle ─────────────────────────────────────────────────
+function setInstType(type) {
+  state.instType = type;
+  document.querySelectorAll('.inst-tab').forEach((t, i) => {
+    t.classList.toggle('active', ['options','futures','equity'][i] === type);
   });
+  ['options','futures','equity'].forEach(s => {
+    document.getElementById('sect-' + s).style.display = s === type ? '' : 'none';
+  });
+  clearResolvedToken();
 }
 
-// Stock options search
-function optSearchStock(){
-  clearTimeout(optStockTimer);
-  var q=document.getElementById('opt_stock_search').value.trim();
-  if(q.length<2){document.getElementById('opt_stock_results').style.display='none';return;}
-  optStockTimer=setTimeout(function(){optDoStockSearch(q);},300);
+function clearResolvedToken() {
+  state.instrumentToken = '';
+  state.tradingsymbol = '';
+  document.getElementById('resolvedTokenWrap').style.display = 'none';
+  document.getElementById('resolveError').innerHTML = '';
 }
 
-async function optDoStockSearch(q){
-  var box=document.getElementById('opt_stock_results');
-  box.style.display='block';
-  box.innerHTML='<div style="padding:9px;color:var(--muted);font-family:var(--mono);font-size:12px;">Searching NFO...</div>';
+// ── Options flow ───────────────────────────────────────────────────────────
+let optUnderlyingTimer;
+function debounceOptUnderlying() {
+  clearTimeout(optUnderlyingTimer);
+  optUnderlyingTimer = setTimeout(loadOptExpiries, 600);
+}
+
+async function onOptExchangeChange() { await loadOptExpiries(); }
+
+async function loadOptExpiries() {
+  const und = document.getElementById('opt-underlying').value.trim().toUpperCase();
+  const ex = document.getElementById('opt-exchange').value;
+  const sel = document.getElementById('opt-expiry');
+  if (!und || und.length < 2) { sel.innerHTML = '<option>— type underlying —</option>'; return; }
   try {
-    var res=await fetch('/api/instruments?api_key='+apiKey+'&access_token='+accessToken+'&exchange=NFO&search='+encodeURIComponent(q));
-    var data=await res.json();
-    var names=[...new Set(data.map(function(r){return r.name;}).filter(function(n){return n&&n!=='';}))] ;
-    if(!names.length){box.innerHTML='<div style="padding:9px;color:var(--muted);font-family:var(--mono);font-size:12px;">No F&O stocks found</div>';return;}
-    box.innerHTML=names.slice(0,20).map(function(n){return '<div class="sri" onclick="optPickStock(\''+n+'\')"><span class="sym">'+n+'</span><span class="meta">NFO</span></div>';}).join('');
-  } catch(e){box.innerHTML='<div style="padding:9px;color:var(--red);font-family:var(--mono);font-size:12px;">'+e.message+'</div>';}
+    const r = await fetch(`${API}/api/instruments/expiries?underlying=${und}&exchange=${ex}`);
+    const d = await r.json();
+    if (!r.ok || !d.expiries.length) {
+      sel.innerHTML = '<option>— no expiries found —</option>';
+      document.getElementById('opt-strike').innerHTML = '<option>— select expiry first —</option>';
+      return;
+    }
+    sel.innerHTML = d.expiries.map(e => `<option value="${e}">${e}</option>`).join('');
+    await onOptExpiryChange();
+  } catch(e) { sel.innerHTML = '<option>— error —</option>'; }
 }
 
-function optPickStock(name){
-  optStockName=name;
-  document.getElementById('opt_stock_search').value=name;
-  document.getElementById('opt_stock_sym').textContent=name;
-  document.getElementById('opt_stock_chip').style.display='block';
-  document.getElementById('opt_stock_results').style.display='none';
-}
-
-function optClearStock(){
-  optStockName='';
-  document.getElementById('opt_stock_search').value='';
-  document.getElementById('opt_stock_chip').style.display='none';
-  resetExpiry();
-}
-
-async function optLoadStockExpiries(){
-  if(!optStockName){showAlert('opt_status','Search and select a stock first','err');return;}
-  var sel=document.getElementById('opt_expiry');
-  sel.innerHTML='<option>Loading...</option>'; sel.disabled=true;
-  document.getElementById('opt_strike').innerHTML='<option>—</option>'; document.getElementById('opt_strike').disabled=true;
+async function onOptExpiryChange() {
+  const und = document.getElementById('opt-underlying').value.trim().toUpperCase();
+  const ex = document.getElementById('opt-exchange').value;
+  const expiry = document.getElementById('opt-expiry').value;
+  const sel = document.getElementById('opt-strike');
+  if (!expiry) return;
   try {
-    var res=await fetch('/api/options/expiries?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+encodeURIComponent(optStockName)+'&exchange=NFO');
-    var d=await res.json();
-    sel.innerHTML=d.expiries.length?d.expiries.map(function(e){return '<option value="'+e+'">'+e+'</option>';}).join(''):'<option>None found</option>';
-    sel.disabled=false; optLoadStrikes();
-  } catch(e){sel.innerHTML='<option>Error</option>';}
+    const r = await fetch(`${API}/api/instruments/strikes?underlying=${und}&expiry=${expiry}&exchange=${ex}`);
+    const d = await r.json();
+    if (!r.ok || !d.strikes.length) { sel.innerHTML = '<option>— no strikes —</option>'; return; }
+    sel.innerHTML = d.strikes.map(s => `<option value="${s}">${s}</option>`).join('');
+  } catch(e) { sel.innerHTML = '<option>— error —</option>'; }
 }
 
-async function dlOptions(){
-  var u=optMode==='stock'?optStockName:document.getElementById('opt_ul').value;
-  var expDate=document.getElementById('opt_expiry').value;
-  var strike=document.getElementById('opt_strike').value;
-  if(!u){showAlert('opt_status','Select underlying','err');return;}
-  if(!expDate){showAlert('opt_status','Select expiry','err');return;}
-  if(!strike){showAlert('opt_status','Select strike','err');return;}
-  if(!document.getElementById('opt_from').value){showAlert('opt_status','Select date range','err');return;}
-  var ex=optMode==='stock'?'NFO':document.getElementById('opt_ex').value;
-  var fmt=document.getElementById('opt_fmt').value;
-  var types=optType==='BOTH'?['CE','PE']:[optType];
-  showAlert('opt_status','⏳ Downloading...','info');
-  var done=0;
-  for(var i=0;i<types.length;i++){
-    var ot=types[i];
-    try {
-      var tr=await fetch('/api/options/token?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+u+'&expiry='+expDate+'&strike='+strike+'&option_type='+ot+'&exchange='+ex);
-      if(!tr.ok){var td=await tr.json();throw new Error(td.detail);}
-      var tok=await tr.json();
-      var body={api_key:apiKey,access_token:accessToken,instrument_token:tok.instrument_token,from_date:document.getElementById('opt_from').value,to_date:document.getElementById('opt_to').value,interval:document.getElementById('opt_interval').value,oi:document.getElementById('opt_oi').checked,continuous:false,file_format:fmt};
-      var res=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      if(!res.ok){var d=await res.json();throw new Error(d.detail);}
-      dlBlob(await res.blob(),tok.tradingsymbol+'_'+body.interval+'_'+body.from_date+'_'+body.to_date+'.'+fmt);
-      done++;
-    } catch(e){showAlert('opt_status','✗ '+ot+': '+e.message,'err');}
-  }
-  if(done>0) showAlert('opt_status','✓ Downloaded '+done+' file(s)','ok');
-}
-
-// ── FUTURES ────────────────────────────────────────────────────
-function futToggleCont(){
-  var isCont=document.getElementById('fut_cont').checked;
-  var row=document.getElementById('fut_expiry_row');
-  if(row) row.style.display=isCont?'none':'';
-}
-
-async function futLoadExpiries(){
-  var u=document.getElementById('fut_ul').value.trim().toUpperCase();
-  if(!u){showAlert('fut_status','Enter underlying symbol','err');return;}
-  var ex=document.getElementById('fut_ex').value;
-  var sel=document.getElementById('fut_expiry');
-  sel.innerHTML='<option>Loading...</option>'; sel.disabled=true;
+async function resolveOptionToken() {
+  const und = document.getElementById('opt-underlying').value.trim().toUpperCase();
+  const ex = document.getElementById('opt-exchange').value;
+  const expiry = document.getElementById('opt-expiry').value;
+  const strike = document.getElementById('opt-strike').value;
+  const optType = document.getElementById('opt-type').value;
+  if (!und || !expiry || !strike) { showAlert('resolveError', 'error', 'Select underlying, expiry and strike.'); return; }
   try {
-    var res=await fetch('/api/futures/expiries?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+u+'&exchange='+ex);
-    var d=await res.json();
-    if(!d.expiries.length){sel.innerHTML='<option>No contracts found</option>';return;}
-    sel.innerHTML=d.expiries.map(function(e){return '<option value="'+e+'">'+e+'</option>';}).join('');
-    sel.disabled=false; futLoadTok(); sel.onchange=futLoadTok;
-  } catch(e){sel.innerHTML='<option>Error</option>';}
+    const r = await fetch(`${API}/api/instruments/resolve?underlying=${und}&expiry=${expiry}&strike=${strike}&option_type=${optType}&exchange=${ex}`);
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail);
+    setResolvedToken(d.instrument_token, d.tradingsymbol);
+  } catch(e) { showAlert('resolveError', 'error', '❌ ' + e.message); }
 }
 
-async function futLoadTok(){
-  var u=document.getElementById('fut_ul').value.trim().toUpperCase();
-  var exp=document.getElementById('fut_expiry').value;
-  var ex=document.getElementById('fut_ex').value;
-  if(!u||!exp) return;
+// ── Futures flow ───────────────────────────────────────────────────────────
+let futUnderlyingTimer;
+function debounceFutUnderlying() {
+  clearTimeout(futUnderlyingTimer);
+  futUnderlyingTimer = setTimeout(loadFutExpiries, 600);
+}
+
+async function loadFutExpiries() {
+  const und = document.getElementById('fut-underlying').value.trim().toUpperCase();
+  const ex = document.getElementById('fut-exchange').value;
+  const sel = document.getElementById('fut-expiry');
+  if (!und || und.length < 2) { sel.innerHTML = '<option>— type underlying —</option>'; return; }
   try {
-    var res=await fetch('/api/futures/token?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+u+'&expiry='+exp+'&exchange='+ex);
-    var d=await res.json();
-    futTok=d.instrument_token; futSym=d.tradingsymbol;
-    document.getElementById('fut_info').textContent='Symbol: '+d.tradingsymbol+' | Token: '+d.instrument_token;
-  } catch(e){document.getElementById('fut_info').textContent='Not found';}
+    const r = await fetch(`${API}/api/instruments/expiries?underlying=${und}&exchange=${ex}`);
+    const d = await r.json();
+    if (!r.ok || !d.expiries.length) { sel.innerHTML = '<option>— no expiries found —</option>'; return; }
+    sel.innerHTML = d.expiries.map(e => `<option value="${e}">${e}</option>`).join('');
+  } catch(e) { sel.innerHTML = '<option>— error —</option>'; }
 }
 
-async function dlFutures(){
-  if(!futTok){showAlert('fut_status','Load a futures contract first','err');return;}
-  if(!document.getElementById('fut_from').value){showAlert('fut_status','Select date range','err');return;}
-  showAlert('fut_status','⏳ Downloading...','info');
+async function resolveFutToken() {
+  const und = document.getElementById('fut-underlying').value.trim().toUpperCase();
+  const ex = document.getElementById('fut-exchange').value;
+  const expiry = document.getElementById('fut-expiry').value;
+  if (!und || !expiry) { showAlert('resolveError', 'error', 'Select underlying and expiry.'); return; }
   try {
-    var body={api_key:apiKey,access_token:accessToken,instrument_token:futTok,from_date:document.getElementById('fut_from').value,to_date:document.getElementById('fut_to').value,interval:document.getElementById('fut_interval').value,oi:true,continuous:document.getElementById('fut_cont').checked,file_format:document.getElementById('fut_fmt').value};
-    var res=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    if(!res.ok){var d=await res.json();throw new Error(d.detail);}
-    dlBlob(await res.blob(),futSym+'_'+body.interval+'_'+body.from_date+'_'+body.to_date+'.'+body.file_format);
-    showAlert('fut_status','✓ Downloaded!','ok');
-  } catch(e){showAlert('fut_status','✗ '+e.message,'err');}
+    const r = await fetch(`${API}/api/instruments/resolve-futures?underlying=${und}&expiry=${expiry}&exchange=${ex}`);
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail);
+    setResolvedToken(d.instrument_token, d.tradingsymbol);
+  } catch(e) { showAlert('resolveError', 'error', '❌ ' + e.message); }
 }
 
-// ── EXPIRED OPTIONS ────────────────────────────────────────────
-function getLastThursday(year,month){
-  var d=new Date(year,month+1,0);
-  while(d.getDay()!==4) d.setDate(d.getDate()-1);
-  return new Date(d);
+// ── Equity flow ────────────────────────────────────────────────────────────
+async function resolveEquityToken() {
+  const sym = document.getElementById('eq-symbol').value.trim().toUpperCase();
+  const ex = document.getElementById('eq-exchange').value;
+  if (!sym) { showAlert('resolveError', 'error', 'Enter a symbol.'); return; }
+  try {
+    const r = await fetch(`${API}/api/instruments/resolve-equity?symbol=${sym}&exchange=${ex}`);
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail);
+    setResolvedToken(d.instrument_token, d.tradingsymbol);
+  } catch(e) { showAlert('resolveError', 'error', '❌ ' + e.message); }
 }
 
-function getExpiries(from,to,type,index){
-  var expiries=[], start=new Date(from), end=new Date(to);
-  if(type==='monthly'){
-    var d=new Date(start.getFullYear(),start.getMonth(),1);
-    while(d<=end){ var lt=getLastThursday(d.getFullYear(),d.getMonth()); if(lt>=start&&lt<=end) expiries.push(new Date(lt)); d.setMonth(d.getMonth()+1); }
-  } else {
-    var dayMap={NIFTY:4,BANKNIFTY:3,FINNIFTY:2,MIDCPNIFTY:1,SENSEX:5,BANKEX:1};
-    var td=dayMap[index]||4;
-    var d=new Date(start);
-    while(d.getDay()!==td) d.setDate(d.getDate()+1);
-    while(d<=end){ expiries.push(new Date(d)); d.setDate(d.getDate()+7); }
-  }
-  return expiries;
+function setResolvedToken(token, symbol) {
+  state.instrumentToken = token;
+  state.tradingsymbol = symbol;
+  document.getElementById('resolvedToken').textContent = token;
+  document.getElementById('resolvedSymbol').textContent = symbol;
+  document.getElementById('resolvedTokenWrap').style.display = '';
+  document.getElementById('resolveError').innerHTML = `<div class="alert alert-success" style="margin-top:8px">✅ Token resolved for <b>${symbol}</b></div>`;
 }
 
-function fmtDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-function fmtSymDateMonthly(d){
-  // Zerodha monthly format: YYMMON e.g. 25JUL (no day)
-  var m=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-  return String(d.getFullYear()).slice(-2)+m[d.getMonth()];
-}
-function fmtSymDateWeekly(d){
-  // Zerodha weekly format: YY + month(no pad) + DD e.g. 25604 for Jun 4 2025
-  return String(d.getFullYear()).slice(-2)+String(d.getMonth()+1)+String(d.getDate()).padStart(2,'0');
-}
-function fmtSymDate(d){ 
-  // Keep for backward compat - returns monthly format
-  var m=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-  return String(d.getFullYear()).slice(-2)+m[d.getMonth()];
-}
-
-function expFindExpiries(){
-  var from=document.getElementById('exp_from').value, to=document.getElementById('exp_to').value;
-  var type=document.getElementById('exp_type').value, index=document.getElementById('exp_index').value;
-  if(!from||!to){showAlert('exp_status','Select date range first','err');return;}
-  var expiries=getExpiries(from,to,type,index);
-  if(!expiries.length){showAlert('exp_status','No expiries found in this range','err');return;}
-  var sel=document.getElementById('exp_expiry_sel');
-  sel.innerHTML='<option value="">— Select an expiry —</option>';
-  expiries.forEach(function(e){ var ds=fmtDate(e); var opt=document.createElement('option'); opt.value=ds; opt.textContent=ds; sel.appendChild(opt); });
-  document.getElementById('exp_count').textContent=expiries.length;
-  document.getElementById('exp_step2').style.display='block';
-  document.getElementById('exp_step3').style.display='none';
-  document.getElementById('exp_step4').style.display='none';
-  sel.onchange=function(){
-    expSelExpiry=this.value;
-    document.getElementById('exp_sel_info').style.display=expSelExpiry?'block':'none';
-    document.getElementById('exp_sel_date').textContent=expSelExpiry;
-    document.getElementById('exp_step3').style.display=expSelExpiry?'block':'none';
-    document.getElementById('exp_step4').style.display=expSelExpiry?'block':'none';
-    if(expSelExpiry) expAutoFetchSpot(expSelExpiry);
+// ── Download / Preview ─────────────────────────────────────────────────────
+function buildPayload() {
+  if (!state.apiKey || !state.accessToken) throw new Error('Not connected. Go to Login tab first.');
+  if (!state.instrumentToken) throw new Error('No instrument selected. Resolve a token first.');
+  return {
+    api_key: state.apiKey,
+    access_token: state.accessToken,
+    instrument_token: state.instrumentToken,
+    tradingsymbol: state.tradingsymbol,
+    from_date: document.getElementById('fromDate').value,
+    to_date: document.getElementById('toDate').value,
+    interval: document.getElementById('interval').value,
+    oi: document.getElementById('includeOI').checked,
+    continuous: document.getElementById('continuous').checked,
+    file_format: document.getElementById('fileFormat').value,
   };
 }
 
-async function expAutoFetchSpot(expDate){
-  // Auto-fetch spot price for the selected expiry date
-  var index = document.getElementById('exp_index').value;
-  var spotTokenMap = {NIFTY:'256265', BANKNIFTY:'260105', FINNIFTY:'257801', MIDCPNIFTY:'288009', SENSEX:'265', BANKEX:'274441'};
-  var token = spotTokenMap[index];
-  if(!token) return;
-
-  var atmEl = document.getElementById('exp_atm');
-  atmEl.placeholder = '⏳ Fetching spot price...';
-  atmEl.value = '';
-
+async function previewData() {
+  let payload;
+  try { payload = buildPayload(); } catch(e) { showAlert('downloadStatus', 'error', e.message); return; }
+  showAlert('downloadStatus', 'info', '<span class="spinner"></span> Fetching preview...');
+  document.getElementById('previewWrap').style.display = 'none';
   try {
-    // Fetch day candle for the expiry date to get closing spot
-    var body = {
-      api_key: apiKey,
-      access_token: accessToken,
-      instrument_token: token,
-      from_date: expDate,
-      to_date: expDate,
-      interval: 'day',
-      continuous: false,
-      oi: false,
-      file_format: 'json'
-    };
-    var res = await fetch('/api/historical', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(body)
+    const r = await fetch(`${API}/api/preview`, {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload),
     });
-    if(!res.ok) throw new Error('fetch failed');
-    var blob = await res.blob();
-    var text = await blob.text();
-    var rows = JSON.parse(text);
-    if(rows && rows.length > 0){
-      var closePrice = rows[rows.length-1].close;
-      // Round to nearest step
-      var stepEl = document.getElementById('exp_step');
-      var step = stepEl ? (parseFloat(stepEl.value)||50) : 50;
-      var rounded = Math.round(closePrice / step) * step;
-      atmEl.value = rounded;
-      atmEl.placeholder = 'e.g. 24500';
-      atmEl.style.borderColor = 'var(--grn)';
-      atmEl.title = 'Auto-fetched: '+index+' closed at '+closePrice+' on '+expDate+', rounded to '+rounded;
-    } else {
-      atmEl.placeholder = 'Could not fetch — enter manually';
-    }
-  } catch(e) {
-    atmEl.placeholder = 'Enter manually (e.g. 24500)';
-  }
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail);
+    if (!d.rows.length) { showAlert('downloadStatus', 'warn', 'No data for this range.'); return; }
+    showAlert('downloadStatus', 'success', `✅ Showing first 5 of ${d.total} candles`);
+    document.getElementById('previewWrap').style.display = '';
+    document.getElementById('previewWrap').innerHTML = buildTable(d.rows);
+  } catch(e) { showAlert('downloadStatus', 'error', '❌ ' + e.message); }
 }
 
-function expSetStrikeMode(mode){
-  expStrikeMode=mode;
-  var a=document.getElementById('emode-atm'), s=document.getElementById('emode-specific');
-  if(mode==='atm'){
-    a.style.cssText='flex:1;padding:8px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:rgba(0,212,170,.12);border:1px solid var(--grn);color:var(--grn);';
-    s.style.cssText='flex:1;padding:8px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:var(--surf2);border:1px solid var(--bdr);color:var(--muted);';
-    document.getElementById('exp_atm_row').style.display=''; document.getElementById('exp_specific_row').style.display='none';
-  } else {
-    s.style.cssText='flex:1;padding:8px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:rgba(0,145,255,.12);border:1px solid var(--blu);color:var(--blu);';
-    a.style.cssText='flex:1;padding:8px;text-align:center;font-family:var(--mono);font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;background:var(--surf2);border:1px solid var(--bdr);color:var(--muted);';
-    document.getElementById('exp_atm_row').style.display='none'; document.getElementById('exp_specific_row').style.display='';
-  }
+async function downloadData() {
+  let payload;
+  try { payload = buildPayload(); } catch(e) { showAlert('downloadStatus', 'error', e.message); return; }
+  showAlert('downloadStatus', 'info', '<span class="spinner"></span> Downloading...');
+  try {
+    const r = await fetch(`${API}/api/historical`, {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload),
+    });
+    if (!r.ok) { const d = await r.json(); throw new Error(d.detail); }
+    const blob = await r.blob();
+    const cd = r.headers.get('content-disposition') || '';
+    const fname = cd.match(/filename="(.+?)"/)?.[1] || `${state.tradingsymbol}.${payload.file_format}`;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = fname;
+    a.click();
+    showAlert('downloadStatus', 'success', `✅ Downloaded: ${fname}`);
+  } catch(e) { showAlert('downloadStatus', 'error', '❌ ' + e.message); }
 }
 
-function expStop(){ expStopped=true; document.getElementById('exp_stopbtn').style.display='none'; }
-
-async function expDownload(){
-  if(!expSelExpiry){showAlert('exp_status','Select an expiry (Step 2)','err');return;}
-  if(!apiKey||!accessToken){showAlert('exp_status','Connect token first','err');return;}
-  var index=document.getElementById('exp_index').value;
-  var otype=document.getElementById('exp_otype').value;
-  var interval=document.getElementById('exp_interval').value;
-  var fmt=document.getElementById('exp_fmt').value;
-  var exchange=['SENSEX','BANKEX'].includes(index)?'BFO':'NFO';
-  var strikes=[];
-  if(expStrikeMode==='atm'){
-    var atm=parseFloat(document.getElementById('exp_atm').value);
-    if(!atm){showAlert('exp_status','Enter ATM/Spot price above','err');document.getElementById('exp_atm').focus();return;}
-    var step=parseFloat(document.getElementById('exp_step').value)||50;
-    var range=parseInt(document.getElementById('exp_range').value)||5;
-    var rounded=Math.round(atm/step)*step;
-    for(var i=-range;i<=range;i++) strikes.push(rounded+i*step);
-  } else {
-    var s=parseFloat(document.getElementById('exp_strike').value);
-    if(!s){showAlert('exp_status','Enter strike price','err');return;}
-    strikes=[s];
-  }
-  var types=otype==='BOTH'?['CE','PE']:[otype];
-  var total=strikes.length*types.length;
-  var log=document.getElementById('exp_log'); log.style.display='block'; log.innerHTML='';
-  expStopped=false;
-  document.getElementById('exp_stopbtn').style.display='';
-  document.getElementById('exp_dlbtn').disabled=true;
-  document.getElementById('exp_prog').style.width='0%';
-  var done=0,failed=0;
-  for(var si=0;si<strikes.length;si++){
-    for(var ti=0;ti<types.length;ti++){
-      if(expStopped){logLine(log,'■ Stopped.','info');break;}
-      var strike=strikes[si], ot=types[ti];
-      var instrToken=null, tradingSym='';
-      try {
-        var tr=await fetch('/api/options/token?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+index+'&expiry='+expSelExpiry+'&strike='+strike+'&option_type='+ot+'&exchange='+exchange);
-        if(tr.ok){var td=await tr.json();instrToken=td.instrument_token;tradingSym=td.tradingsymbol;}
-      } catch(e){}
-      if(!instrToken){
-        var expObj=new Date(expSelExpiry);
-        var expType=document.getElementById('exp_type').value;
-        var datePart = expType==='weekly' ? fmtSymDateWeekly(expObj) : fmtSymDateMonthly(expObj);
-        tradingSym=index+datePart+parseInt(strike)+ot;
-        logLine(log,'🔍 '+tradingSym,'info');
-        try {
-          var sr=await fetch('/api/instruments?api_key='+apiKey+'&access_token='+accessToken+'&exchange='+exchange+'&search='+encodeURIComponent(tradingSym));
-          if(sr.ok){var sd=await sr.json();if(sd.length>0){instrToken=sd[0].instrument_token;tradingSym=sd[0].tradingsymbol;}}
-        } catch(e){}
-      }
-      if(!instrToken){logLine(log,'⚠ '+index+' '+strike+ot+' — not found','info');failed++;}
-      else {
-        try {
-          var body={api_key:apiKey,access_token:accessToken,instrument_token:instrToken,from_date:expSelExpiry,to_date:expSelExpiry,interval:interval,oi:true,continuous:false,file_format:fmt};
-          var res=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-          if(!res.ok){var ed=await res.json().catch(function(){return{detail:'No data'};});logLine(log,'✗ '+tradingSym+': '+ed.detail,'err');failed++;}
-          else{dlBlob(await res.blob(),tradingSym+'_'+interval+'_'+expSelExpiry+'.'+fmt);logLine(log,'✓ '+tradingSym,'ok');done++;}
-        } catch(e){logLine(log,'✗ '+tradingSym+': '+e.message,'err');failed++;}
-      }
-      document.getElementById('exp_prog').style.width=Math.round((done+failed)/total*100)+'%';
-      document.getElementById('exp_cnt').textContent=done+' downloaded, '+failed+' not found — '+(done+failed)+'/'+total;
-      await sleep(150);
-    }
-  }
-  document.getElementById('exp_stopbtn').style.display='none';
-  document.getElementById('exp_dlbtn').disabled=false;
-  showAlert('exp_status','✓ Done! '+done+' files downloaded. '+failed+' not found.','ok');
+function buildTable(rows) {
+  if (!rows.length) return '';
+  const cols = Object.keys(rows[0]);
+  const head = cols.map(c => `<th>${c}</th>`).join('');
+  const body = rows.map(r => `<tr>${cols.map(c => `<td>${r[c] ?? ''}</td>`).join('')}</tr>`).join('');
+  return `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
 }
 
-// ── CHAIN DOWNLOAD ─────────────────────────────────────────────
-var CH_WINDOWS={weekly:21,monthly:90,quarterly:270};
-var CH_INFO={weekly:'📅 <strong>Weekly:</strong> Each file = 3 weeks before expiry up to expiry date.',monthly:'📅 <strong>Monthly:</strong> Each file = 3 months before expiry up to expiry date.',quarterly:'📅 <strong>Quarterly (Mar/Jun/Sep/Dec):</strong> Each file = 9 months before expiry up to expiry date.'};
-
-function chOnExpiryChange(){
-  var type=document.getElementById('ch_exptype').value;
-  document.getElementById('ch_window_info').innerHTML=CH_INFO[type];
-  chUpdateEstimate();
+// ── Bulk Download ──────────────────────────────────────────────────────────
+function downloadTemplate() {
+  const csv = `instrument_token,tradingsymbol,from_date,to_date,interval,oi,continuous,file_format\n256265,NIFTY50-INDEX,2024-01-01,2024-12-31,day,1,0,csv\n260105,NIFTY BANK,2024-01-01,2024-12-31,day,1,0,csv`;
+  const a = document.createElement('a');
+  a.href = 'data:text/csv,' + encodeURIComponent(csv);
+  a.download = 'zetapull_bulk_template.csv';
+  a.click();
 }
 
-function chGetExpiries(from,to,type){
-  var index=document.getElementById('ch_index').value;
-  if(type==='quarterly'){
-    var expiries=[],start=new Date(from),end=new Date(to);
-    var qMonths=[2,5,8,11];
-    for(var yr=start.getFullYear();yr<=end.getFullYear()+1;yr++){
-      qMonths.forEach(function(m){var lt=getLastThursday(yr,m);if(lt>=start&&lt<=end)expiries.push(new Date(lt));});
-    }
-    return expiries.sort(function(a,b){return a-b;});
-  }
-  return getExpiries(from,to,type,index);
+function loadBulkCSV() {
+  const file = document.getElementById('bulkFile').files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.trim().split('\n');
+    const headers = lines[0].split(',').map(h => h.trim());
+    bulkItems = lines.slice(1).map(line => {
+      const vals = line.split(',').map(v => v.trim());
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = vals[i] || '');
+      return obj;
+    }).filter(r => r.instrument_token);
+    document.getElementById('bulkPreview').innerHTML = `<div class="alert alert-info">${bulkItems.length} instruments loaded.</div>`;
+    document.getElementById('bulkStartBtn').disabled = bulkItems.length === 0;
+    bulkIndex = 0;
+  };
+  reader.readAsText(file);
 }
 
-function chCalcFrom(expDate,type){
-  var days=CH_WINDOWS[type]||21;
-  var d=new Date(expDate); d.setDate(d.getDate()-days);
-  return fmtDate(d);
-}
+async function startBulk() {
+  if (!state.apiKey || !state.accessToken) { alert('Connect first.'); return; }
+  if (!bulkItems.length) return;
+  bulkRunning = true; bulkPaused = false;
+  document.getElementById('bulkStartBtn').disabled = true;
+  document.getElementById('bulkPauseBtn').disabled = false;
+  document.getElementById('bulkProgressWrap').style.display = '';
+  document.getElementById('bulkLog').style.display = '';
 
-function chUpdateEstimate(){
-  var from=document.getElementById('ch_from').value, to=document.getElementById('ch_to').value;
-  var type=document.getElementById('ch_exptype').value;
-  var range=parseInt(document.getElementById('ch_strikes').value);
-  var interval=document.getElementById('ch_interval').value;
-  var index=document.getElementById('ch_index').value;
-  var el=document.getElementById('ch_estimate');
-  if(!from||!to){el.innerHTML='Select date range to see estimate.';return;}
-  var expiries=chGetExpiries(from,to,type);
-  var strikes=range*2+1;
-  var ex=''; if(expiries.length>0){var e0=expiries[0];var fd=chCalcFrom(e0,type);ex='<br><span style="color:var(--muted)">Example: expiry '+fmtDate(e0)+' → data from '+fd+' to '+fmtDate(e0)+'</span>';}
-  el.innerHTML='<strong style="color:var(--grn)">'+expiries.length+'</strong> expiries × <strong style="color:var(--grn)">'+strikes+' CE + '+strikes+' PE</strong> per file'+ex;
-}
-
-function chStop(){chStopped=true;document.getElementById('ch_stopbtn').style.display='none';}
-
-async function chDownload(){
-  var from=document.getElementById('ch_from').value, to=document.getElementById('ch_to').value;
-  var index=document.getElementById('ch_index').value, type=document.getElementById('ch_exptype').value;
-  var range=parseInt(document.getElementById('ch_strikes').value);
-  var interval=document.getElementById('ch_interval').value, fmt=document.getElementById('ch_fmt').value;
-  if(!from||!to){showAlert('ch_status','Select expiry date range','err');return;}
-  if(!apiKey||!accessToken){showAlert('ch_status','Connect token first','err');return;}
-  var expiries=chGetExpiries(from,to,type);
-  if(!expiries.length){showAlert('ch_status','No expiries found in this range','err');return;}
-  var log=document.getElementById('ch_log'); log.style.display='block'; log.innerHTML='';
-  chStopped=false;
-  document.getElementById('ch_dlbtn').disabled=true;
-  document.getElementById('ch_stopbtn').style.display='';
-  document.getElementById('ch_prog').style.width='0%';
-  document.getElementById('ch_cnt').textContent='0 / '+expiries.length+' expiries';
-  var done=0,failed=0;
-  for(var i=0;i<expiries.length;i++){
-    if(chStopped){logLine(log,'■ Stopped.','info');break;}
-    var expDate=fmtDate(expiries[i]);
-    var dataFrom=chCalcFrom(expiries[i],type);
-    logLine(log,'⏳ ['+(i+1)+'/'+expiries.length+'] '+index+' '+type+' exp:'+expDate+' data:'+dataFrom+'→'+expDate,'info');
+  for (; bulkIndex < bulkItems.length; bulkIndex++) {
+    while (bulkPaused) await sleep(300);
+    if (!bulkRunning) break;
+    const item = bulkItems[bulkIndex];
+    updateBulkProgress(bulkIndex + 1, bulkItems.length);
+    appendLog(`[${bulkIndex+1}/${bulkItems.length}] Downloading ${item.tradingsymbol || item.instrument_token}...`, 'info');
     try {
-      var body={api_key:apiKey,access_token:accessToken,index:index,expiry_date:expDate,expiry_number:i+1,expiry_type:type,strike_range:range,interval:interval,from_date:dataFrom,to_date:expDate,file_format:fmt};
-      var res=await fetch('/api/options-chain',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      if(!res.ok){var d=await res.json().catch(function(){return{detail:'Unknown error'};});logLine(log,'✗ '+expDate+': '+d.detail,'err');failed++;}
-      else {
-        var il=interval==='day'?'day':interval.replace('minute','min');
-        var fn=index+'_'+type.toUpperCase()+'_'+expDate+'_'+il+'.'+fmt;
-        dlBlob(await res.blob(),fn); logLine(log,'✓ '+fn,'ok'); done++;
-      }
-    } catch(e){logLine(log,'✗ '+expDate+': '+e.message,'err');failed++;}
-    document.getElementById('ch_prog').style.width=Math.round((done+failed)/expiries.length*100)+'%';
-    document.getElementById('ch_cnt').textContent=done+' downloaded, '+failed+' failed — '+(done+failed)+'/'+expiries.length;
-    await sleep(300);
+      const payload = {
+        api_key: state.apiKey,
+        access_token: state.accessToken,
+        instrument_token: item.instrument_token,
+        tradingsymbol: item.tradingsymbol || '',
+        from_date: item.from_date,
+        to_date: item.to_date,
+        interval: item.interval || 'day',
+        oi: item.oi !== '0',
+        continuous: item.continuous === '1',
+        file_format: item.file_format || 'csv',
+      };
+      const r = await fetch(`${API}/api/historical`, {
+        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload),
+      });
+      if (!r.ok) { const d = await r.json(); throw new Error(d.detail); }
+      const blob = await r.blob();
+      const cd = r.headers.get('content-disposition') || '';
+      const fname = cd.match(/filename="(.+?)"/)?.[1] || `${item.tradingsymbol}.${item.file_format || 'csv'}`;
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fname; a.click();
+      appendLog(`✅ ${fname}`, 'ok');
+    } catch(e) {
+      appendLog(`❌ ${item.tradingsymbol || item.instrument_token}: ${e.message}`, 'err');
+    }
+    await sleep(400); // be polite to Kite API
   }
-  document.getElementById('ch_dlbtn').disabled=false;
-  document.getElementById('ch_stopbtn').style.display='none';
-  showAlert('ch_status','✓ Done! '+done+' files'+(failed?' ('+failed+' failed)':''),'ok');
+  updateBulkProgress(bulkItems.length, bulkItems.length);
+  appendLog('— Done —', 'info');
+  document.getElementById('bulkStartBtn').disabled = false;
+  document.getElementById('bulkPauseBtn').disabled = true;
+  bulkRunning = false;
 }
 
-// ── HELPERS ────────────────────────────────────────────────────
-function showAlert(id,msg,type){
-  var el=document.getElementById(id); if(!el)return;
-  var c=type==='ok'?'alert-ok':type==='err'?'alert-err':'alert-info';
-  el.innerHTML='<div class="alert '+c+'">'+msg+'</div>';
+function pauseBulk() {
+  bulkPaused = !bulkPaused;
+  document.getElementById('bulkPauseBtn').textContent = bulkPaused ? '▶ Resume' : '⏸ Pause';
 }
 
-function dlBlob(blob,fname){
-  var url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url; a.download=fname; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(function(){URL.revokeObjectURL(url);},1000);
+function clearBulk() {
+  bulkItems = []; bulkIndex = 0; bulkRunning = false; bulkPaused = false;
+  document.getElementById('bulkPreview').innerHTML = '';
+  document.getElementById('bulkLog').innerHTML = '';
+  document.getElementById('bulkLog').style.display = 'none';
+  document.getElementById('bulkProgressWrap').style.display = 'none';
+  document.getElementById('bulkStartBtn').disabled = true;
+  document.getElementById('bulkPauseBtn').disabled = true;
+  document.getElementById('bulkFile').value = '';
 }
 
-function logLine(el,msg,type){el.innerHTML+='<div class="log-'+type+'">'+msg+'</div>';el.scrollTop=el.scrollHeight;}
-function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
-
-function setDates(){
-  var t=new Date(), p=function(n){return String(n).padStart(2,'0');};
-  var td=t.getFullYear()+'-'+p(t.getMonth()+1)+'-'+p(t.getDate());
-  var a=new Date(t); a.setMonth(a.getMonth()-1);
-  var fd=a.getFullYear()+'-'+p(a.getMonth()+1)+'-'+p(a.getDate());
-  ['fromDate','opt_from','fut_from','exp_from','ch_from'].forEach(function(id){var el=document.getElementById(id);if(el)el.value=fd;});
-  ['toDate','opt_to','fut_to','exp_to','ch_to'].forEach(function(id){var el=document.getElementById(id);if(el)el.value=td;});
+function updateBulkProgress(done, total) {
+  document.getElementById('bulkProgressLabel').textContent = `${done} / ${total}`;
+  document.getElementById('bulkBar').style.width = `${Math.round(done/total*100)}%`;
 }
+
+function appendLog(msg, cls) {
+  const el = document.getElementById('bulkLog');
+  el.innerHTML += `<div class="log-${cls}">${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function showAlert(id, type, msg) {
+  document.getElementById(id).innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
 </body>
 </html>

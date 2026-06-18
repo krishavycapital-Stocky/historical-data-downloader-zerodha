@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,13 +8,8 @@ import httpx
 import pandas as pd
 import io
 import json
-from datetime import datetime, timedelta
 import asyncio
-try:
-    import fastparquet
-    PARQUET_OK = True
-except ImportError:
-    PARQUET_OK = False
+from datetime import datetime, date
 
 app = FastAPI(title="ZetaPull — Historical Data Downloader")
 
@@ -28,544 +23,359 @@ app.add_middleware(
 
 KITE_BASE = "https://api.kite.trade"
 
-# ── Instrument cache ───────────────────────────────────────────────────────────
-# Zerodha publishes a public instruments CSV daily. No auth needed.
-# We fetch it once on startup and cache it for the day.
-# Per Zerodha docs: fetch once daily, ideally at 08:30 AM.
-
-_instrument_df: Optional[pd.DataFrame] = None
-_instrument_last_fetched: Optional[datetime] = None
-_per_exchange_cache: dict = {}
-
-async def _load_all_instruments():
-    """Fetch the complete instrument dump from Zerodha (public, no auth)."""
-    global _instrument_df, _instrument_last_fetched
-    now = datetime.now()
-    if _instrument_df is not None and _instrument_last_fetched is not None:
-        if (now - _instrument_last_fetched).total_seconds() < 3600 * 8:
-            return _instrument_df
-    try:
-        async with httpx.AsyncClient(timeout=120) as client:
-            resp = await client.get(
-                "https://api.kite.trade/instruments",
-                headers={"X-Kite-Version": "3"},
-            )
-        if resp.status_code == 200:
-            _instrument_df = pd.read_csv(io.StringIO(resp.text))
-            _instrument_last_fetched = now
-            return _instrument_df
-    except Exception:
-        pass
-    return None
-
-async def _get_exchange_df(api_key: str, access_token: str, exchange: str) -> pd.DataFrame:
-    """Get instruments for a specific exchange. Uses cached all-instruments if available,
-    else falls back to authenticated per-exchange endpoint."""
-    global _per_exchange_cache
-
-    cache_key = exchange
-    cached = _per_exchange_cache.get(cache_key)
-    if cached is not None:
-        ts, df = cached
-        if (datetime.now() - ts).total_seconds() < 3600 * 8:
-            return df
-
-    # Try public all-instruments dump first
-    all_df = await _load_all_instruments()
-    if all_df is not None and not all_df.empty:
-        df = all_df[all_df["exchange"] == exchange].copy()
-        if not df.empty:
-            _per_exchange_cache[cache_key] = (datetime.now(), df)
-            return df
-
-    # Fallback: authenticated per-exchange endpoint
-    try:
-        async with httpx.AsyncClient(timeout=120) as client:
-            resp = await client.get(
-                f"{KITE_BASE}/instruments/{exchange}",
-                headers={
-                    "X-Kite-Version": "3",
-                    "Authorization": f"token {api_key}:{access_token}",
-                },
-            )
-        if resp.status_code != 200:
-            raise HTTPException(status_code=resp.status_code,
-                                detail=f"Kite API {resp.status_code}: {resp.text[:300]}")
-        df = pd.read_csv(io.StringIO(resp.text))
-        _per_exchange_cache[cache_key] = (datetime.now(), df)
-        return df
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=504, detail=f"Timeout fetching {exchange} instruments. Try again in 30s.")
+# ── In-memory instrument cache ────────────────────────────────────────────────
+# Stored as a list of dicts after fetching. Cleared on new fetch.
+_instrument_cache: list = []
+_cache_fetched_at: Optional[str] = None
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Pre-load instruments on startup so first user request is fast."""
-    asyncio.create_task(_load_all_instruments())
-
-
-# ── Auth ───────────────────────────────────────────────────────────────────────
+# ── Auth ──────────────────────────────────────────────────────────────────────
 
 class TokenRequest(BaseModel):
     api_key: str
     request_token: str
     api_secret: str
 
+
 @app.post("/api/generate-token")
 async def generate_token(req: TokenRequest):
+    """Exchange request_token for access_token using Kite login flow."""
     import hashlib
     checksum = hashlib.sha256(
         f"{req.api_key}{req.request_token}{req.api_secret}".encode()
     ).hexdigest()
-    async with httpx.AsyncClient(timeout=30) as client:
+    async with httpx.AsyncClient() as client:
         resp = await client.post(
             f"{KITE_BASE}/session/token",
-            data={"api_key": req.api_key, "request_token": req.request_token, "checksum": checksum},
+            data={
+                "api_key": req.api_key,
+                "request_token": req.request_token,
+                "checksum": checksum,
+            },
             headers={"X-Kite-Version": "3"},
         )
     if resp.status_code != 200:
         raise HTTPException(status_code=resp.status_code, detail=resp.text)
-    return {"access_token": resp.json()["data"]["access_token"]}
+    data = resp.json()
+    return {"access_token": data["data"]["access_token"]}
 
 
-@app.get("/api/validate-token")
-async def validate_token(api_key: str, access_token: str):
+# ── Fetch Instruments (all exchanges, cached) ─────────────────────────────────
+
+class FetchInstrumentsRequest(BaseModel):
+    api_key: str
+    access_token: str
+
+
+async def _fetch_exchange(client: httpx.AsyncClient, api_key: str, access_token: str, exchange: str) -> list:
+    """Fetch instruments for a single exchange and return as list of dicts."""
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(
-                f"{KITE_BASE}/user/profile",
-                headers={"X-Kite-Version": "3", "Authorization": f"token {api_key}:{access_token}"},
-            )
-        if resp.status_code == 200:
-            return {"valid": True, "user": resp.json().get("data", {}).get("user_name", "")}
-    except Exception:
-        pass
-    return {"valid": False, "user": ""}
-
-
-# ── Instruments search ─────────────────────────────────────────────────────────
-
-@app.get("/api/instruments")
-async def get_instruments(api_key: str, access_token: str, exchange: str = "NFO", search: str = ""):
-    try:
-        df = await _get_exchange_df(api_key, access_token, exchange)
-    except HTTPException:
-        raise
+        resp = await client.get(
+            f"{KITE_BASE}/instruments/{exchange}",
+            headers={
+                "X-Kite-Version": "3",
+                "Authorization": f"token {api_key}:{access_token}",
+            },
+            timeout=60,
+        )
+        if resp.status_code != 200:
+            return []
+        df = pd.read_csv(io.StringIO(resp.text))
+        df["exchange"] = exchange
+        # Keep only essential columns to reduce memory
+        keep_cols = [c for c in [
+            "instrument_token", "tradingsymbol", "name", "exchange",
+            "segment", "instrument_type", "expiry", "strike", "lot_size", "tick_size"
+        ] if c in df.columns]
+        df = df[keep_cols]
+        # Convert expiry to string safely
+        if "expiry" in df.columns:
+            df["expiry"] = df["expiry"].astype(str).replace("nan", "")
+        if "strike" in df.columns:
+            df["strike"] = pd.to_numeric(df["strike"], errors="coerce").fillna(0)
+        return df.to_dict(orient="records")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    if search:
-        mask = df["tradingsymbol"].astype(str).str.contains(search.upper(), na=False)
-        df = df[mask].head(50)
-    else:
-        df = df.head(100)
-
-    cols = ["instrument_token", "tradingsymbol", "name", "expiry",
-            "strike", "instrument_type", "exchange", "lot_size"]
-    existing = [c for c in cols if c in df.columns]
-    result = df[existing].fillna("").to_dict(orient="records")
-    return JSONResponse(content=result)
+        return []
 
 
-# ── Options helpers ────────────────────────────────────────────────────────────
+@app.post("/api/fetch-instruments")
+async def fetch_instruments(req: FetchInstrumentsRequest):
+    """Fetch instruments from NFO, BFO, NSE, BSE in parallel and cache in memory."""
+    global _instrument_cache, _cache_fetched_at
 
-@app.get("/api/options/expiries")
-async def get_expiries(api_key: str, access_token: str, underlying: str, exchange: str = "NFO"):
-    df = await _get_exchange_df(api_key, access_token, exchange)
-    mask = (
-        df["name"].astype(str).str.upper().eq(underlying.upper()) &
-        df["instrument_type"].isin(["CE", "PE"])
-    )
-    sub = df[mask]
-    if sub.empty:
-        return {"expiries": []}
-    expiries = sorted(sub["expiry"].dropna().unique().tolist())
+    exchanges = ["NFO", "BFO", "NSE", "BSE"]
+    async with httpx.AsyncClient() as client:
+        results = await asyncio.gather(*[
+            _fetch_exchange(client, req.api_key, req.access_token, ex)
+            for ex in exchanges
+        ])
+
+    all_instruments = []
+    counts = {}
+    for ex, records in zip(exchanges, results):
+        counts[ex] = len(records)
+        all_instruments.extend(records)
+
+    _instrument_cache = all_instruments
+    _cache_fetched_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    return {
+        "total": len(all_instruments),
+        "counts": counts,
+        "fetched_at": _cache_fetched_at,
+    }
+
+
+@app.get("/api/instruments/symbols")
+async def get_symbols(exchange: str = "", segment: str = ""):
+    """Return unique symbols from the cached instrument list, optionally filtered."""
+    if not _instrument_cache:
+        raise HTTPException(status_code=400, detail="Instruments not fetched yet. Click 'Fetch Instruments' first.")
+
+    df = pd.DataFrame(_instrument_cache)
+    if exchange:
+        df = df[df["exchange"] == exchange]
+    if segment:
+        df = df[df["segment"] == segment]
+
+    symbols = sorted(df["tradingsymbol"].dropna().unique().tolist())
+    return {"symbols": symbols, "total": len(symbols)}
+
+
+@app.get("/api/instruments/search")
+async def search_instruments(q: str, exchange: str = "", instrument_type: str = ""):
+    """Search instruments by symbol name from cache."""
+    if not _instrument_cache:
+        raise HTTPException(status_code=400, detail="Instruments not fetched yet.")
+
+    df = pd.DataFrame(_instrument_cache)
+    q_upper = q.upper()
+
+    if exchange:
+        df = df[df["exchange"] == exchange]
+    if instrument_type:
+        df = df[df["instrument_type"] == instrument_type]
+
+    mask = df["tradingsymbol"].str.upper().str.contains(q_upper, na=False)
+    results = df[mask].head(50).to_dict(orient="records")
+    return {"results": results, "total": len(results)}
+
+
+@app.get("/api/instruments/expiries")
+async def get_expiries(underlying: str, exchange: str = "NFO"):
+    """Return sorted expiry dates for a given underlying (e.g. NIFTY, BANKNIFTY)."""
+    if not _instrument_cache:
+        raise HTTPException(status_code=400, detail="Instruments not fetched yet.")
+
+    df = pd.DataFrame(_instrument_cache)
+    df = df[df["exchange"] == exchange]
+    df = df[df["name"].str.upper() == underlying.upper()] if "name" in df.columns else df[df["tradingsymbol"].str.startswith(underlying.upper())]
+    df = df[df["expiry"].str.len() > 0]
+    expiries = sorted(df["expiry"].dropna().unique().tolist())
     return {"expiries": expiries}
 
 
-@app.get("/api/options/strikes")
-async def get_strikes(api_key: str, access_token: str, underlying: str, expiry: str, exchange: str = "NFO"):
-    df = await _get_exchange_df(api_key, access_token, exchange)
-    mask = (
-        df["name"].astype(str).str.upper().eq(underlying.upper()) &
-        df["expiry"].astype(str).eq(expiry) &
-        df["instrument_type"].isin(["CE", "PE"])
-    )
-    sub = df[mask]
-    if sub.empty:
-        return {"strikes": []}
-    strikes = sorted(sub["strike"].dropna().unique().tolist())
+@app.get("/api/instruments/strikes")
+async def get_strikes(underlying: str, expiry: str, exchange: str = "NFO"):
+    """Return sorted strikes for a given underlying + expiry."""
+    if not _instrument_cache:
+        raise HTTPException(status_code=400, detail="Instruments not fetched yet.")
+
+    df = pd.DataFrame(_instrument_cache)
+    df = df[df["exchange"] == exchange]
+    if "name" in df.columns:
+        df = df[df["name"].str.upper() == underlying.upper()]
+    df = df[df["expiry"] == expiry]
+    df = df[df["instrument_type"].isin(["CE", "PE"])]
+    df = df[df["strike"] > 0]
+    strikes = sorted(df["strike"].unique().tolist())
     return {"strikes": strikes}
 
 
-@app.get("/api/options/token")
-async def get_option_token(api_key: str, access_token: str, underlying: str,
-                            expiry: str, strike: float, option_type: str, exchange: str = "NFO"):
-    df = await _get_exchange_df(api_key, access_token, exchange)
-    mask = (
-        df["name"].astype(str).str.upper().eq(underlying.upper()) &
-        df["expiry"].astype(str).eq(expiry) &
-        df["strike"].eq(strike) &
-        df["instrument_type"].eq(option_type.upper())
-    )
-    sub = df[mask]
-    if sub.empty:
-        raise HTTPException(status_code=404, detail="Option contract not found.")
-    row = sub.iloc[0]
-    return {"instrument_token": str(row["instrument_token"]), "tradingsymbol": row["tradingsymbol"]}
+@app.get("/api/instruments/resolve")
+async def resolve_token(underlying: str, expiry: str, strike: float, option_type: str, exchange: str = "NFO"):
+    """Resolve instrument_token for a specific option contract."""
+    if not _instrument_cache:
+        raise HTTPException(status_code=400, detail="Instruments not fetched yet.")
+
+    df = pd.DataFrame(_instrument_cache)
+    df = df[df["exchange"] == exchange]
+    if "name" in df.columns:
+        df = df[df["name"].str.upper() == underlying.upper()]
+    df = df[df["expiry"] == expiry]
+    df = df[df["instrument_type"] == option_type.upper()]
+    df = df[df["strike"] == strike]
+
+    if df.empty:
+        raise HTTPException(status_code=404, detail=f"No instrument found for {underlying} {expiry} {strike} {option_type}")
+
+    row = df.iloc[0]
+    return {
+        "instrument_token": str(row["instrument_token"]),
+        "tradingsymbol": row["tradingsymbol"],
+        "exchange": row["exchange"],
+        "lot_size": int(row.get("lot_size", 0)),
+    }
 
 
-# ── Futures helpers ────────────────────────────────────────────────────────────
+@app.get("/api/instruments/resolve-futures")
+async def resolve_futures_token(underlying: str, expiry: str, exchange: str = "NFO"):
+    """Resolve instrument_token for a futures contract."""
+    if not _instrument_cache:
+        raise HTTPException(status_code=400, detail="Instruments not fetched yet.")
 
-@app.get("/api/futures/expiries")
-async def get_futures_expiries(api_key: str, access_token: str, underlying: str, exchange: str = "NFO"):
-    df = await _get_exchange_df(api_key, access_token, exchange)
-    mask = (
-        df["name"].astype(str).str.upper().eq(underlying.upper()) &
-        df["instrument_type"].eq("FUT")
-    )
-    sub = df[mask]
-    expiries = sorted(sub["expiry"].dropna().unique().tolist())
-    return {"expiries": expiries}
+    df = pd.DataFrame(_instrument_cache)
+    df = df[df["exchange"] == exchange]
+    if "name" in df.columns:
+        df = df[df["name"].str.upper() == underlying.upper()]
+    df = df[df["expiry"] == expiry]
+    df = df[df["instrument_type"] == "FUT"]
 
+    if df.empty:
+        raise HTTPException(status_code=404, detail=f"No futures found for {underlying} {expiry}")
 
-@app.get("/api/futures/token")
-async def get_futures_token(api_key: str, access_token: str, underlying: str,
-                             expiry: str, exchange: str = "NFO"):
-    df = await _get_exchange_df(api_key, access_token, exchange)
-    mask = (
-        df["name"].astype(str).str.upper().eq(underlying.upper()) &
-        df["expiry"].astype(str).eq(expiry) &
-        df["instrument_type"].eq("FUT")
-    )
-    sub = df[mask]
-    if sub.empty:
-        raise HTTPException(status_code=404, detail="Futures contract not found.")
-    row = sub.iloc[0]
-    return {"instrument_token": str(row["instrument_token"]), "tradingsymbol": row["tradingsymbol"]}
+    row = df.iloc[0]
+    return {
+        "instrument_token": str(row["instrument_token"]),
+        "tradingsymbol": row["tradingsymbol"],
+        "exchange": row["exchange"],
+        "lot_size": int(row.get("lot_size", 0)),
+    }
 
 
-# ── Historical Data ────────────────────────────────────────────────────────────
+@app.get("/api/instruments/resolve-equity")
+async def resolve_equity_token(symbol: str, exchange: str = "NSE"):
+    """Resolve instrument_token for an equity/ETF."""
+    if not _instrument_cache:
+        raise HTTPException(status_code=400, detail="Instruments not fetched yet.")
 
-def _date_chunks(from_date: str, to_date: str, interval: str):
-    fmt = "%Y-%m-%d"
-    start = datetime.strptime(from_date, fmt)
-    end   = datetime.strptime(to_date, fmt)
-    chunk_days = 400 if interval == "day" else 60
-    chunks, cur = [], start
-    while cur <= end:
-        chunk_end = min(cur + timedelta(days=chunk_days - 1), end)
-        chunks.append((cur.strftime(fmt), chunk_end.strftime(fmt)))
-        cur = chunk_end + timedelta(days=1)
-    return chunks
+    df = pd.DataFrame(_instrument_cache)
+    df = df[df["exchange"] == exchange]
+    df = df[df["tradingsymbol"].str.upper() == symbol.upper()]
+    df = df[df["instrument_type"] == "EQ"] if "EQ" in df["instrument_type"].values else df
 
-async def _fetch_candles(api_key, access_token, instrument_token,
-                          from_date, to_date, interval, continuous, oi):
-    chunks = _date_chunks(from_date, to_date, interval)
-    all_candles = []
-    async with httpx.AsyncClient(timeout=60) as client:
-        for chunk_from, chunk_to in chunks:
-            resp = await client.get(
-                f"{KITE_BASE}/instruments/historical/{instrument_token}/{interval}",
-                params={"from": chunk_from, "to": chunk_to,
-                        "continuous": int(continuous), "oi": int(oi)},
-                headers={"X-Kite-Version": "3",
-                         "Authorization": f"token {api_key}:{access_token}"},
-            )
-            if resp.status_code != 200:
-                raise HTTPException(status_code=resp.status_code, detail=resp.text)
-            all_candles.extend(resp.json()["data"]["candles"])
-    return all_candles
+    if df.empty:
+        raise HTTPException(status_code=404, detail=f"No equity found for {symbol} on {exchange}")
 
-def _build_df(candles):
-    if not candles:
-        return pd.DataFrame()
-    cols = ["date","open","high","low","close","volume","oi"] if len(candles[0]) == 7 \
-           else ["date","open","high","low","close","volume"]
-    df = pd.DataFrame(candles, columns=cols)
-    df["date"] = pd.to_datetime(df["date"])
-    return df
+    row = df.iloc[0]
+    return {
+        "instrument_token": str(row["instrument_token"]),
+        "tradingsymbol": row["tradingsymbol"],
+        "exchange": row["exchange"],
+    }
 
+
+@app.get("/api/instruments/cache-status")
+async def cache_status():
+    """Return how many instruments are cached and when."""
+    return {
+        "cached": len(_instrument_cache),
+        "fetched_at": _cache_fetched_at,
+    }
+
+
+# ── Historical Data ───────────────────────────────────────────────────────────
 
 class HistoricalRequest(BaseModel):
     api_key: str
     access_token: str
     instrument_token: str
-    from_date: str
-    to_date: str
-    interval: str
+    tradingsymbol: str = ""     # for filename
+    from_date: str              # YYYY-MM-DD
+    to_date: str                # YYYY-MM-DD
+    interval: str               # minute, 3minute, 5minute, 10minute, 15minute, 30minute, 60minute, day
     continuous: bool = False
     oi: bool = True
-    file_format: str = "csv"
+    file_format: str = "csv"    # csv | json
+
+
+def _build_df(candles: list) -> pd.DataFrame:
+    df = pd.DataFrame(candles, columns=["date", "open", "high", "low", "close", "volume", "oi"])
+    df["date"] = pd.to_datetime(df["date"])
+    return df
 
 
 @app.post("/api/historical")
 async def download_historical(req: HistoricalRequest):
-    candles = await _fetch_candles(req.api_key, req.access_token, req.instrument_token,
-                                    req.from_date, req.to_date, req.interval,
-                                    req.continuous, req.oi)
+    """Download historical OHLCV+OI data and return as file."""
+    async with httpx.AsyncClient(timeout=60) as client:
+        resp = await client.get(
+            f"{KITE_BASE}/instruments/historical/{req.instrument_token}/{req.interval}",
+            params={
+                "from": req.from_date,
+                "to": req.to_date,
+                "continuous": int(req.continuous),
+                "oi": int(req.oi),
+            },
+            headers={
+                "X-Kite-Version": "3",
+                "Authorization": f"token {req.api_key}:{req.access_token}",
+            },
+        )
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail=resp.text)
+
+    candles = resp.json()["data"]["candles"]
     if not candles:
         raise HTTPException(status_code=404, detail="No data returned for this range.")
-    df = _build_df(candles)
-    fname = f"{req.instrument_token}_{req.interval}_{req.from_date}_{req.to_date}"
-    if req.file_format == "csv":
-        buf = io.StringIO(); df.to_csv(buf, index=False)
-        return StreamingResponse(io.BytesIO(buf.getvalue().encode()), media_type="text/csv",
-                                  headers={"Content-Disposition": f'attachment; filename="{fname}.csv"'})
-    elif req.file_format == "json":
-        df["date"] = df["date"].astype(str)
-        return StreamingResponse(io.BytesIO(df.to_json(orient="records", indent=2).encode()),
-                                  media_type="application/json",
-                                  headers={"Content-Disposition": f'attachment; filename="{fname}.json"'})
-    elif req.file_format == "parquet":
-        if not PARQUET_OK:
-            raise HTTPException(status_code=400, detail="Parquet not available on this server.")
-        buf = io.BytesIO()
-        df.to_parquet(buf, index=False, engine="fastparquet")
-        buf.seek(0)
-        return StreamingResponse(buf,
-                                  media_type="application/octet-stream",
-                                  headers={"Content-Disposition": f'attachment; filename="{fname}.parquet"'})
-    raise HTTPException(status_code=400, detail="Use csv, json, or parquet.")
 
+    df = _build_df(candles)
+
+    fmt = req.file_format.lower()
+    sym = req.tradingsymbol or req.instrument_token
+    fname_base = f"{sym}_{req.interval}_{req.from_date}_{req.to_date}"
+
+    if fmt == "csv":
+        buf = io.StringIO()
+        df.to_csv(buf, index=False)
+        buf.seek(0)
+        return StreamingResponse(
+            io.BytesIO(buf.getvalue().encode()),
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="{fname_base}.csv"'},
+        )
+    elif fmt == "json":
+        df["date"] = df["date"].astype(str)
+        buf = io.BytesIO(df.to_json(orient="records", indent=2).encode())
+        return StreamingResponse(
+            buf,
+            media_type="application/json",
+            headers={"Content-Disposition": f'attachment; filename="{fname_base}.json"'},
+        )
+    else:
+        raise HTTPException(status_code=400, detail="Invalid file format. Use csv or json.")
+
+
+# ── Preview ───────────────────────────────────────────────────────────────────
 
 @app.post("/api/preview")
 async def preview_historical(req: HistoricalRequest):
-    fmt = "%Y-%m-%d"
-    preview_end = min(
-        datetime.strptime(req.from_date, fmt) + timedelta(days=5),
-        datetime.strptime(req.to_date, fmt),
-    ).strftime(fmt)
-    candles = await _fetch_candles(req.api_key, req.access_token, req.instrument_token,
-                                    req.from_date, preview_end, req.interval,
-                                    req.continuous, req.oi)
+    """Return first 5 rows as JSON for preview."""
+    async with httpx.AsyncClient(timeout=60) as client:
+        resp = await client.get(
+            f"{KITE_BASE}/instruments/historical/{req.instrument_token}/{req.interval}",
+            params={
+                "from": req.from_date,
+                "to": req.to_date,
+                "continuous": int(req.continuous),
+                "oi": int(req.oi),
+            },
+            headers={
+                "X-Kite-Version": "3",
+                "Authorization": f"token {req.api_key}:{req.access_token}",
+            },
+        )
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail=resp.text)
+
+    candles = resp.json()["data"]["candles"]
     if not candles:
         return {"rows": [], "total": 0}
+
     df = _build_df(candles[:5])
     df["date"] = df["date"].astype(str)
     return {"rows": df.to_dict(orient="records"), "total": len(candles)}
 
 
-
-# ── Spot token map ─────────────────────────────────────────────────────────────
-SPOT_TOKENS = {
-    "NIFTY":      "256265",   # NSE:NIFTY 50
-    "BANKNIFTY":  "260105",   # NSE:NIFTY BANK
-}
-
-STEP_SIZE = {
-    "NIFTY":     50,
-    "BANKNIFTY": 100,
-}
-
-# ── Options Chain endpoint ─────────────────────────────────────────────────────
-
-class ChainRequest(BaseModel):
-    api_key: str
-    access_token: str
-    index: str              # NIFTY | BANKNIFTY
-    expiry_date: str        # YYYY-MM-DD
-    expiry_number: int      # 1 = nearest, 2 = next, etc.
-    expiry_type: str        # weekly | monthly | quarterly
-    strike_range: int       # 5 or 10
-    interval: str           # minute | 3minute | 15minute | 60minute | 75minute | day
-    from_date: str          # auto-calculated data window start (3wk/3mo/9mo before expiry)
-    to_date: str            # = expiry_date
-    file_format: str = "parquet"
-
-def _resample_75min(df: pd.DataFrame) -> pd.DataFrame:
-    """Resample 15-min OHLCV data to 75-min bars."""
-    df = df.copy()
-    df["date"] = pd.to_datetime(df["date"])
-    df = df.set_index("date")
-    # Preserve non-OHLCV columns
-    extra_cols = [c for c in df.columns if c not in ["open","high","low","close","volume","oi"]]
-    ohlcv = df[["open","high","low","close","volume","oi"]].resample("75min", label="left", closed="left").agg({
-        "open": "first", "high": "max", "low": "min", "close": "last",
-        "volume": "sum", "oi": "last"
-    }).dropna(subset=["open"])
-    # Re-attach extra cols by nearest timestamp
-    for col in extra_cols:
-        ohlcv[col] = df[col].resample("75min", label="left", closed="left").last()
-    return ohlcv.reset_index()
-
-@app.post("/api/options-chain")
-async def download_options_chain(req: ChainRequest):
-    """
-    Download all strikes for one expiry date, merged into one file.
-    Columns: date, open, high, low, close, volume, oi, spot,
-             strike, strike_index, option_type, expiry_date,
-             expiry_number, expiry_type, symbol, interval_min
-    """
-    index = req.index.upper()
-    exchange = "NFO"
-    step = STEP_SIZE.get(index, 50)
-    actual_interval = "15minute" if req.interval == "75minute" else req.interval
-
-    # interval_min label
-    interval_label_map = {
-        "minute": 1, "3minute": 3, "5minute": 5, "10minute": 10,
-        "15minute": 15, "30minute": 30, "60minute": 60, "75minute": 75, "day": 1440
-    }
-    interval_min = interval_label_map.get(req.interval, 0)
-
-    # ── 1. Get ATM from spot data ──────────────────────────────────────────
-    spot_token = SPOT_TOKENS.get(index)
-    spot_df = pd.DataFrame()
-    if spot_token:
-        try:
-            spot_candles = await _fetch_candles(
-                req.api_key, req.access_token, spot_token,
-                req.from_date, req.to_date, actual_interval, False, False
-            )
-            if spot_candles:
-                spot_df = _build_df(spot_candles)
-                spot_df = spot_df[["date","close"]].rename(columns={"close":"spot"})
-                spot_df["date"] = pd.to_datetime(spot_df["date"])
-                if req.interval == "75minute":
-                    spot_df = spot_df.set_index("date")["spot"].resample(
-                        "75min", label="left", closed="left"
-                    ).last().reset_index()
-        except Exception:
-            pass
-
-    # ── 2. Get instrument list for this expiry ─────────────────────────────
-    df_instr = await _get_exchange_df(req.api_key, req.access_token, exchange)
-    mask = (
-        df_instr["name"].astype(str).str.upper().eq(index) &
-        df_instr["expiry"].astype(str).eq(req.expiry_date) &
-        df_instr["instrument_type"].isin(["CE","PE"])
-    )
-    contracts = df_instr[mask].copy()
-
-    if contracts.empty:
-        raise HTTPException(status_code=404, detail=f"No contracts found for {index} expiry {req.expiry_date}")
-
-    # ── 3. Determine ATM strike ────────────────────────────────────────────
-    # Use last available spot close, else mid of strike range
-    if not spot_df.empty:
-        last_spot = float(spot_df["spot"].dropna().iloc[-1])
-    else:
-        strikes_available = sorted(contracts["strike"].unique())
-        last_spot = float(strikes_available[len(strikes_available)//2])
-
-    atm_raw = round(last_spot / step) * step
-
-    # ── 4. Build strike list ───────────────────────────────────────────────
-    strikes = [atm_raw + i * step for i in range(-req.strike_range, req.strike_range + 1)]
-
-    # ── 5. Download each strike/type and build combined df ─────────────────
-    all_frames = []
-
-    for otype in ["CE", "PE"]:
-        for i, strike in enumerate(strikes):
-            atm_offset = i - req.strike_range  # -10..0..+10
-
-            # Find token
-            match = contracts[
-                (contracts["strike"] == strike) &
-                (contracts["instrument_type"] == otype)
-            ]
-            if match.empty:
-                continue
-
-            token = str(match.iloc[0]["instrument_token"])
-            sym   = match.iloc[0]["tradingsymbol"]
-
-            try:
-                candles = await _fetch_candles(
-                    req.api_key, req.access_token, token,
-                    req.from_date, req.to_date, actual_interval, False, True
-                )
-            except Exception:
-                continue
-
-            if not candles:
-                continue
-
-            df = _build_df(candles)
-            if df.empty:
-                continue
-
-            df["date"] = pd.to_datetime(df["date"])
-
-            # Resample to 75min if needed
-            if req.interval == "75minute":
-                df = _resample_75min(df)
-
-            # Merge spot
-            if not spot_df.empty:
-                spot_df["date"] = pd.to_datetime(spot_df["date"])
-                df = df.merge(spot_df, on="date", how="left")
-                # Forward-fill spot
-                df["spot"] = df["spot"].ffill()
-            else:
-                df["spot"] = None
-
-            # Recalculate ATM based on spot per row
-            if "spot" in df.columns and df["spot"].notna().any():
-                df["atm_strike"] = (df["spot"] / step).round() * step
-                df["strike_offset"] = ((strike - df["atm_strike"]) / step).round().astype(int)
-                df["strike_index"] = df["strike_offset"].apply(
-                    lambda x: "ATM" if x == 0 else (f"ATM+{x}" if x > 0 else f"ATM{x}")
-                )
-            else:
-                atm_label = "ATM" if atm_offset == 0 else (f"ATM+{atm_offset}" if atm_offset > 0 else f"ATM{atm_offset}")
-                df["strike_index"] = atm_label
-
-            # Add metadata columns
-            df["strike"]        = strike
-            df["symbol"]        = sym
-            df["option_type"]   = "CALL" if otype == "CE" else "PUT"
-            df["expiry_date"]   = req.expiry_date
-            df["expiry_number"] = req.expiry_number
-            expiry_label = {"weekly": "WEEK", "monthly": "MONTHLY", "quarterly": "QUARTERLY"}.get(req.expiry_type.lower(), req.expiry_type.upper())
-            df["expiry_type"]   = expiry_label
-            df["interval_min"]  = interval_min
-            df["index"]         = index
-
-            all_frames.append(df)
-
-            # small delay to avoid rate limit
-            await asyncio.sleep(0.1)
-
-    if not all_frames:
-        raise HTTPException(status_code=404, detail="No data found for any strike in this expiry.")
-
-    combined = pd.concat(all_frames, ignore_index=True)
-    combined = combined.sort_values(["date","option_type","strike"]).reset_index(drop=True)
-
-    # Rename date→datetime, add timestamp
-    combined["datetime"] = combined["date"].astype(str)
-    combined["timestamp"] = pd.to_datetime(combined["date"]).astype("int64") // 10**9
-    cols_order = ["timestamp","datetime","open","high","low","close","volume","oi",
-                  "spot","strike","strike_index","symbol","option_type",
-                  "expiry_date","expiry_number","expiry_type","index","interval_min"]
-    existing = [c for c in cols_order if c in combined.columns]
-    combined = combined[existing]
-
-    # ── 6. Serve file ──────────────────────────────────────────────────────
-    step_label = str(interval_min) + "min" if req.interval != "day" else "day"
-    expiry_label = {"weekly": "WEEK", "monthly": "MONTHLY", "quarterly": "QUARTERLY"}.get(req.expiry_type.lower(), req.expiry_type.upper())
-    fname = f"{index}_{expiry_label}_{req.expiry_date}_{step_label}"
-
-    if req.file_format == "parquet":
-        if not PARQUET_OK:
-            raise HTTPException(status_code=400, detail="Parquet not available.")
-        buf = io.BytesIO()
-        combined.to_parquet(buf, index=False, engine="fastparquet")
-        buf.seek(0)
-        return StreamingResponse(buf, media_type="application/octet-stream",
-            headers={"Content-Disposition": f'attachment; filename="{fname}.parquet"'})
-    else:
-        combined["datetime"] = combined["datetime"].astype(str)
-        buf = io.StringIO()
-        combined.to_csv(buf, index=False)
-        return StreamingResponse(io.BytesIO(buf.getvalue().encode()), media_type="text/csv",
-            headers={"Content-Disposition": f'attachment; filename="{fname}.csv"'})
-
-
-# ── Serve frontend ─────────────────────────────────────────────────────────────
+# ── Serve frontend ────────────────────────────────────────────────────────────
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
