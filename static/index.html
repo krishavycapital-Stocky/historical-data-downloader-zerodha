@@ -224,7 +224,7 @@
           </div>
           <div class="field">
             <label>Underlying (e.g. NIFTY, BANKNIFTY, RELIANCE)</label>
-            <input id="opt-underlying" type="text" placeholder="type symbol..." oninput="debounce('opt',loadOptExpiries,500)" />
+            <input id="opt-underlying" type="text" placeholder="type symbol..." oninput="clearErr(); debounce('opt',loadOptExpiries,500)" />
           </div>
         </div>
         <div class="row col3" style="margin-bottom:12px">
@@ -261,7 +261,7 @@
           </div>
           <div class="field">
             <label>Underlying (e.g. NIFTY, RELIANCE)</label>
-            <input id="fut-underlying" type="text" placeholder="type symbol..." oninput="debounce('fut',loadFutExpiries,500)" />
+            <input id="fut-underlying" type="text" placeholder="type symbol..." oninput="clearErr(); debounce('fut',loadFutExpiries,500)" />
           </div>
         </div>
         <div class="row col2" style="margin-bottom:12px">
@@ -290,7 +290,7 @@
           </div>
           <div class="field">
             <label>Symbol (exact — e.g. RELIANCE, INFY, GOLDBEES, NIFTYBEES)</label>
-            <input id="eq-symbol" type="text" placeholder="exact symbol..." />
+            <input id="eq-symbol" type="text" placeholder="exact symbol..." oninput="clearErr()" />
           </div>
         </div>
         <button class="btn btn-outline btn-sm" onclick="resolveEquity()">🔍 Resolve Token</button>
@@ -675,6 +675,11 @@ function clearResolved() {
   document.getElementById('resolveErr').innerHTML = '';
 }
 
+function clearErr() {
+  // Only wipe the error message — keep resolved token visible if user just tweaks input
+  document.getElementById('resolveErr').innerHTML = '';
+}
+
 // ── Debounce ───────────────────────────────────────────────────────────────
 function debounce(key, fn, ms) {
   clearTimeout(_debounceTimers[key]);
@@ -713,6 +718,7 @@ async function loadOptStrikes() {
 }
 
 async function resolveOption() {
+  clearErr();
   const und    = document.getElementById('opt-underlying').value.trim().toUpperCase();
   const ex     = document.getElementById('opt-exchange').value;
   const expiry = document.getElementById('opt-expiry').value;
@@ -743,6 +749,7 @@ async function loadFutExpiries() {
 }
 
 async function resolveFutures() {
+  clearErr();
   const und    = document.getElementById('fut-underlying').value.trim().toUpperCase();
   const ex     = document.getElementById('fut-exchange').value;
   const expiry = document.getElementById('fut-expiry').value;
@@ -757,6 +764,7 @@ async function resolveFutures() {
 
 // ── Equity ─────────────────────────────────────────────────────────────────
 async function resolveEquity() {
+  clearErr();
   const sym = document.getElementById('eq-symbol').value.trim().toUpperCase();
   const ex  = document.getElementById('eq-exchange').value;
   if (!sym) { showAlert('resolveErr', 'error', 'Enter a symbol.'); return; }

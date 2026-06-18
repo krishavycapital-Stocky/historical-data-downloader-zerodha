@@ -181,16 +181,49 @@ async def resolve_futures_token(underlying: str, expiry: str, exchange: str = "N
 async def resolve_equity_token(symbol: str, exchange: str = "NSE"):
     if not _instrument_cache:
         raise HTTPException(status_code=400, detail="Instruments not fetched yet.")
+
     df = pd.DataFrame(_instrument_cache)
-    df = df[df["exchange"] == exchange]
-    df = df[df["tradingsymbol"].str.upper() == symbol.upper()]
-    # Prefer EQ type, but accept any if EQ not present (handles ETFs like GOLDBEES)
-    eq_df = df[df["instrument_type"] == "EQ"]
-    df = eq_df if not eq_df.empty else df
-    if df.empty:
-        raise HTTPException(status_code=404, detail=f"Symbol not found: {symbol} on {exchange}")
-    row = df.iloc[0]
-    return {"instrument_token": str(row["instrument_token"]), "tradingsymbol": row["tradingsymbol"], "instrument_type": str(row.get("instrument_type", ""))}
+    sym_upper = symbol.strip().upper()
+
+    # Step 1: Exact tradingsymbol match on requested exchange + EQ type
+    sub = df[(df["exchange"] == exchange) & (df["tradingsymbol"].str.upper() == sym_upper)]
+    eq = sub[sub["instrument_type"] == "EQ"]
+    if not eq.empty:
+        row = eq.iloc[0]
+        return {"instrument_token": str(row["instrument_token"]), "tradingsymbol": row["tradingsymbol"], "instrument_type": "EQ"}
+    if not sub.empty:
+        row = sub.iloc[0]
+        return {"instrument_token": str(row["instrument_token"]), "tradingsymbol": row["tradingsymbol"], "instrument_type": str(row.get("instrument_type", ""))}
+
+    # Step 2: Exact tradingsymbol match on segment (NSE-EQ / BSE-EQ) — handles segment mismatch
+    seg = "NSE-EQ" if exchange == "NSE" else "BSE-EQ"
+    sub2 = df[(df["segment"] == seg) & (df["tradingsymbol"].str.upper() == sym_upper)] if "segment" in df.columns else pd.DataFrame()
+    if not sub2.empty:
+        row = sub2.iloc[0]
+        return {"instrument_token": str(row["instrument_token"]), "tradingsymbol": row["tradingsymbol"], "instrument_type": str(row.get("instrument_type", "EQ"))}
+
+    # Step 3: Broad search — any exchange, exact symbol, EQ type (catches exchange column mismatches)
+    broad = df[(df["tradingsymbol"].str.upper() == sym_upper) & (df["instrument_type"] == "EQ")]
+    if not broad.empty:
+        row = broad.iloc[0]
+        return {"instrument_token": str(row["instrument_token"]), "tradingsymbol": row["tradingsymbol"], "instrument_type": "EQ",
+                "exchange_found": str(row.get("exchange", ""))}
+
+    # Step 4: Name match — user typed full company name e.g. INFOSYS → matches INFY
+    if "name" in df.columns:
+        name_match = df[df["name"].str.upper().str.contains(sym_upper, na=False) & (df["instrument_type"] == "EQ")]
+        if not name_match.empty:
+            row = name_match.iloc[0]
+            return {"instrument_token": str(row["instrument_token"]), "tradingsymbol": row["tradingsymbol"],
+                    "instrument_type": "EQ", "note": f"Matched by name → {row['tradingsymbol']}"}
+
+    # Debug: tell the user what exchange values exist for this symbol (helps diagnose)
+    any_match = df[df["tradingsymbol"].str.upper() == sym_upper]
+    if not any_match.empty:
+        found = any_match[["tradingsymbol","exchange","segment","instrument_type"]].to_dict(orient="records")
+        raise HTTPException(status_code=404, detail=f"{symbol} exists but not as equity on {exchange}. Found: {found}")
+
+    raise HTTPException(status_code=404, detail=f"'{symbol}' not found in instrument cache ({len(df)} records from {df['exchange'].unique().tolist() if 'exchange' in df.columns else 'unknown'} exchanges). Use exact NSE trading symbol e.g. INFY, RELIANCE, GOLDBEES.")
 
 
 # ── Historical Data ────────────────────────────────────────────────────────────
@@ -263,6 +296,28 @@ async def preview_historical(req: HistoricalRequest):
     df["date"] = df["date"].astype(str)
     return {"rows": df.to_dict(orient="records"), "total": len(candles)}
 
+
+
+
+# ── Debug search (temporary — helps diagnose cache issues) ─────────────────────
+@app.get("/api/debug/search")
+async def debug_search(q: str, exchange: str = ""):
+    """Search cached instruments by tradingsymbol — returns raw matches for debugging."""
+    if not _instrument_cache:
+        return {"cached": 0, "results": []}
+    df = pd.DataFrame(_instrument_cache)
+    if exchange:
+        df = df[df["exchange"] == exchange]
+    mask = df["tradingsymbol"].str.upper().str.contains(q.upper(), na=False)
+    results = df[mask].head(20).to_dict(orient="records")
+    exchanges = df["exchange"].unique().tolist() if "exchange" in df.columns else []
+    return {
+        "cached_total": len(_instrument_cache),
+        "exchange_filter": exchange,
+        "exchanges_in_cache": exchanges,
+        "query": q,
+        "results": results,
+    }
 
 # ── Serve frontend ─────────────────────────────────────────────────────────────
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
