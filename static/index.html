@@ -476,7 +476,6 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--grn);}
   };
 })();
 
-var apiKey='', apiSecret='', accessToken='';
 var selTok='', selSym='';
 var searchTimer=null;
 var optMode='index', optType='CE', optStockName='', optStockTimer=null;
@@ -505,13 +504,9 @@ function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
 var isOwner = false;
 
 window.addEventListener('load', async function(){
-  apiKey      = lsGet('zp_k');
-  apiSecret   = lsGet('zp_s');
-  accessToken = lsGet('zp_t');
-
   try { setDates(); } catch(e){}
 
-  // Fetch session info (is_owner) — redirect to /login handled by fetch wrapper if 401
+  // Fetch session info — the fetch wrapper redirects to /login on 401
   try {
     var meRes = await fetch('/api/me');
     if(meRes.ok){
@@ -520,14 +515,14 @@ window.addEventListener('load', async function(){
     }
   } catch(e){}
 
-  // Show/hide owner-only UI
+  // Show/hide owner-only UI elements
   try {
-    document.getElementById('ownerKiteBlock').style.display  = isOwner ? '' : 'none';
-    document.getElementById('nonOwnerBlock').style.display   = isOwner ? 'none' : '';
-    document.getElementById('newTokenBtn').style.display     = isOwner ? '' : 'none';
+    document.getElementById('ownerKiteBlock').style.display = isOwner ? '' : 'none';
+    document.getElementById('nonOwnerBlock').style.display  = isOwner ? 'none' : '';
+    document.getElementById('newTokenBtn').style.display    = isOwner ? '' : 'none';
   } catch(e){}
 
-  // Check for request_token in URL (owner returning from Kite OAuth)
+  // Owner returning from Kite OAuth — show token-generation page
   var reqTok = '';
   try {
     var params = new URLSearchParams(window.location.search);
@@ -547,24 +542,21 @@ window.addEventListener('load', async function(){
     return;
   }
 
-  // Validate saved Kite token (still from localStorage for now — Step 3 moves this)
-  if(accessToken && apiKey){
-    try {
-      var vres = await fetch('/api/validate-token?api_key='+apiKey+'&access_token='+accessToken);
-      var vdata = await vres.json();
-      if(vdata.valid){
-        enterApp(vdata.user_name || apiKey.substring(0,8)+'...');
-        return;
-      }
-    } catch(e){}
-    lsDel('zp_t');
-    accessToken = '';
-    showAlert('loginMsg', isOwner
-      ? 'Your saved token has expired. Please refresh the Kite token.'
-      : 'Today\'s token has expired. Ask the owner to refresh it.', 'err');
-  }
+  // Check the server-side Kite token
+  try {
+    var vres = await fetch('/api/validate-token');
+    var vdata = await vres.json();
+    if(vdata.valid){
+      enterApp(vdata.user_name || '');
+      return;
+    }
+  } catch(e){}
 
+  // No valid token — send to the "refresh token" page with a message
   showPage('login');
+  showAlert('loginMsg', isOwner
+    ? 'No valid Kite token. Please refresh it.'
+    : 'Daily Kite token not set yet — ask the owner to refresh it.', 'err');
 });
 
 // ── KITE LOGIN (owner only — URL fetched from server) ──────────────────────────
@@ -579,13 +571,17 @@ async function doKiteLogin(){
   }
 }
 
-function useDirectToken(){
+async function useDirectToken(){
   var t=document.getElementById('directToken').value.trim();
   if(!t){showAlert('loginMsg','Paste your access token first','err');return;}
-  accessToken=t;
-  lsSet('zp_t',t);
-  // Keep zp_k in localStorage if it was already set (other endpoints still use it for now)
-  enterApp();
+  try {
+    var res=await fetch('/api/set-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({access_token:t})});
+    var data=await res.json();
+    if(!res.ok) throw new Error(data.detail||'Failed');
+    enterApp();
+  } catch(e){
+    showAlert('loginMsg','✗ '+e.message,'err');
+  }
 }
 
 // ── TOKEN (owner only) ────────────────────────────────────────────────────────
@@ -611,9 +607,7 @@ async function generateToken(){
     var res=await fetch('/api/generate-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request_token:r})});
     var data=await res.json();
     if(!res.ok) throw new Error(data.detail||'Failed');
-    accessToken=data.access_token;
-    lsSet('zp_t',accessToken);
-    document.getElementById('accessTokenDisplay').textContent=accessToken.substring(0,20)+'...';
+    document.getElementById('accessTokenDisplay').textContent=data.access_token.substring(0,20)+'...';
     document.getElementById('accessTokenDisplay').classList.add('filled');
     document.getElementById('step3num').className='step-num done';
     document.getElementById('step3num').textContent='✓';
@@ -636,7 +630,6 @@ function enterApp(userName){
 }
 
 function doRelogin(){
-  lsDel('zp_t'); accessToken='';
   showPage('login');
 }
 
@@ -654,7 +647,7 @@ async function doSearch(q){
   box.style.display='block';
   box.innerHTML='<div style="padding:9px;color:var(--muted);font-family:var(--mono);font-size:12px;">Searching '+ex+'...</div>';
   try {
-    var res=await fetch('/api/instruments?api_key='+apiKey+'&access_token='+accessToken+'&exchange='+ex+'&search='+encodeURIComponent(q));
+    var res=await fetch('/api/instruments?exchange='+ex+'&search='+encodeURIComponent(q));
     var data;try{data=await res.json();}catch(e){box.innerHTML='<div style="padding:9px;color:var(--red);font-family:var(--mono);font-size:12px;">Server error — check token</div>';return;}
     if(!res.ok){box.innerHTML='<div style="padding:9px;color:var(--red);font-family:var(--mono);font-size:12px;">'+(data.detail||'Error')+'</div>';return;}
     if(!Array.isArray(data)||!data.length){box.innerHTML='<div style="padding:9px;color:var(--muted);font-family:var(--mono);font-size:12px;">No results in '+ex+'</div>';return;}
@@ -689,7 +682,7 @@ async function dlEquity(){
   if(!document.getElementById('fromDate').value){showAlert('dlStatus','Select date range','err');return;}
   showAlert('dlStatus','⏳ Downloading...','info');
   try {
-    var body={api_key:apiKey,access_token:accessToken,instrument_token:selTok,from_date:document.getElementById('fromDate').value,to_date:document.getElementById('toDate').value,interval:document.getElementById('interval').value,continuous:false,oi:false,file_format:document.getElementById('fileFormat').value};
+    var body={instrument_token:selTok,from_date:document.getElementById('fromDate').value,to_date:document.getElementById('toDate').value,interval:document.getElementById('interval').value,continuous:false,oi:false,file_format:document.getElementById('fileFormat').value};
     var res=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(!res.ok){var d=await res.json();throw new Error(d.detail);}
     var blob=await res.blob();
@@ -739,7 +732,7 @@ async function optLoadExpiries(){
   sel.innerHTML='<option>Loading...</option>';sel.disabled=true;
   document.getElementById('opt_strike').innerHTML='<option>—</option>';document.getElementById('opt_strike').disabled=true;
   try {
-    var res=await fetch('/api/options/expiries?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+u+'&exchange='+ex);
+    var res=await fetch('/api/options/expiries?underlying='+u+'&exchange='+ex);
     var d=await res.json();
     sel.innerHTML=d.expiries.length?d.expiries.map(function(e){return '<option value="'+e+'">'+e+'</option>';}).join(''):'<option>None found</option>';
     sel.disabled=false;optLoadStrikes();
@@ -754,7 +747,7 @@ async function optLoadStrikes(){
   var sel=document.getElementById('opt_strike');
   sel.innerHTML='<option>Loading...</option>';sel.disabled=true;
   try {
-    var res=await fetch('/api/options/strikes?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+u+'&expiry='+expDate+'&exchange='+ex);
+    var res=await fetch('/api/options/strikes?underlying='+u+'&expiry='+expDate+'&exchange='+ex);
     var d=await res.json();
     sel.innerHTML=d.strikes.length?d.strikes.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join(''):'<option>None</option>';
     sel.disabled=false;
@@ -781,7 +774,7 @@ async function optDoStockSearch(q){
   box.style.display='block';
   box.innerHTML='<div style="padding:9px;color:var(--muted);font-family:var(--mono);font-size:12px;">Searching NFO...</div>';
   try {
-    var res=await fetch('/api/instruments?api_key='+apiKey+'&access_token='+accessToken+'&exchange=NFO&search='+encodeURIComponent(q));
+    var res=await fetch('/api/instruments?exchange=NFO&search='+encodeURIComponent(q));
     var data=await res.json();
     var names=[...new Set(data.map(function(r){return r.name;}).filter(function(n){return n&&n!=='';}))] ;
     if(!names.length){box.innerHTML='<div style="padding:9px;color:var(--muted);font-family:var(--mono);font-size:12px;">No F&O stocks found</div>';return;}
@@ -810,7 +803,7 @@ async function optLoadStockExpiries(){
   sel.innerHTML='<option>Loading...</option>';sel.disabled=true;
   document.getElementById('opt_strike').innerHTML='<option>—</option>';document.getElementById('opt_strike').disabled=true;
   try {
-    var res=await fetch('/api/options/expiries?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+encodeURIComponent(optStockName)+'&exchange=NFO');
+    var res=await fetch('/api/options/expiries?underlying='+encodeURIComponent(optStockName)+'&exchange=NFO');
     var d=await res.json();
     sel.innerHTML=d.expiries.length?d.expiries.map(function(e){return '<option value="'+e+'">'+e+'</option>';}).join(''):'<option>None found</option>';
     sel.disabled=false;optLoadStrikes();
@@ -833,10 +826,10 @@ async function dlOptions(){
   for(var i=0;i<types.length;i++){
     var ot=types[i];
     try {
-      var tr=await fetch('/api/options/token?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+u+'&expiry='+expDate+'&strike='+strike+'&option_type='+ot+'&exchange='+ex);
+      var tr=await fetch('/api/options/token?underlying='+u+'&expiry='+expDate+'&strike='+strike+'&option_type='+ot+'&exchange='+ex);
       if(!tr.ok){var td=await tr.json();throw new Error(td.detail);}
       var tok=await tr.json();
-      var body={api_key:apiKey,access_token:accessToken,instrument_token:tok.instrument_token,from_date:document.getElementById('opt_from').value,to_date:document.getElementById('opt_to').value,interval:document.getElementById('opt_interval').value,oi:document.getElementById('opt_oi').checked,continuous:false,file_format:fmt};
+      var body={instrument_token:tok.instrument_token,from_date:document.getElementById('opt_from').value,to_date:document.getElementById('opt_to').value,interval:document.getElementById('opt_interval').value,oi:document.getElementById('opt_oi').checked,continuous:false,file_format:fmt};
       var res=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
       if(!res.ok){var d=await res.json();throw new Error(d.detail);}
       dlBlob(await res.blob(),tok.tradingsymbol+'_'+body.interval+'_'+body.from_date+'_'+body.to_date+'.'+fmt);
@@ -860,7 +853,7 @@ async function futLoadExpiries(){
   var sel=document.getElementById('fut_expiry');
   sel.innerHTML='<option>Loading...</option>';sel.disabled=true;
   try {
-    var res=await fetch('/api/futures/expiries?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+u+'&exchange='+ex);
+    var res=await fetch('/api/futures/expiries?underlying='+u+'&exchange='+ex);
     var d=await res.json();
     if(!d.expiries.length){sel.innerHTML='<option>No contracts found</option>';return;}
     sel.innerHTML=d.expiries.map(function(e){return '<option value="'+e+'">'+e+'</option>';}).join('');
@@ -874,7 +867,7 @@ async function futLoadTok(){
   var ex=document.getElementById('fut_ex').value;
   if(!u||!exp) return;
   try {
-    var res=await fetch('/api/futures/token?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+u+'&expiry='+exp+'&exchange='+ex);
+    var res=await fetch('/api/futures/token?underlying='+u+'&expiry='+exp+'&exchange='+ex);
     var d=await res.json();
     futTok=d.instrument_token;futSym=d.tradingsymbol;
     document.getElementById('fut_info').textContent='Symbol: '+d.tradingsymbol+' | Token: '+d.instrument_token;
@@ -886,7 +879,7 @@ async function dlFutures(){
   if(!document.getElementById('fut_from').value){showAlert('fut_status','Select date range','err');return;}
   showAlert('fut_status','⏳ Downloading...','info');
   try {
-    var body={api_key:apiKey,access_token:accessToken,instrument_token:futTok,from_date:document.getElementById('fut_from').value,to_date:document.getElementById('fut_to').value,interval:document.getElementById('fut_interval').value,oi:true,continuous:document.getElementById('fut_cont').checked,file_format:document.getElementById('fut_fmt').value};
+    var body={instrument_token:futTok,from_date:document.getElementById('fut_from').value,to_date:document.getElementById('fut_to').value,interval:document.getElementById('fut_interval').value,oi:true,continuous:document.getElementById('fut_cont').checked,file_format:document.getElementById('fut_fmt').value};
     var res=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(!res.ok){var d=await res.json();throw new Error(d.detail);}
     dlBlob(await res.blob(),futSym+'_'+body.interval+'_'+body.from_date+'_'+body.to_date+'.'+body.file_format);
@@ -952,7 +945,7 @@ async function expAutoFetchSpot(expDate){
   atmEl.placeholder='⏳ Fetching spot price...';
   atmEl.value='';
   try {
-    var body={api_key:apiKey,access_token:accessToken,instrument_token:token,from_date:expDate,to_date:expDate,interval:'day',continuous:false,oi:false,file_format:'json'};
+    var body={instrument_token:token,from_date:expDate,to_date:expDate,interval:'day',continuous:false,oi:false,file_format:'json'};
     var res=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(!res.ok) throw new Error('fetch failed');
     var blob=await res.blob();
@@ -990,7 +983,6 @@ function expStop(){expStopped=true;document.getElementById('exp_stopbtn').style.
 
 async function expDownload(){
   if(!expSelExpiry){showAlert('exp_status','Select an expiry (Step 2)','err');return;}
-  if(!apiKey||!accessToken){showAlert('exp_status','Connect token first','err');return;}
   var index=document.getElementById('exp_index').value;
   var otype=document.getElementById('exp_otype').value;
   var interval=document.getElementById('exp_interval').value;
@@ -1023,7 +1015,7 @@ async function expDownload(){
       var strike=strikes[si],ot=types[ti];
       var instrToken=null,tradingSym='';
       try {
-        var tr=await fetch('/api/options/token?api_key='+apiKey+'&access_token='+accessToken+'&underlying='+index+'&expiry='+expSelExpiry+'&strike='+strike+'&option_type='+ot+'&exchange='+exchange);
+        var tr=await fetch('/api/options/token?underlying='+index+'&expiry='+expSelExpiry+'&strike='+strike+'&option_type='+ot+'&exchange='+exchange);
         if(tr.ok){var td=await tr.json();instrToken=td.instrument_token;tradingSym=td.tradingsymbol;}
       } catch(e){}
       if(!instrToken){
@@ -1033,14 +1025,14 @@ async function expDownload(){
         tradingSym=index+datePart+parseInt(strike)+ot;
         logLine(log,'🔍 '+tradingSym,'info');
         try {
-          var sr=await fetch('/api/instruments?api_key='+apiKey+'&access_token='+accessToken+'&exchange='+exchange+'&search='+encodeURIComponent(tradingSym));
+          var sr=await fetch('/api/instruments?exchange='+exchange+'&search='+encodeURIComponent(tradingSym));
           if(sr.ok){var sd=await sr.json();if(sd.length>0){instrToken=sd[0].instrument_token;tradingSym=sd[0].tradingsymbol;}}
         } catch(e){}
       }
       if(!instrToken){logLine(log,'⚠ '+index+' '+strike+ot+' — not found','info');failed++;}
       else {
         try {
-          var body={api_key:apiKey,access_token:accessToken,instrument_token:instrToken,from_date:expSelExpiry,to_date:expSelExpiry,interval:interval,oi:true,continuous:false,file_format:fmt};
+          var body={instrument_token:instrToken,from_date:expSelExpiry,to_date:expSelExpiry,interval:interval,oi:true,continuous:false,file_format:fmt};
           var res=await fetch('/api/historical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
           if(!res.ok){var ed=await res.json().catch(function(){return{detail:'No data'};});logLine(log,'✗ '+tradingSym+': '+ed.detail,'err');failed++;}
           else{dlBlob(await res.blob(),tradingSym+'_'+interval+'_'+expSelExpiry+'.'+fmt);logLine(log,'✓ '+tradingSym,'ok');done++;}
@@ -1105,7 +1097,6 @@ async function chDownload(){
   var range=parseInt(document.getElementById('ch_strikes').value);
   var interval=document.getElementById('ch_interval').value,fmt=document.getElementById('ch_fmt').value;
   if(!from||!to){showAlert('ch_status','Select expiry date range','err');return;}
-  if(!apiKey||!accessToken){showAlert('ch_status','Connect token first','err');return;}
   var expiries=chGetExpiries(from,to,type);
   if(!expiries.length){showAlert('ch_status','No expiries found in this range','err');return;}
   var log=document.getElementById('ch_log');log.style.display='block';log.innerHTML='';
@@ -1121,7 +1112,7 @@ async function chDownload(){
     var dataFrom=chCalcFrom(expiries[i],type);
     logLine(log,'⏳ ['+(i+1)+'/'+expiries.length+'] '+index+' '+type+' exp:'+expDate+' data:'+dataFrom+'→'+expDate,'info');
     try {
-      var body={api_key:apiKey,access_token:accessToken,index:index,expiry_date:expDate,expiry_number:i+1,expiry_type:type,strike_range:range,interval:interval,from_date:dataFrom,to_date:expDate,file_format:fmt};
+      var body={index:index,expiry_date:expDate,expiry_number:i+1,expiry_type:type,strike_range:range,interval:interval,from_date:dataFrom,to_date:expDate,file_format:fmt};
       var res=await fetch('/api/options-chain',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
       if(!res.ok){var d=await res.json().catch(function(){return{detail:'Unknown error'};});logLine(log,'✗ '+expDate+': '+d.detail,'err');failed++;}
       else {
