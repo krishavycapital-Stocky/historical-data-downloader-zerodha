@@ -5,7 +5,6 @@ FastAPI routes for the live OI tab.
 
 Register this router in main.py ABOVE the StaticFiles mount:
 
-    from oi_tracker.token_store import save_token as _oi_save_token
     from oi_tracker.routes_fastapi import router as oi_router
     app.include_router(oi_router)
 
@@ -18,8 +17,9 @@ Endpoints:
 import os
 import logging
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from fastapi.responses import HTMLResponse, JSONResponse
+from typing import Optional
 
 from . import config
 from . import token_store
@@ -46,8 +46,11 @@ def oi_tab():
 
 
 @router.get("/api/snapshot")
-async def api_snapshot():
-    result = await poller.poll_once()
+async def api_snapshot(
+    api_key: Optional[str] = Query(default=None),
+    access_token: Optional[str] = Query(default=None),
+):
+    result = await poller.poll_once(api_key=api_key, access_token=access_token)
     return JSONResponse(result)
 
 

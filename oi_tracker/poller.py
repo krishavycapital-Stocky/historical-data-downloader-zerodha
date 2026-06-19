@@ -56,10 +56,11 @@ def _baseline_label(captured_at: dt.datetime) -> str:
     return f"since {captured_at.strftime('%H:%M')}"
 
 
-async def poll_once() -> dict:
+async def poll_once(api_key: str = None, access_token: str = None) -> dict:
     """Fetch quotes for all configured instruments and return table rows + status."""
-    api_key = token_store.load_api_key()
-    access_token = token_store.load_access_token()
+    # Browser passes keys from localStorage; fall back to server-side store
+    api_key = api_key or token_store.load_api_key()
+    access_token = access_token or token_store.load_access_token()
 
     if not api_key or not access_token:
         return {
