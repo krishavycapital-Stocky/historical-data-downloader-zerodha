@@ -149,38 +149,56 @@ const INTERVAL = {{ interval }};
 const TAG = {"Long Buildup":"lb","Short Buildup":"sb","Short Covering":"sc","Long Unwinding":"lu","Neutral":"nt","—":"nt"};
 let lastSnapTs = null;
 
-/* ---------- session priming: find the token your browser already stored ---------- */
-const TOKEN_KEYS = ["access_token","accessToken","kite_access_token","kiteAccessToken","zerodha_access_token","token"];
-const APIKEY_KEYS = ["api_key","apiKey","kite_api_key","kiteApiKey","zerodha_api_key"];
-
-function scanLocalStorage(){
-  // Returns {api_key, access_token} best-guesses from localStorage (same origin
-  // as your main app, so its saved values are visible here).
-  const found = {api_key:"", access_token:""};
-  const all = {};
-  for(let i=0;i<localStorage.length;i++){
-    const k = localStorage.key(i); all[k]=localStorage.getItem(k);
-  }
-  // 1) direct key-name matches
-  for(const k of TOKEN_KEYS)  if(all[k]) { found.access_token = all[k]; break; }
-  for(const k of APIKEY_KEYS) if(all[k]) { found.api_key = all[k]; break; }
-  // 2) JSON blobs that contain the fields
-  if(!found.access_token || !found.api_key){
-    for(const k in all){
-      const v = all[k];
-      if(typeof v==="string" && v.trim().startsWith("{")){
-        try{ const o=JSON.parse(v);
-          for(const tk of TOKEN_KEYS)  if(!found.access_token && o[tk]) found.access_token=o[tk];
-          for(const ak of APIKEY_KEYS) if(!found.api_key && o[ak]) found.api_key=o[ak];
-        }catch(e){}
+/* ---------- session priming: find the token your browser already stored ----------
+   Aggressive auto-detect. The main app is the SAME origin, so its localStorage is
+   visible here. We match by key NAME and, if that fails, by the VALUE's shape
+   (Kite api_key = ~16 lowercase alphanumerics; access_token = ~32 alphanumerics,
+   usually mixed-case). We also dig into JSON blobs. */
+function _flatten(){
+  const flat = {};
+  function add(store){
+    try{
+      for(let i=0;i<store.length;i++){
+        const k = store.key(i);
+        const val = store.getItem(k);
+        flat[k] = val;
+        if(typeof val==="string" && val.trim().startsWith("{")){
+          try{ const o=JSON.parse(val);
+            for(const kk in o){ if(typeof o[kk]==="string") flat[k+"."+kk]=o[kk]; }
+          }catch(e){}
+        }
       }
-    }
+    }catch(e){}
+  }
+  add(localStorage);
+  try{ add(sessionStorage); }catch(e){}
+  return flat;
+}
+function scanLocalStorage(){
+  const found = {api_key:"", access_token:""};
+  const flat = _flatten();
+  // 1) by key name
+  for(const [k,v] of Object.entries(flat)){
+    if(typeof v!=="string") continue;
+    const lk = k.toLowerCase();
+    if(!found.access_token && /(access[_-]?token|\btoken\b)/.test(lk) && /^[A-Za-z0-9]{12,64}$/.test(v)) found.access_token=v;
+    if(!found.api_key && /(api[_-]?key)/.test(lk) && /^[A-Za-z0-9]{6,40}$/.test(v)) found.api_key=v;
+  }
+  // 2) by value shape (fallback when names are non-standard)
+  const vals = Object.values(flat).filter(v=>typeof v==="string");
+  if(!found.api_key){
+    const cand = vals.find(v=>/^[a-z0-9]{10,20}$/.test(v));   // api_key: lowercase alnum
+    if(cand) found.api_key=cand;
+  }
+  if(!found.access_token){
+    const toks = vals.filter(v=>/^[A-Za-z0-9]{24,40}$/.test(v) && v!==found.api_key);
+    found.access_token = toks.find(v=>/[A-Z]/.test(v)) || toks[0] || "";
   }
   return found;
 }
 
 async function primeServer(api_key, access_token){
-  const res = await fetch("api/set-token",{
+  const res = await fetch("/oi/api/set-token",{
     method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({api_key, access_token})
   });
@@ -213,7 +231,7 @@ document.getElementById("primeBtn").addEventListener("click", async ()=>{
 async function ensureSession(){
   // If the server already has a token (primed earlier / persisted today), do nothing.
   try{
-    const st = await (await fetch("api/status",{cache:"no-store"})).json();
+    const st = await (await fetch("/oi/api/status",{cache:"no-store"})).json();
     if(st.server_has_token) return true;
   }catch(e){}
   // Otherwise try to auto-prime from the browser's saved login.
@@ -276,7 +294,7 @@ function render(data){
 }
 
 async function poll(){
-  try{ render(await (await fetch('api/snapshot',{cache:'no-store'})).json()); }
+  try{ render(await (await fetch('/oi/api/snapshot',{cache:'no-store'})).json()); }
   catch(e){ document.getElementById('connText').textContent='page offline'; }
 }
 function tickCountdown(){
