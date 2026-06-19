@@ -123,6 +123,7 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--grn);}
     <input class="inp" type="text" id="directToken" placeholder="Paste access_token here"/>
     <button class="btn-big blu" onclick="useDirectToken()">Use This Token</button>
     <div id="loginMsg" style="margin-top:12px;"></div>
+    <div class="back-link" style="margin-top:20px;" onclick="window.location.href='/logout'">← Sign out of ZetaPull</div>
   </div>
 </div>
 
@@ -156,6 +157,7 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--grn);}
     <button class="btn-big" onclick="retryKiteLogin()" style="background:transparent;color:var(--blu);border:1px solid var(--blu);margin-top:8px;">↩ Go back to Kite Login</button>
     <div id="tokenMsg" style="margin-top:12px;"></div>
     <div class="back-link" onclick="showPage('login')">← Change API credentials</div>
+    <div class="back-link" style="margin-top:8px;" onclick="window.location.href='/logout'">← Sign out of ZetaPull</div>
   </div>
 </div>
 
@@ -168,6 +170,7 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--grn);}
     <div class="hright">
       <div class="pill" id="userPill">—</div>
       <button class="relogin-btn" onclick="doRelogin()">↻ New Token</button>
+      <a href="/logout" class="relogin-btn" style="text-decoration:none">Sign out</a>
     </div>
   </header>
   <div class="tabs">
@@ -176,6 +179,7 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--grn);}
     <button class="tab" onclick="switchTab('expired',this)">Exp. Options</button>
     <button class="tab" onclick="switchTab('futures',this)">Futures</button>
     <button class="tab" onclick="switchTab('chain',this)">Chain Download</button>
+    <a class="tab" href="/oi" target="_blank" style="text-decoration:none">Live OI ↗</a>
   </div>
   <main>
 
@@ -460,6 +464,18 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--grn);}
 
 <script>
 'use strict';
+
+// Redirect to app login page if the session cookie expires mid-session.
+(function(){
+  var _fetch = window.fetch;
+  window.fetch = function() {
+    return _fetch.apply(this, arguments).then(function(res) {
+      if (res.status === 401) { window.location.href = '/login'; }
+      return res;
+    });
+  };
+})();
+
 var apiKey='', apiSecret='', accessToken='';
 var selTok='', selSym='';
 var searchTimer=null;

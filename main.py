@@ -1,13 +1,17 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request, Form
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import StreamingResponse, JSONResponse, HTMLResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel
 from typing import Optional
 import httpx
 import pandas as pd
 import io
 import json
+import os
+import secrets
 from datetime import datetime, timedelta
 import asyncio
 try:
@@ -18,6 +22,93 @@ except ImportError:
 
 app = FastAPI(title="ZetaPull — Historical Data Downloader")
 
+from oi_tracker.token_store import save_token as _oi_save_token
+from oi_tracker.routes_fastapi import router as oi_router
+app.include_router(oi_router)
+
+# ── App-level auth setup ────────────────────────────────────────────────────────────
+
+def _parse_users() -> dict:
+    """Parse APP_USERS env var: 'alice:pass1,bob:pass2' → {alice: pass1, bob: pass2}"""
+    users: dict = {}
+    for entry in os.environ.get("APP_USERS", "").split(","):
+        entry = entry.strip()
+        if ":" in entry:
+            u, p = entry.split(":", 1)
+            u, p = u.strip(), p.strip()
+            if u and p:
+                users[u] = p
+    return users
+
+_APP_USERS: dict = _parse_users()
+
+_SECRET_KEY = os.environ.get("SECRET_KEY", "")
+if not _SECRET_KEY:
+    import logging as _logging
+    _logging.getLogger("main").warning(
+        "SECRET_KEY env var is not set — sessions are insecure. Set it on Render."
+    )
+    _SECRET_KEY = "insecure-dev-only-change-me-before-deploying"
+
+_LOGIN_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ZetaPull — Sign in</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0e14;--surf:#111720;--surf2:#18202e;--bdr:#1e2d44;--grn:#00d4aa;--blu:#0091ff;--red:#ff4d6d;--txt:#e0eaf8;--muted:#5a7a9a;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif}
+body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:14px;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 20px}
+.box{background:var(--surf);border:1px solid var(--bdr);border-radius:12px;padding:40px;width:100%;max-width:400px}
+.logo{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--grn);margin-bottom:4px}
+.logo span{color:var(--muted);font-weight:400}
+.tagline{color:var(--muted);font-size:13px;margin-bottom:28px}
+.lbl{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:5px;display:block}
+.inp{width:100%;background:var(--surf2);border:1px solid var(--bdr);border-radius:6px;color:var(--txt);font-family:var(--mono);font-size:13px;padding:10px 13px;outline:none;margin-bottom:14px;transition:border-color .2s}
+.inp:focus{border-color:var(--blu)}
+.btn{width:100%;padding:12px;border:none;border-radius:6px;font-family:var(--mono);font-size:13px;font-weight:600;cursor:pointer;background:var(--grn);color:#000;margin-top:4px;transition:opacity .2s}
+.btn:hover{opacity:.85}
+.errmsg{background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.3);color:var(--red);border-radius:5px;padding:9px 13px;font-family:var(--mono);font-size:12px;margin-bottom:14px}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="logo">Zeta<span>Pull</span></div>
+  <div class="tagline">Sign in to continue</div>
+  <!--ERROR-->
+  <form method="POST" action="/login">
+    <label class="lbl">Username</label>
+    <input class="inp" type="text" name="username" autofocus autocomplete="username" required/>
+    <label class="lbl">Password</label>
+    <input class="inp" type="password" name="password" autocomplete="current-password" required/>
+    <button class="btn" type="submit">Sign in →</button>
+  </form>
+</div>
+</body>
+</html>"""
+
+
+class _AuthMiddleware(BaseHTTPMiddleware):
+    """Require a signed-in app session for every route except /login and /logout."""
+    _PUBLIC = frozenset({"/login", "/logout"})
+
+    async def dispatch(self, request: Request, call_next):
+        if request.url.path in self._PUBLIC or request.method == "OPTIONS":
+            return await call_next(request)
+        if not request.session.get("user"):
+            if "/api/" in request.url.path:
+                return JSONResponse({"detail": "Not authenticated"}, status_code=401)
+            return RedirectResponse("/login", status_code=302)
+        return await call_next(request)
+
+
+# Middleware — added in reverse execution order (last added = outermost = runs first):
+#   CORSMiddleware → SessionMiddleware → _AuthMiddleware → route handler
+app.add_middleware(_AuthMiddleware)
+app.add_middleware(SessionMiddleware, secret_key=_SECRET_KEY,
+                   session_cookie="zp_sess", https_only=False, same_site="lax")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -28,7 +119,7 @@ app.add_middleware(
 
 KITE_BASE = "https://api.kite.trade"
 
-# ── Instrument cache ───────────────────────────────────────────────────────────
+# ── Instrument cache ─────────────────────────────────────────────────────────────────────────────────
 _instrument_df: Optional[pd.DataFrame] = None
 _instrument_last_fetched: Optional[datetime] = None
 _per_exchange_cache: dict = {}
@@ -95,7 +186,40 @@ async def startup_event():
     asyncio.create_task(_load_all_instruments())
 
 
-# ── Auth ───────────────────────────────────────────────────────────────────────
+# ── App login / logout ─────────────────────────────────────────────────────────────────────
+
+@app.get("/login", response_class=HTMLResponse, include_in_schema=False)
+async def login_page():
+    return HTMLResponse(_LOGIN_HTML)
+
+
+@app.post("/login", include_in_schema=False)
+async def do_login(request: Request,
+                   username: str = Form(...),
+                   password: str = Form(...)):
+    stored = _APP_USERS.get(username, "")
+    if stored and secrets.compare_digest(stored, password):
+        request.session["user"] = username
+        return RedirectResponse("/", status_code=302)
+    error = '<div class="errmsg">Invalid username or password.</div>'
+    return HTMLResponse(_LOGIN_HTML.replace("<!--ERROR-->", error), status_code=401)
+
+
+@app.get("/logout", include_in_schema=False)
+async def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse("/login", status_code=302)
+
+
+@app.get("/api/me")
+async def get_me(request: Request):
+    user = request.session.get("user")
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return {"username": user}
+
+
+# ── Kite Auth ──────────────────────────────────────────────────────────────────────────────
 
 class TokenRequest(BaseModel):
     api_key: str
@@ -116,7 +240,9 @@ async def generate_token(req: TokenRequest):
         )
     if resp.status_code != 200:
         raise HTTPException(status_code=resp.status_code, detail=resp.text)
-    return {"access_token": resp.json()["data"]["access_token"]}
+    access_token = resp.json()["data"]["access_token"]
+    _oi_save_token(access_token, req.api_key)
+    return {"access_token": access_token}
 
 
 @app.get("/api/validate-token")
@@ -136,7 +262,7 @@ async def validate_token(api_key: str, access_token: str):
     return {"valid": False, "user_name": "", "email": ""}
 
 
-# ── Instruments search ─────────────────────────────────────────────────────────
+# ── Instruments search ─────────────────────────────────────────────────────────────────────────
 
 @app.get("/api/instruments")
 async def get_instruments(api_key: str, access_token: str, exchange: str = "NFO", search: str = ""):
@@ -160,7 +286,7 @@ async def get_instruments(api_key: str, access_token: str, exchange: str = "NFO"
     return JSONResponse(content=result)
 
 
-# ── Options helpers ────────────────────────────────────────────────────────────
+# ── Options helpers ─────────────────────────────────────────────────────────────────────────────
 
 @app.get("/api/options/expiries")
 async def get_expiries(api_key: str, access_token: str, underlying: str, exchange: str = "NFO"):
@@ -208,7 +334,7 @@ async def get_option_token(api_key: str, access_token: str, underlying: str,
     return {"instrument_token": str(row["instrument_token"]), "tradingsymbol": row["tradingsymbol"]}
 
 
-# ── Futures helpers ────────────────────────────────────────────────────────────
+# ── Futures helpers ─────────────────────────────────────────────────────────────────────────────
 
 @app.get("/api/futures/expiries")
 async def get_futures_expiries(api_key: str, access_token: str, underlying: str, exchange: str = "NFO"):
@@ -238,7 +364,7 @@ async def get_futures_token(api_key: str, access_token: str, underlying: str,
     return {"instrument_token": str(row["instrument_token"]), "tradingsymbol": row["tradingsymbol"]}
 
 
-# ── Historical Data ────────────────────────────────────────────────────────────
+# ── Historical Data ──────────────────────────────────────────────────────────────────────────────
 
 def _date_chunks(from_date: str, to_date: str, interval: str):
     fmt = "%Y-%m-%d"
@@ -339,7 +465,7 @@ async def preview_historical(req: HistoricalRequest):
     return {"rows": df.to_dict(orient="records"), "total": len(candles)}
 
 
-# ── Spot token map ─────────────────────────────────────────────────────────────
+# ── Spot token map ──────────────────────────────────────────────────────────────────────────────────
 # FIX: Added FINNIFTY, MIDCPNIFTY, SENSEX, BANKEX spot tokens
 SPOT_TOKENS = {
     "NIFTY":       "256265",   # NSE:NIFTY 50
@@ -359,7 +485,7 @@ STEP_SIZE = {
     "BANKEX":     100,
 }
 
-# ── Options Chain endpoint ─────────────────────────────────────────────────────
+# ── Options Chain endpoint ────────────────────────────────────────────────────────────────────────────
 
 class ChainRequest(BaseModel):
     api_key: str
@@ -400,7 +526,7 @@ async def download_options_chain(req: ChainRequest):
     }
     interval_min = interval_label_map.get(req.interval, 0)
 
-    # ── 1. Get spot data ───────────────────────────────────────────────────
+    # ── 1. Get spot data ────────────────────────────────────────────────────────────────────
     spot_token = SPOT_TOKENS.get(index)
     spot_df = pd.DataFrame()
     if spot_token:
@@ -420,7 +546,7 @@ async def download_options_chain(req: ChainRequest):
         except Exception:
             pass
 
-    # ── 2. Get instrument list for this expiry ─────────────────────────────
+    # ── 2. Get instrument list for this expiry ─────────────────────────────────────────────
     df_instr = await _get_exchange_df(req.api_key, req.access_token, exchange)
     mask = (
         df_instr["name"].astype(str).str.upper().eq(index) &
@@ -432,7 +558,7 @@ async def download_options_chain(req: ChainRequest):
     if contracts.empty:
         raise HTTPException(status_code=404, detail=f"No contracts found for {index} expiry {req.expiry_date}")
 
-    # ── 3. Determine ATM strike ────────────────────────────────────────────
+    # ── 3. Determine ATM strike ──────────────────────────────────────────────────────────────────
     if not spot_df.empty:
         last_spot = float(spot_df["spot"].dropna().iloc[-1])
     else:
@@ -441,10 +567,10 @@ async def download_options_chain(req: ChainRequest):
 
     atm_raw = round(last_spot / step) * step
 
-    # ── 4. Build strike list ───────────────────────────────────────────────
+    # ── 4. Build strike list ─────────────────────────────────────────────────────────────────────
     strikes = [atm_raw + i * step for i in range(-req.strike_range, req.strike_range + 1)]
 
-    # ── 5. Download each strike ────────────────────────────────────────────
+    # ── 5. Download each strike ─────────────────────────────────────────────────────────────────────
     all_frames = []
 
     for otype in ["CE", "PE"]:
@@ -544,13 +670,5 @@ async def download_options_chain(req: ChainRequest):
         return StreamingResponse(io.BytesIO(buf.getvalue().encode()), media_type="text/csv",
             headers={"Content-Disposition": f'attachment; filename="{fname}.csv"'})
 
-from oi_tracker.routes_fastapi import router as oi_router, init_oi
-app.include_router(oi_router)
-
-@app.on_event("startup")
-async def _start_oi():
-    init_oi()
-
-
-# ── Serve frontend ─────────────────────────────────────────────────────────────
+# ── Serve frontend ──────────────────────────────────────────────────────────────────────────────────
 app.mount("/", StaticFiles(directory="static", html=True), name="static")

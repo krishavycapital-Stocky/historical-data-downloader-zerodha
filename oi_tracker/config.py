@@ -29,11 +29,13 @@ API_KEY = os.environ.get("KITE_API_KEY", "").strip()
 #        table fast (e.g. "NIFTY 25000 CE").
 #
 #    instrument_token is the NUMBER Zerodha uses internally, NOT the symbol.
-#    See instruments.py for a helper that turns "NIFTY25JUN25000CE" into a token.
+#    Find it in the CSV at https://api.kite.trade/instruments/NFO.
 # ---------------------------------------------------------------------------
 INSTRUMENTS = [
-    (256265, "NIFTY 50 index"),
-    (260105, "BANKNIFTY index"),
+    (256265, "NIFTY 50"),
+    (260105, "BANKNIFTY"),
+    (13568258, "NIFTY 25000 CE"),
+    (13568514, "NIFTY 25000 PE"),
 ]
 
 # If KITE_OI_TOKENS is set, it overrides the list above (labels become the token).

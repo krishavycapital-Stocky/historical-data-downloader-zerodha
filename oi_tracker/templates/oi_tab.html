@@ -9,54 +9,30 @@
   :root{
     --bg:#11151c; --panel:#171c25; --line:#252c38;
     --ink:#e8edf4; --muted:#8a96a8; --muteder:#5c6675;
-    --long-buildup:#3fb968; --short-covering:#46c7c0;
-    --short-buildup:#e5564b; --long-unwinding:#e0a13c; --neutral:#6b7585;
     --up:#3fb968; --down:#e5564b; --accent:#6ea8fe;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);
     font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:1100px;margin:0 auto;padding:22px 18px 60px}
-  header{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .wrap{max-width:900px;margin:0 auto;padding:22px 18px 60px}
+  header{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}
   h1{font-size:18px;font-weight:650;letter-spacing:-.01em;margin:0}
   h1 .sub{color:var(--muted);font-weight:450;font-size:13px;margin-left:8px}
 
-  .status{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin:14px 0 14px;
+  .status{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:14px;
     padding:10px 14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;
     font-size:12.5px;color:var(--muted)}
   .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:7px;vertical-align:middle}
   .dot.on{background:var(--up);box-shadow:0 0 0 3px rgba(63,185,104,.15)}
-  .dot.off{background:var(--down);box-shadow:0 0 0 3px rgba(229,86,75,.15)}
-  .dot.wait{background:var(--long-unwinding);box-shadow:0 0 0 3px rgba(224,161,60,.15)}
+  .dot.err{background:var(--down);box-shadow:0 0 0 3px rgba(229,86,75,.15)}
+  .dot.wait{background:#e0a13c;box-shadow:0 0 0 3px rgba(224,161,60,.15)}
   .status b{color:var(--ink);font-weight:600}
-  .status .countdown{font-variant-numeric:tabular-nums;font-family:ui-monospace,Menlo,monospace}
-
-  /* session priming panel */
-  .session{background:var(--panel);border:1px solid var(--line);border-radius:10px;
-    padding:14px 16px;margin-bottom:16px;font-size:13px}
-  .session.hidden{display:none}
-  .session h3{margin:0 0 6px;font-size:13.5px;font-weight:650}
-  .session p{margin:0 0 12px;color:var(--muted);line-height:1.5}
-  .session .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-  .session label{font-size:11px;color:var(--muteder);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
-  .session input{background:#0d1118;border:1px solid var(--line);color:var(--ink);border-radius:7px;
-    padding:8px 10px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;min-width:230px}
-  .session button{background:var(--accent);color:#0b1020;border:none;border-radius:7px;
-    padding:9px 16px;font-weight:650;font-size:13px;cursor:pointer}
-  .session button:hover{filter:brightness(1.08)}
-  .session .note{margin-top:10px;font-size:11.5px;color:var(--muteder)}
-
-  .legend{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-  .chip{font-size:11.5px;padding:3px 9px;border-radius:999px;font-weight:600;border:1px solid transparent;white-space:nowrap}
-  .chip.lb{color:var(--long-buildup);border-color:rgba(63,185,104,.35);background:rgba(63,185,104,.08)}
-  .chip.sb{color:var(--short-buildup);border-color:rgba(229,86,75,.35);background:rgba(229,86,75,.08)}
-  .chip.sc{color:var(--short-covering);border-color:rgba(70,199,192,.35);background:rgba(70,199,192,.08)}
-  .chip.lu{color:var(--long-unwinding);border-color:rgba(224,161,60,.35);background:rgba(224,161,60,.08)}
-  .chip.nt{color:var(--neutral);border-color:rgba(107,117,133,.35);background:rgba(107,117,133,.08)}
+  .status .mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,Menlo,monospace}
+  .err-msg{color:var(--down)}
 
   table{width:100%;border-collapse:collapse;font-size:13px}
   thead th{text-align:right;color:var(--muteder);font-weight:600;font-size:11px;text-transform:uppercase;
-    letter-spacing:.04em;padding:0 12px 8px;border-bottom:1px solid var(--line)}
+    letter-spacing:.04em;padding:0 12px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
   thead th.l{text-align:left}
   tbody td{padding:11px 12px;border-bottom:1px solid var(--line);text-align:right;
     font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
@@ -64,60 +40,22 @@
   tbody tr:hover{background:rgba(255,255,255,.018)}
   .pos{color:var(--up)} .neg{color:var(--down)} .dim{color:var(--muteder)}
   .arrow{font-size:11px;opacity:.85}
-  td .tag{font-size:11.5px;padding:3px 10px;border-radius:6px;font-weight:600;display:inline-block;min-width:104px;text-align:center}
-  .tag.lb{color:var(--long-buildup);background:rgba(63,185,104,.10)}
-  .tag.sc{color:var(--short-covering);background:rgba(70,199,192,.10)}
-  .tag.sb{color:var(--short-buildup);background:rgba(229,86,75,.10)}
-  .tag.lu{color:var(--long-unwinding);background:rgba(224,161,60,.10)}
-  .tag.nt{color:var(--neutral);background:rgba(107,117,133,.10)}
   .empty{padding:40px 12px;text-align:center;color:var(--muted);font-size:13px}
   footer{margin-top:16px;color:var(--muteder);font-size:11.5px;line-height:1.6}
-  @media (max-width:680px){.hide-sm{display:none}.wrap{padding:16px 12px 50px}}
+  @media(max-width:640px){.hide-sm{display:none}.wrap{padding:16px 12px 50px}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>Live OI Tracker<span class="sub">{{ instrument_count }} instruments · snapshot every {{ interval }}s</span></h1>
+    <h1>Live OI Tracker<span class="sub">{{ instrument_count }} instruments · every {{ interval }}s</span></h1>
   </header>
 
   <div class="status" id="status">
-    <span><span class="dot wait" id="dot"></span><b id="connText">checking session…</b></span>
-    <span>server token: <b id="tokText">—</b></span>
-    <span>last snapshot: <b id="lastText">—</b></span>
-    <span>next in <b class="countdown" id="cdText">—</b></span>
-    <span id="errText" style="color:var(--down)"></span>
-  </div>
-
-  <!-- One-time session priming: reuse the token your browser already has -->
-  <div class="session hidden" id="session">
-    <h3>Reuse your logged-in session</h3>
-    <p>The live feed runs on the server, so it needs a copy of the access token your
-       browser already holds from this morning's login. This does <b>not</b> log you
-       in again — it reuses the same token. We tried to read it automatically; confirm
-       or paste below, then click once.</p>
-    <div class="row">
-      <div>
-        <label>API key</label>
-        <input id="inApiKey" placeholder="api_key" autocomplete="off">
-      </div>
-      <div>
-        <label>Access token (today's)</label>
-        <input id="inToken" placeholder="access_token" autocomplete="off">
-      </div>
-      <div style="align-self:flex-end">
-        <button id="primeBtn">Use my session</button>
-      </div>
-    </div>
-    <div class="note" id="sessNote"></div>
-  </div>
-
-  <div class="legend">
-    <span class="chip lb">Long Buildup · price↑ OI↑</span>
-    <span class="chip sb">Short Buildup · price↓ OI↑</span>
-    <span class="chip sc">Short Covering · price↑ OI↓</span>
-    <span class="chip lu">Long Unwinding · price↓ OI↓</span>
-    <span class="chip nt">Neutral</span>
+    <span><span class="dot wait" id="dot"></span><b id="stateText">loading…</b></span>
+    <span>last poll: <b class="mono" id="lastText">—</b></span>
+    <span>next in <b class="mono" id="cdText">—</b></span>
+    <span id="errText" class="err-msg"></span>
   </div>
 
   <table>
@@ -125,189 +63,116 @@
       <tr>
         <th class="l">Instrument</th>
         <th>LTP</th>
-        <th class="hide-sm">Δ Price (3m)</th>
         <th>OI</th>
         <th>Δ OI (3m)</th>
-        <th class="hide-sm">Δ OI (day)</th>
-        <th>Buildup</th>
+        <th class="hide-sm" id="dayHeader">Δ OI (day open)</th>
       </tr>
     </thead>
     <tbody id="rows">
-      <tr><td class="empty" colspan="7">Waiting for the first ticks…</td></tr>
+      <tr><td class="empty" colspan="5">Waiting for first poll…</td></tr>
     </tbody>
   </table>
 
-  <footer>
-    Δ (3m) = change vs the previous snapshot. Δ OI (day) = change vs the day-open
-    baseline (first OI observed today). Buildup is computed from the price-vs-OI
-    move over the last interval. Personal, single-user view — data is not redistributed.
+  <footer id="footer">
+    Δ OI (3m) = change vs previous poll. Δ OI (day open) = change vs first OI observed today.
+    If the tracker wasn't open at market open, the column will say "since HH:MM".
+    — shows when no previous reading exists yet.
   </footer>
 </div>
 
 <script>
 const INTERVAL = {{ interval }};
-const TAG = {"Long Buildup":"lb","Short Buildup":"sb","Short Covering":"sc","Long Unwinding":"lu","Neutral":"nt","—":"nt"};
-let lastSnapTs = null;
+let lastPollMs = null;
 
-/* ---------- session priming: find the token your browser already stored ----------
-   Aggressive auto-detect. The main app is the SAME origin, so its localStorage is
-   visible here. We match by key NAME and, if that fails, by the VALUE's shape
-   (Kite api_key = ~16 lowercase alphanumerics; access_token = ~32 alphanumerics,
-   usually mixed-case). We also dig into JSON blobs. */
-function _flatten(){
-  const flat = {};
-  function add(store){
-    try{
-      for(let i=0;i<store.length;i++){
-        const k = store.key(i);
-        const val = store.getItem(k);
-        flat[k] = val;
-        if(typeof val==="string" && val.trim().startsWith("{")){
-          try{ const o=JSON.parse(val);
-            for(const kk in o){ if(typeof o[kk]==="string") flat[k+"."+kk]=o[kk]; }
-          }catch(e){}
-        }
-      }
-    }catch(e){}
-  }
-  add(localStorage);
-  try{ add(sessionStorage); }catch(e){}
-  return flat;
-}
-function scanLocalStorage(){
-  const found = {api_key:"", access_token:""};
-  const flat = _flatten();
-  // 1) by key name
-  for(const [k,v] of Object.entries(flat)){
-    if(typeof v!=="string") continue;
-    const lk = k.toLowerCase();
-    if(!found.access_token && /(access[_-]?token|\btoken\b)/.test(lk) && /^[A-Za-z0-9]{12,64}$/.test(v)) found.access_token=v;
-    if(!found.api_key && /(api[_-]?key)/.test(lk) && /^[A-Za-z0-9]{6,40}$/.test(v)) found.api_key=v;
-  }
-  // 2) by value shape (fallback when names are non-standard)
-  const vals = Object.values(flat).filter(v=>typeof v==="string");
-  if(!found.api_key){
-    const cand = vals.find(v=>/^[a-z0-9]{10,20}$/.test(v));   // api_key: lowercase alnum
-    if(cand) found.api_key=cand;
-  }
-  if(!found.access_token){
-    const toks = vals.filter(v=>/^[A-Za-z0-9]{24,40}$/.test(v) && v!==found.api_key);
-    found.access_token = toks.find(v=>/[A-Z]/.test(v)) || toks[0] || "";
-  }
-  return found;
-}
-
-async function primeServer(api_key, access_token){
-  const res = await fetch("/oi/api/set-token",{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({api_key, access_token})
-  });
-  return res.json();
-}
-
-function showSession(prefill, note){
-  const s = document.getElementById("session");
-  s.classList.remove("hidden");
-  if(prefill){
-    if(prefill.api_key) document.getElementById("inApiKey").value = prefill.api_key;
-    if(prefill.access_token) document.getElementById("inToken").value = prefill.access_token;
-  }
-  if(note) document.getElementById("sessNote").textContent = note;
-}
-function hideSession(){ document.getElementById("session").classList.add("hidden"); }
-
-document.getElementById("primeBtn").addEventListener("click", async ()=>{
-  const api_key = document.getElementById("inApiKey").value.trim();
-  const access_token = document.getElementById("inToken").value.trim();
-  if(!access_token){ document.getElementById("sessNote").textContent="Access token is required."; return; }
-  document.getElementById("sessNote").textContent="Connecting…";
-  try{
-    const r = await primeServer(api_key, access_token);
-    if(r.ok){ hideSession(); poll(); }
-    else document.getElementById("sessNote").textContent = "Server: "+(r.error||"failed");
-  }catch(e){ document.getElementById("sessNote").textContent = "Could not reach server."; }
-});
-
-async function ensureSession(){
-  // If the server already has a token (primed earlier / persisted today), do nothing.
-  try{
-    const st = await (await fetch("/oi/api/status",{cache:"no-store"})).json();
-    if(st.server_has_token) return true;
-  }catch(e){}
-  // Otherwise try to auto-prime from the browser's saved login.
-  const guess = scanLocalStorage();
-  if(guess.access_token){
-    try{
-      const r = await primeServer(guess.api_key, guess.access_token);
-      if(r.ok){ return true; }
-    }catch(e){}
-  }
-  // Couldn't auto-detect — show the one-time confirm/paste panel (no login).
-  showSession(guess, guess.access_token ? "" :
-    "Couldn't auto-read your token. Paste today's access token (the same one your historical tab uses).");
-  return false;
-}
-
-/* ---------- table rendering ---------- */
-function fmtInt(n){ if(n==null) return '<span class="dim">—</span>'; return Number(n).toLocaleString('en-IN'); }
-function fmtPrice(n){ if(n==null) return '<span class="dim">—</span>';
-  return Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function fmtDelta(n,isPrice){
+function fmtInt(n){
   if(n==null) return '<span class="dim">—</span>';
-  const v=Number(n); if(v===0) return '<span class="dim">0</span>';
+  return Number(n).toLocaleString('en-IN');
+}
+function fmtPrice(n){
+  if(n==null) return '<span class="dim">—</span>';
+  return Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtDelta(n){
+  if(n==null) return '<span class="dim">—</span>';
+  const v=Number(n);
+  if(v===0) return '<span class="dim">0</span>';
   const cls=v>0?'pos':'neg', arr=v>0?'▲':'▼';
-  const mag=isPrice?Math.abs(v).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})
-                   :Math.abs(v).toLocaleString('en-IN');
-  return `<span class="${cls}"><span class="arrow">${arr}</span> ${mag}</span>`;
+  return `<span class="${cls}"><span class="arrow">${arr}</span> ${Math.abs(v).toLocaleString('en-IN')}</span>`;
 }
 
 function render(data){
-  const s=data.status||{};
-  const dot=document.getElementById('dot'), conn=document.getElementById('connText');
-  if(s.connected){ dot.className='dot on'; conn.textContent='connected'; }
-  else if(s.running){ dot.className='dot wait'; conn.textContent='connecting…'; }
-  else { dot.className='dot off'; conn.textContent='not started'; }
-  document.getElementById('tokText').textContent = s.token_loaded ? 'loaded ✓' : 'not set';
-  document.getElementById('errText').textContent = s.last_error ? ('· '+s.last_error) : '';
+  const st = data.status || {};
+  const dot = document.getElementById('dot');
+  const stateEl = document.getElementById('stateText');
+  const errEl = document.getElementById('errText');
 
-  const rows=data.rows||[];
-  const tbody=document.getElementById('rows');
-  if(rows.length===0){
-    tbody.innerHTML='<tr><td class="empty" colspan="7">No instruments configured. Set KITE_OI_TOKENS or config.INSTRUMENTS.</td></tr>';
+  if(st.error){
+    dot.className='dot err'; stateEl.textContent='error';
+    errEl.textContent=st.error;
+  } else {
+    dot.className='dot on'; stateEl.textContent='ok';
+    errEl.textContent='';
+  }
+
+  if(st.polled_at){
+    lastPollMs = st.polled_at * 1000;
+    document.getElementById('lastText').textContent =
+      new Date(lastPollMs).toLocaleTimeString('en-IN',{hour12:false});
+  }
+
+  const rows = data.rows || [];
+  const tbody = document.getElementById('rows');
+
+  if(rows.length === 0){
+    const msg = st.error || 'No instruments configured. Set KITE_OI_TOKENS env var.';
+    tbody.innerHTML=`<tr><td class="empty" colspan="5">${msg}</td></tr>`;
     return;
   }
-  if(rows.some(r=>r.oi!=null)) lastSnapTs=Date.now();
-  document.getElementById('lastText').textContent = lastSnapTs ? new Date(lastSnapTs).toLocaleTimeString('en-IN',{hour12:false}) : '—';
 
-  tbody.innerHTML=rows.map(r=>{
-    const t=TAG[r.buildup]||'nt';
-    return `<tr>
-      <td class="l">${r.label}</td>
-      <td>${fmtPrice(r.ltp)}</td>
-      <td class="hide-sm">${fmtDelta(r.d_price_prev,true)}</td>
-      <td>${fmtInt(r.oi)}</td>
-      <td>${fmtDelta(r.d_oi_prev,false)}</td>
-      <td class="hide-sm">${fmtDelta(r.d_oi_open,false)}</td>
-      <td><span class="tag ${t}">${r.buildup}</span></td>
-    </tr>`;
-  }).join('');
+  // Update the day-open column header if baseline is "since HH:MM"
+  const baselineLabels = rows.map(r=>r.baseline_label).filter(Boolean);
+  if(baselineLabels.length > 0){
+    const unique = [...new Set(baselineLabels)];
+    const label = unique.length===1 ? unique[0] : 'baseline';
+    document.getElementById('dayHeader').textContent = `Δ OI (${label})`;
+  }
+
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td class="l">${r.label}</td>
+    <td>${fmtPrice(r.ltp)}</td>
+    <td>${fmtInt(r.oi)}</td>
+    <td>${fmtDelta(r.d_oi_prev)}</td>
+    <td class="hide-sm">${fmtDelta(r.d_oi_open)}</td>
+  </tr>`).join('');
 }
 
 async function poll(){
-  try{ render(await (await fetch('/oi/api/snapshot',{cache:'no-store'})).json()); }
-  catch(e){ document.getElementById('connText').textContent='page offline'; }
-}
-function tickCountdown(){
-  const now=Date.now()/1000, secs=Math.ceil(INTERVAL-(now%INTERVAL));
-  document.getElementById('cdText').textContent=`${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}`;
+  try{
+    const k = localStorage.getItem('zp_k') || '';
+    const t = localStorage.getItem('zp_t') || '';
+    const qs = (k && t) ? `?api_key=${encodeURIComponent(k)}&access_token=${encodeURIComponent(t)}` : '';
+    const res = await fetch('/oi/api/snapshot'+qs,{cache:'no-store'});
+    if(res.status === 401){ window.location.href = '/login'; return; }
+    render(await res.json());
+  } catch(e){
+    document.getElementById('dot').className='dot err';
+    document.getElementById('stateText').textContent='unreachable';
+    document.getElementById('errText').textContent=String(e);
+  }
 }
 
-(async function init(){
-  await ensureSession();
-  poll();
-  setInterval(poll,15000);
-  setInterval(tickCountdown,1000); tickCountdown();
-})();
+function tickCountdown(){
+  if(!lastPollMs){ document.getElementById('cdText').textContent='—'; return; }
+  const elapsed = (Date.now() - lastPollMs) / 1000;
+  const rem = Math.max(0, Math.ceil(INTERVAL - elapsed));
+  document.getElementById('cdText').textContent =
+    `${Math.floor(rem/60)}:${String(rem%60).padStart(2,'0')}`;
+}
+
+poll();
+setInterval(poll, INTERVAL * 1000);
+setInterval(tickCountdown, 1000);
+tickCountdown();
 </script>
 </body>
 </html>
