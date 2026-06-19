@@ -17,9 +17,8 @@ Endpoints:
 import os
 import logging
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter
 from fastapi.responses import HTMLResponse, JSONResponse
-from typing import Optional
 
 from . import config
 from . import token_store
@@ -46,11 +45,8 @@ def oi_tab():
 
 
 @router.get("/api/snapshot")
-async def api_snapshot(
-    api_key: Optional[str] = Query(default=None),
-    access_token: Optional[str] = Query(default=None),
-):
-    result = await poller.poll_once(api_key=api_key, access_token=access_token)
+async def api_snapshot():
+    result = await poller.poll_once()
     return JSONResponse(result)
 
 

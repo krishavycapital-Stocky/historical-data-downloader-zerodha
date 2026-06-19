@@ -112,6 +112,10 @@ class _AuthMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
+_ALLOWED_ORIGINS: list = [
+    o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "").split(",") if o.strip()
+] or ["http://localhost:8000"]
+
 # Middleware — added in reverse execution order (last added = outermost = runs first):
 #   CORSMiddleware → SessionMiddleware → _AuthMiddleware → route handler
 app.add_middleware(_AuthMiddleware)
@@ -119,10 +123,10 @@ app.add_middleware(SessionMiddleware, secret_key=_SECRET_KEY,
                    session_cookie="zp_sess", https_only=False, same_site="lax")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
 KITE_BASE = "https://api.kite.trade"
