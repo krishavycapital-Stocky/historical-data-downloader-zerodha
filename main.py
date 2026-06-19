@@ -544,6 +544,13 @@ async def download_options_chain(req: ChainRequest):
         return StreamingResponse(io.BytesIO(buf.getvalue().encode()), media_type="text/csv",
             headers={"Content-Disposition": f'attachment; filename="{fname}.csv"'})
 
+from oi_tracker.routes_fastapi import router as oi_router, init_oi
+    app.include_router(oi_router)
+
+    @app.on_event("startup")
+    async def _start_oi():
+        init_oi()
+
 
 # ── Serve frontend ─────────────────────────────────────────────────────────────
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
