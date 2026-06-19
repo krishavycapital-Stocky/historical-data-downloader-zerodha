@@ -152,6 +152,7 @@ async function poll(){
     const t = localStorage.getItem('zp_t') || '';
     const qs = (k && t) ? `?api_key=${encodeURIComponent(k)}&access_token=${encodeURIComponent(t)}` : '';
     const res = await fetch('/oi/api/snapshot'+qs,{cache:'no-store'});
+    if(res.status === 401){ window.location.href = '/login'; return; }
     render(await res.json());
   } catch(e){
     document.getElementById('dot').className='dot err';
