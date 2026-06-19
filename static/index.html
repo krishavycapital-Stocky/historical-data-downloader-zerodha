@@ -105,23 +105,23 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--grn);}
 </head>
 <body>
 
-<!-- LOGIN PAGE -->
+<!-- KITE TOKEN PAGE (owner only — fetches login URL from server) -->
 <div class="page center-page" id="page-login">
   <div class="box">
     <div class="logo">Zeta<span>Pull</span></div>
     <div class="tagline">Zerodha Historical Data Downloader</div>
-    <div class="saved-badge" id="savedBadge">✓ Credentials saved — just click Login</div>
-    <label class="lbl">API Key</label>
-    <input class="inp" type="text" id="apiKey" placeholder="Your Kite API Key"/>
-    <div class="hint">From <a href="https://developers.kite.trade/apps" target="_blank">developers.kite.trade/apps</a></div>
-    <label class="lbl">API Secret</label>
-    <input class="inp" type="password" id="apiSecret" placeholder="Your Kite API Secret"/>
-    <div class="hint">Same page — keep private</div>
-    <button class="btn-big grn" onclick="doKiteLogin()">🔐 Login with Zerodha Kite →</button>
-    <div class="divider">or paste today's token directly</div>
-    <label class="lbl">Access Token (if you already have it)</label>
-    <input class="inp" type="text" id="directToken" placeholder="Paste access_token here"/>
-    <button class="btn-big blu" onclick="useDirectToken()">Use This Token</button>
+    <!-- owner flow -->
+    <div id="ownerKiteBlock">
+      <button class="btn-big grn" onclick="doKiteLogin()">🔐 Login with Zerodha Kite →</button>
+      <div class="divider">or paste today's token directly</div>
+      <label class="lbl">Access Token (if you already have it)</label>
+      <input class="inp" type="text" id="directToken" placeholder="Paste access_token here"/>
+      <button class="btn-big blu" onclick="useDirectToken()">Use This Token</button>
+    </div>
+    <!-- non-owner message -->
+    <div id="nonOwnerBlock" style="display:none">
+      <div class="alert alert-info" style="margin-bottom:12px;">⏳ Today's Kite token hasn't been set yet. Please ask the owner to refresh the daily token.</div>
+    </div>
     <div id="loginMsg" style="margin-top:12px;"></div>
     <div class="back-link" style="margin-top:20px;" onclick="window.location.href='/logout'">← Sign out of ZetaPull</div>
   </div>
@@ -169,7 +169,7 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--grn);}
     <div class="conn">Connected</div>
     <div class="hright">
       <div class="pill" id="userPill">—</div>
-      <button class="relogin-btn" onclick="doRelogin()">↻ New Token</button>
+      <button class="relogin-btn" id="newTokenBtn" style="display:none" onclick="doRelogin()">↻ New Token</button>
       <a href="/logout" class="relogin-btn" style="text-decoration:none">Sign out</a>
     </div>
   </header>
@@ -501,7 +501,9 @@ function lsGet(k){try{return localStorage.getItem(k)||'';}catch(e){return '';}}
 function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
 
-// ── On load — FIX: validate saved token before entering app ───────────────────
+// ── On load ───────────────────────────────────────────────────────────────────
+var isOwner = false;
+
 window.addEventListener('load', async function(){
   apiKey      = lsGet('zp_k');
   apiSecret   = lsGet('zp_s');
@@ -509,7 +511,23 @@ window.addEventListener('load', async function(){
 
   try { setDates(); } catch(e){}
 
-  // Check for request_token in URL (returning from Kite login)
+  // Fetch session info (is_owner) — redirect to /login handled by fetch wrapper if 401
+  try {
+    var meRes = await fetch('/api/me');
+    if(meRes.ok){
+      var meData = await meRes.json();
+      isOwner = !!meData.is_owner;
+    }
+  } catch(e){}
+
+  // Show/hide owner-only UI
+  try {
+    document.getElementById('ownerKiteBlock').style.display  = isOwner ? '' : 'none';
+    document.getElementById('nonOwnerBlock').style.display   = isOwner ? 'none' : '';
+    document.getElementById('newTokenBtn').style.display     = isOwner ? '' : 'none';
+  } catch(e){}
+
+  // Check for request_token in URL (owner returning from Kite OAuth)
   var reqTok = '';
   try {
     var params = new URLSearchParams(window.location.search);
@@ -517,20 +535,19 @@ window.addEventListener('load', async function(){
     if(reqTok) window.history.replaceState({},'',window.location.pathname);
   } catch(e){}
 
-  if(reqTok){
+  if(reqTok && isOwner){
     showPage('token');
     try {
       document.getElementById('reqTokenDisplay').textContent = reqTok;
       document.getElementById('reqTokenDisplay').classList.add('filled');
       document.getElementById('reqTokenManual').value = reqTok;
       document.getElementById('autofillBadge').style.display = 'inline-flex';
-      document.getElementById('step1desc').textContent = apiKey ? 'API Key: '+apiKey : 'Login successful';
+      document.getElementById('step1desc').textContent = 'Owner login successful';
     } catch(e){}
     return;
   }
 
-  // FIX: If we have a saved token, validate it before entering the app.
-  // This catches yesterday's stale tokens and redirects to login.
+  // Validate saved Kite token (still from localStorage for now — Step 3 moves this)
   if(accessToken && apiKey){
     try {
       var vres = await fetch('/api/validate-token?api_key='+apiKey+'&access_token='+accessToken);
@@ -540,60 +557,62 @@ window.addEventListener('load', async function(){
         return;
       }
     } catch(e){}
-    // Token invalid — clear it and show login
     lsDel('zp_t');
     accessToken = '';
-    showAlert('loginMsg','Your saved token has expired. Please login again.','err');
+    showAlert('loginMsg', isOwner
+      ? 'Your saved token has expired. Please refresh the Kite token.'
+      : 'Today\'s token has expired. Ask the owner to refresh it.', 'err');
   }
 
   showPage('login');
-  try {
-    if(apiKey){document.getElementById('apiKey').value=apiKey;document.getElementById('savedBadge').style.display='flex';}
-    if(apiSecret) document.getElementById('apiSecret').value=apiSecret;
-  } catch(e){}
 });
 
-// ── LOGIN ──────────────────────────────────────────────────────
-function doKiteLogin(){
-  var k=document.getElementById('apiKey').value.trim();
-  var s=document.getElementById('apiSecret').value.trim();
-  if(!k){showAlert('loginMsg','Enter your API Key','err');return;}
-  if(!s){showAlert('loginMsg','Enter your API Secret','err');return;}
-  apiKey=k; apiSecret=s;
-  lsSet('zp_k',k); lsSet('zp_s',s);
-  window.location.href='https://kite.zerodha.com/connect/login?api_key='+k+'&v=3';
+// ── KITE LOGIN (owner only — URL fetched from server) ──────────────────────────
+async function doKiteLogin(){
+  try {
+    var res = await fetch('/api/kite-login-url');
+    var data = await res.json();
+    if(!res.ok) throw new Error(data.detail||'Failed to get login URL');
+    window.location.href = data.url;
+  } catch(e){
+    showAlert('loginMsg', '✗ '+e.message, 'err');
+  }
 }
 
 function useDirectToken(){
-  var k=document.getElementById('apiKey').value.trim();
   var t=document.getElementById('directToken').value.trim();
-  if(!k||!t){showAlert('loginMsg','Enter API Key and Access Token','err');return;}
-  apiKey=k; accessToken=t;
-  lsSet('zp_k',k); lsSet('zp_t',t);
+  if(!t){showAlert('loginMsg','Paste your access token first','err');return;}
+  accessToken=t;
+  lsSet('zp_t',t);
+  // Keep zp_k in localStorage if it was already set (other endpoints still use it for now)
   enterApp();
 }
 
-// ── TOKEN ──────────────────────────────────────────────────────
-function retryKiteLogin(){
-  if(!apiKey){showPage('login');return;}
-  window.location.href='https://kite.zerodha.com/connect/login?api_key='+apiKey+'&v=3';
+// ── TOKEN (owner only) ────────────────────────────────────────────────────────
+async function retryKiteLogin(){
+  try {
+    var res = await fetch('/api/kite-login-url');
+    var data = await res.json();
+    if(!res.ok) throw new Error(data.detail||'Failed');
+    window.location.href = data.url;
+  } catch(e){
+    showPage('login');
+  }
 }
 
 async function generateToken(){
-  var k=apiKey||lsGet('zp_k');
-  var s=apiSecret||lsGet('zp_s');
   var r=document.getElementById('reqTokenManual').value.trim()||document.getElementById('reqTokenDisplay').textContent.trim();
-  if(!k||!s){showAlert('tokenMsg','API Key/Secret missing. Go back.','err');return;}
   if(!r||r==='Waiting...'){showAlert('tokenMsg','No request token found. Paste it manually above.','err');return;}
   var btn=document.getElementById('generateBtn');
   btn.disabled=true; btn.textContent='⏳ Generating...';
   showAlert('tokenMsg','Generating...','info');
   try {
-    var res=await fetch('/api/generate-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:k,request_token:r,api_secret:s})});
+    // Only request_token is sent — api_key and api_secret stay server-side
+    var res=await fetch('/api/generate-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request_token:r})});
     var data=await res.json();
     if(!res.ok) throw new Error(data.detail||'Failed');
-    accessToken=data.access_token; apiKey=k; apiSecret=s;
-    lsSet('zp_t',accessToken); lsSet('zp_k',k); lsSet('zp_s',s);
+    accessToken=data.access_token;
+    lsSet('zp_t',accessToken);
     document.getElementById('accessTokenDisplay').textContent=accessToken.substring(0,20)+'...';
     document.getElementById('accessTokenDisplay').classList.add('filled');
     document.getElementById('step3num').className='step-num done';
@@ -610,18 +629,15 @@ async function generateToken(){
 function enterApp(userName){
   showPage('app');
   try{
-    var label = userName || (apiKey ? apiKey.substring(0,8)+'...' : '—');
+    var label = userName || '—';
     document.getElementById('userPill').textContent = label;
+    document.getElementById('newTokenBtn').style.display = isOwner ? '' : 'none';
   }catch(e){}
 }
 
 function doRelogin(){
   lsDel('zp_t'); accessToken='';
   showPage('login');
-  try {
-    if(apiKey){document.getElementById('apiKey').value=apiKey;document.getElementById('savedBadge').style.display='flex';}
-    if(apiSecret) document.getElementById('apiSecret').value=apiSecret;
-  } catch(e){}
 }
 
 // ── INSTRUMENT SEARCH (Equity) ─────────────────────────────────

@@ -42,6 +42,10 @@ def _parse_users() -> dict:
 
 _APP_USERS: dict = _parse_users()
 
+_OWNER_USERNAME = os.environ.get("OWNER_USERNAME", "").strip()
+_KITE_API_KEY   = os.environ.get("KITE_API_KEY",   "").strip()
+_KITE_API_SECRET = os.environ.get("KITE_API_SECRET", "").strip()
+
 _SECRET_KEY = os.environ.get("SECRET_KEY", "")
 if not _SECRET_KEY:
     import logging as _logging
@@ -216,32 +220,54 @@ async def get_me(request: Request):
     user = request.session.get("user")
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    return {"username": user}
+    return {"username": user, "is_owner": (user == _OWNER_USERNAME)}
 
 
 # ── Kite Auth ──────────────────────────────────────────────────────────────────────────────
 
+def _require_owner(request: Request):
+    """Raise 403 unless the logged-in session user is the configured owner."""
+    if not _OWNER_USERNAME:
+        raise HTTPException(status_code=500, detail="OWNER_USERNAME env var is not set.")
+    if request.session.get("user") != _OWNER_USERNAME:
+        raise HTTPException(status_code=403, detail="Owner access required.")
+
+
+@app.get("/api/kite-login-url")
+async def kite_login_url(request: Request):
+    """Return the Kite OAuth redirect URL, built server-side from KITE_API_KEY.
+    Only the owner can fetch this — non-owners get 403."""
+    _require_owner(request)
+    if not _KITE_API_KEY:
+        raise HTTPException(status_code=500, detail="KITE_API_KEY env var is not set.")
+    return {"url": f"https://kite.zerodha.com/connect/login?api_key={_KITE_API_KEY}&v=3"}
+
+
 class TokenRequest(BaseModel):
-    api_key: str
-    request_token: str
-    api_secret: str
+    request_token: str   # api_key and api_secret now come from server env vars only
+
 
 @app.post("/api/generate-token")
-async def generate_token(req: TokenRequest):
+async def generate_token(req: TokenRequest, request: Request):
+    _require_owner(request)
+    if not _KITE_API_KEY or not _KITE_API_SECRET:
+        raise HTTPException(status_code=500,
+                            detail="KITE_API_KEY / KITE_API_SECRET env vars are not set.")
     import hashlib
     checksum = hashlib.sha256(
-        f"{req.api_key}{req.request_token}{req.api_secret}".encode()
+        f"{_KITE_API_KEY}{req.request_token}{_KITE_API_SECRET}".encode()
     ).hexdigest()
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.post(
             f"{KITE_BASE}/session/token",
-            data={"api_key": req.api_key, "request_token": req.request_token, "checksum": checksum},
+            data={"api_key": _KITE_API_KEY, "request_token": req.request_token,
+                  "checksum": checksum},
             headers={"X-Kite-Version": "3"},
         )
     if resp.status_code != 200:
         raise HTTPException(status_code=resp.status_code, detail=resp.text)
     access_token = resp.json()["data"]["access_token"]
-    _oi_save_token(access_token, req.api_key)
+    _oi_save_token(access_token, _KITE_API_KEY)
     return {"access_token": access_token}
 
 
