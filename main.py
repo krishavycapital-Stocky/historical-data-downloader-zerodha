@@ -22,7 +22,11 @@ except ImportError:
 
 app = FastAPI(title="ZetaPull — Historical Data Downloader")
 
-from oi_tracker.token_store import save_token as _oi_save_token
+from oi_tracker.token_store import (
+    save_token as _oi_save_token,
+    load_access_token as _oi_load_token,
+    load_api_key as _oi_load_api_key,
+)
 from oi_tracker.routes_fastapi import router as oi_router
 app.include_router(oi_router)
 
@@ -123,6 +127,16 @@ app.add_middleware(
 
 KITE_BASE = "https://api.kite.trade"
 
+_NO_TOKEN_MSG = "Daily Kite token not set yet — the owner needs to refresh it."
+
+def _get_kite_creds() -> tuple:
+    """Return (api_key, access_token) from server-side store. Raises 503 if missing."""
+    api_key      = _KITE_API_KEY or _oi_load_api_key() or ""
+    access_token = _oi_load_token() or ""
+    if not api_key or not access_token:
+        raise HTTPException(status_code=503, detail=_NO_TOKEN_MSG)
+    return api_key, access_token
+
 # ── Instrument cache ─────────────────────────────────────────────────────────────────────────────────
 _instrument_df: Optional[pd.DataFrame] = None
 _instrument_last_fetched: Optional[datetime] = None
@@ -148,10 +162,9 @@ async def _load_all_instruments():
         pass
     return None
 
-async def _get_exchange_df(api_key: str, access_token: str, exchange: str) -> pd.DataFrame:
+async def _get_exchange_df(exchange: str) -> pd.DataFrame:
     global _per_exchange_cache
-    cache_key = exchange
-    cached = _per_exchange_cache.get(cache_key)
+    cached = _per_exchange_cache.get(exchange)
     if cached is not None:
         ts, df = cached
         if (datetime.now() - ts).total_seconds() < 3600 * 8:
@@ -161,9 +174,10 @@ async def _get_exchange_df(api_key: str, access_token: str, exchange: str) -> pd
     if all_df is not None and not all_df.empty:
         df = all_df[all_df["exchange"] == exchange].copy()
         if not df.empty:
-            _per_exchange_cache[cache_key] = (datetime.now(), df)
+            _per_exchange_cache[exchange] = (datetime.now(), df)
             return df
 
+    api_key, access_token = _get_kite_creds()
     try:
         async with httpx.AsyncClient(timeout=120) as client:
             resp = await client.get(
@@ -177,11 +191,11 @@ async def _get_exchange_df(api_key: str, access_token: str, exchange: str) -> pd
             raise HTTPException(status_code=resp.status_code,
                                 detail=f"Kite API {resp.status_code}: {resp.text[:300]}")
         df = pd.read_csv(io.StringIO(resp.text))
-        _per_exchange_cache[cache_key] = (datetime.now(), df)
+        _per_exchange_cache[exchange] = (datetime.now(), df)
         return df
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=504, detail=f"Timeout fetching {exchange} instruments. Try again in 30s.")
 
 
@@ -272,8 +286,12 @@ async def generate_token(req: TokenRequest, request: Request):
 
 
 @app.get("/api/validate-token")
-async def validate_token(api_key: str, access_token: str):
-    """Check if a saved token is still valid. Called on app load."""
+async def validate_token():
+    """Check the server-side Kite token. No credentials needed from the client."""
+    try:
+        api_key, access_token = _get_kite_creds()
+    except HTTPException:
+        return {"valid": False, "user_name": "", "email": "", "detail": _NO_TOKEN_MSG}
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.get(
@@ -288,12 +306,27 @@ async def validate_token(api_key: str, access_token: str):
     return {"valid": False, "user_name": "", "email": ""}
 
 
+class SetTokenRequest(BaseModel):
+    access_token: str
+
+
+@app.post("/api/set-token")
+async def set_token(req: SetTokenRequest, request: Request):
+    """Owner-only: store a manually pasted access token server-side."""
+    _require_owner(request)
+    tok = req.access_token.strip()
+    if not tok:
+        raise HTTPException(status_code=400, detail="access_token is empty.")
+    _oi_save_token(tok, _KITE_API_KEY)
+    return {"ok": True}
+
+
 # ── Instruments search ─────────────────────────────────────────────────────────────────────────
 
 @app.get("/api/instruments")
-async def get_instruments(api_key: str, access_token: str, exchange: str = "NFO", search: str = ""):
+async def get_instruments(exchange: str = "NFO", search: str = ""):
     try:
-        df = await _get_exchange_df(api_key, access_token, exchange)
+        df = await _get_exchange_df(exchange)
     except HTTPException:
         raise
     except Exception as e:
@@ -315,8 +348,8 @@ async def get_instruments(api_key: str, access_token: str, exchange: str = "NFO"
 # ── Options helpers ─────────────────────────────────────────────────────────────────────────────
 
 @app.get("/api/options/expiries")
-async def get_expiries(api_key: str, access_token: str, underlying: str, exchange: str = "NFO"):
-    df = await _get_exchange_df(api_key, access_token, exchange)
+async def get_expiries(underlying: str, exchange: str = "NFO"):
+    df = await _get_exchange_df(exchange)
     mask = (
         df["name"].astype(str).str.upper().eq(underlying.upper()) &
         df["instrument_type"].isin(["CE", "PE"])
@@ -329,8 +362,8 @@ async def get_expiries(api_key: str, access_token: str, underlying: str, exchang
 
 
 @app.get("/api/options/strikes")
-async def get_strikes(api_key: str, access_token: str, underlying: str, expiry: str, exchange: str = "NFO"):
-    df = await _get_exchange_df(api_key, access_token, exchange)
+async def get_strikes(underlying: str, expiry: str, exchange: str = "NFO"):
+    df = await _get_exchange_df(exchange)
     mask = (
         df["name"].astype(str).str.upper().eq(underlying.upper()) &
         df["expiry"].astype(str).eq(expiry) &
@@ -344,9 +377,9 @@ async def get_strikes(api_key: str, access_token: str, underlying: str, expiry: 
 
 
 @app.get("/api/options/token")
-async def get_option_token(api_key: str, access_token: str, underlying: str,
-                            expiry: str, strike: float, option_type: str, exchange: str = "NFO"):
-    df = await _get_exchange_df(api_key, access_token, exchange)
+async def get_option_token(underlying: str, expiry: str, strike: float,
+                            option_type: str, exchange: str = "NFO"):
+    df = await _get_exchange_df(exchange)
     mask = (
         df["name"].astype(str).str.upper().eq(underlying.upper()) &
         df["expiry"].astype(str).eq(expiry) &
@@ -363,8 +396,8 @@ async def get_option_token(api_key: str, access_token: str, underlying: str,
 # ── Futures helpers ─────────────────────────────────────────────────────────────────────────────
 
 @app.get("/api/futures/expiries")
-async def get_futures_expiries(api_key: str, access_token: str, underlying: str, exchange: str = "NFO"):
-    df = await _get_exchange_df(api_key, access_token, exchange)
+async def get_futures_expiries(underlying: str, exchange: str = "NFO"):
+    df = await _get_exchange_df(exchange)
     mask = (
         df["name"].astype(str).str.upper().eq(underlying.upper()) &
         df["instrument_type"].eq("FUT")
@@ -375,9 +408,8 @@ async def get_futures_expiries(api_key: str, access_token: str, underlying: str,
 
 
 @app.get("/api/futures/token")
-async def get_futures_token(api_key: str, access_token: str, underlying: str,
-                             expiry: str, exchange: str = "NFO"):
-    df = await _get_exchange_df(api_key, access_token, exchange)
+async def get_futures_token(underlying: str, expiry: str, exchange: str = "NFO"):
+    df = await _get_exchange_df(exchange)
     mask = (
         df["name"].astype(str).str.upper().eq(underlying.upper()) &
         df["expiry"].astype(str).eq(expiry) &
@@ -404,8 +436,8 @@ def _date_chunks(from_date: str, to_date: str, interval: str):
         cur = chunk_end + timedelta(days=1)
     return chunks
 
-async def _fetch_candles(api_key, access_token, instrument_token,
-                          from_date, to_date, interval, continuous, oi):
+async def _fetch_candles(instrument_token, from_date, to_date, interval, continuous, oi):
+    api_key, access_token = _get_kite_creds()
     chunks = _date_chunks(from_date, to_date, interval)
     all_candles = []
     async with httpx.AsyncClient(timeout=60) as client:
@@ -433,8 +465,6 @@ def _build_df(candles):
 
 
 class HistoricalRequest(BaseModel):
-    api_key: str
-    access_token: str
     instrument_token: str
     from_date: str
     to_date: str
@@ -446,7 +476,7 @@ class HistoricalRequest(BaseModel):
 
 @app.post("/api/historical")
 async def download_historical(req: HistoricalRequest):
-    candles = await _fetch_candles(req.api_key, req.access_token, req.instrument_token,
+    candles = await _fetch_candles(req.instrument_token,
                                     req.from_date, req.to_date, req.interval,
                                     req.continuous, req.oi)
     if not candles:
@@ -481,7 +511,7 @@ async def preview_historical(req: HistoricalRequest):
         datetime.strptime(req.from_date, fmt) + timedelta(days=5),
         datetime.strptime(req.to_date, fmt),
     ).strftime(fmt)
-    candles = await _fetch_candles(req.api_key, req.access_token, req.instrument_token,
+    candles = await _fetch_candles(req.instrument_token,
                                     req.from_date, preview_end, req.interval,
                                     req.continuous, req.oi)
     if not candles:
@@ -514,8 +544,6 @@ STEP_SIZE = {
 # ── Options Chain endpoint ────────────────────────────────────────────────────────────────────────────
 
 class ChainRequest(BaseModel):
-    api_key: str
-    access_token: str
     index: str
     expiry_date: str
     expiry_number: int
@@ -558,7 +586,7 @@ async def download_options_chain(req: ChainRequest):
     if spot_token:
         try:
             spot_candles = await _fetch_candles(
-                req.api_key, req.access_token, spot_token,
+                spot_token,
                 req.from_date, req.to_date, actual_interval, False, False
             )
             if spot_candles:
@@ -573,7 +601,7 @@ async def download_options_chain(req: ChainRequest):
             pass
 
     # ── 2. Get instrument list for this expiry ─────────────────────────────────────────────
-    df_instr = await _get_exchange_df(req.api_key, req.access_token, exchange)
+    df_instr = await _get_exchange_df(exchange)
     mask = (
         df_instr["name"].astype(str).str.upper().eq(index) &
         df_instr["expiry"].astype(str).eq(req.expiry_date) &
@@ -615,7 +643,7 @@ async def download_options_chain(req: ChainRequest):
 
             try:
                 candles = await _fetch_candles(
-                    req.api_key, req.access_token, token,
+                    token,
                     req.from_date, req.to_date, actual_interval, False, True
                 )
             except Exception:
