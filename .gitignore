@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+oi_runtime/
+oi_snapshots/

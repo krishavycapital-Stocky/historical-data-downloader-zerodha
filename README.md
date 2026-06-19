@@ -13,6 +13,7 @@ A free, self-hosted web app to download historical OHLCV + OI data from Zerodha 
 - Pause / Resume bulk downloads
 - Credentials saved in browser (no re-entry)
 - Built-in daily token generator
+- **Live OI Tracker** at `/oi` — polls Kite REST every 3 min, shows LTP + OI + deltas
 
 ---
 
@@ -52,6 +53,7 @@ Your live URL will be: `https://historical-data-downloader-zerodha.onrender.com`
 4. Copy `request_token` from the redirect URL
 5. Paste it and click **Generate Access Token**
 6. Switch to **Download Data** tab → select instrument → download!
+7. Click **Live OI ↗** tab to open the OI tracker — it reads your token from the browser automatically.
 
 ---
 
