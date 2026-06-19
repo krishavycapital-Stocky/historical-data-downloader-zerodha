@@ -4,4 +4,3 @@ httpx==0.27.2
 pandas==2.2.3
 python-multipart==0.0.9
 fastparquet==2023.10.0
-kiteconnect==5.2.0  
