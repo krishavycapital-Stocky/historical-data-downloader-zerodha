@@ -18,6 +18,10 @@ except ImportError:
 
 app = FastAPI(title="ZetaPull — Historical Data Downloader")
 
+from oi_tracker.token_store import save_token as _oi_save_token
+from oi_tracker.routes_fastapi import router as oi_router
+app.include_router(oi_router)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -28,7 +32,7 @@ app.add_middleware(
 
 KITE_BASE = "https://api.kite.trade"
 
-# ── Instrument cache ───────────────────────────────────────────────────────────
+# ── Instrument cache ─────────────────────────────────────────────────────────────────────────────────
 _instrument_df: Optional[pd.DataFrame] = None
 _instrument_last_fetched: Optional[datetime] = None
 _per_exchange_cache: dict = {}
@@ -95,7 +99,7 @@ async def startup_event():
     asyncio.create_task(_load_all_instruments())
 
 
-# ── Auth ───────────────────────────────────────────────────────────────────────
+# ── Auth ───────────────────────────────────────────────────────────────────────────────────
 
 class TokenRequest(BaseModel):
     api_key: str
@@ -116,7 +120,9 @@ async def generate_token(req: TokenRequest):
         )
     if resp.status_code != 200:
         raise HTTPException(status_code=resp.status_code, detail=resp.text)
-    return {"access_token": resp.json()["data"]["access_token"]}
+    access_token = resp.json()["data"]["access_token"]
+    _oi_save_token(access_token, req.api_key)
+    return {"access_token": access_token}
 
 
 @app.get("/api/validate-token")
@@ -136,7 +142,7 @@ async def validate_token(api_key: str, access_token: str):
     return {"valid": False, "user_name": "", "email": ""}
 
 
-# ── Instruments search ─────────────────────────────────────────────────────────
+# ── Instruments search ─────────────────────────────────────────────────────────────────────────
 
 @app.get("/api/instruments")
 async def get_instruments(api_key: str, access_token: str, exchange: str = "NFO", search: str = ""):
@@ -160,7 +166,7 @@ async def get_instruments(api_key: str, access_token: str, exchange: str = "NFO"
     return JSONResponse(content=result)
 
 
-# ── Options helpers ────────────────────────────────────────────────────────────
+# ── Options helpers ─────────────────────────────────────────────────────────────────────────────
 
 @app.get("/api/options/expiries")
 async def get_expiries(api_key: str, access_token: str, underlying: str, exchange: str = "NFO"):
@@ -208,7 +214,7 @@ async def get_option_token(api_key: str, access_token: str, underlying: str,
     return {"instrument_token": str(row["instrument_token"]), "tradingsymbol": row["tradingsymbol"]}
 
 
-# ── Futures helpers ────────────────────────────────────────────────────────────
+# ── Futures helpers ─────────────────────────────────────────────────────────────────────────────
 
 @app.get("/api/futures/expiries")
 async def get_futures_expiries(api_key: str, access_token: str, underlying: str, exchange: str = "NFO"):
@@ -238,7 +244,7 @@ async def get_futures_token(api_key: str, access_token: str, underlying: str,
     return {"instrument_token": str(row["instrument_token"]), "tradingsymbol": row["tradingsymbol"]}
 
 
-# ── Historical Data ────────────────────────────────────────────────────────────
+# ── Historical Data ──────────────────────────────────────────────────────────────────────────────
 
 def _date_chunks(from_date: str, to_date: str, interval: str):
     fmt = "%Y-%m-%d"
@@ -339,7 +345,7 @@ async def preview_historical(req: HistoricalRequest):
     return {"rows": df.to_dict(orient="records"), "total": len(candles)}
 
 
-# ── Spot token map ─────────────────────────────────────────────────────────────
+# ── Spot token map ──────────────────────────────────────────────────────────────────────────────────
 # FIX: Added FINNIFTY, MIDCPNIFTY, SENSEX, BANKEX spot tokens
 SPOT_TOKENS = {
     "NIFTY":       "256265",   # NSE:NIFTY 50
@@ -359,7 +365,7 @@ STEP_SIZE = {
     "BANKEX":     100,
 }
 
-# ── Options Chain endpoint ─────────────────────────────────────────────────────
+# ── Options Chain endpoint ────────────────────────────────────────────────────────────────────────────
 
 class ChainRequest(BaseModel):
     api_key: str
@@ -400,7 +406,7 @@ async def download_options_chain(req: ChainRequest):
     }
     interval_min = interval_label_map.get(req.interval, 0)
 
-    # ── 1. Get spot data ───────────────────────────────────────────────────
+    # ── 1. Get spot data ────────────────────────────────────────────────────────────────────
     spot_token = SPOT_TOKENS.get(index)
     spot_df = pd.DataFrame()
     if spot_token:
@@ -420,7 +426,7 @@ async def download_options_chain(req: ChainRequest):
         except Exception:
             pass
 
-    # ── 2. Get instrument list for this expiry ─────────────────────────────
+    # ── 2. Get instrument list for this expiry ─────────────────────────────────────────────
     df_instr = await _get_exchange_df(req.api_key, req.access_token, exchange)
     mask = (
         df_instr["name"].astype(str).str.upper().eq(index) &
@@ -432,7 +438,7 @@ async def download_options_chain(req: ChainRequest):
     if contracts.empty:
         raise HTTPException(status_code=404, detail=f"No contracts found for {index} expiry {req.expiry_date}")
 
-    # ── 3. Determine ATM strike ────────────────────────────────────────────
+    # ── 3. Determine ATM strike ──────────────────────────────────────────────────────────────────
     if not spot_df.empty:
         last_spot = float(spot_df["spot"].dropna().iloc[-1])
     else:
@@ -441,10 +447,10 @@ async def download_options_chain(req: ChainRequest):
 
     atm_raw = round(last_spot / step) * step
 
-    # ── 4. Build strike list ───────────────────────────────────────────────
+    # ── 4. Build strike list ─────────────────────────────────────────────────────────────────────
     strikes = [atm_raw + i * step for i in range(-req.strike_range, req.strike_range + 1)]
 
-    # ── 5. Download each strike ────────────────────────────────────────────
+    # ── 5. Download each strike ─────────────────────────────────────────────────────────────────────
     all_frames = []
 
     for otype in ["CE", "PE"]:
@@ -544,13 +550,5 @@ async def download_options_chain(req: ChainRequest):
         return StreamingResponse(io.BytesIO(buf.getvalue().encode()), media_type="text/csv",
             headers={"Content-Disposition": f'attachment; filename="{fname}.csv"'})
 
-from oi_tracker.routes_fastapi import router as oi_router, init_oi
-app.include_router(oi_router)
-
-@app.on_event("startup")
-async def _start_oi():
-    init_oi()
-
-
-# ── Serve frontend ─────────────────────────────────────────────────────────────
+# ── Serve frontend ──────────────────────────────────────────────────────────────────────────────────
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
