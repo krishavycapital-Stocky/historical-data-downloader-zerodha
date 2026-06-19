@@ -32,10 +32,8 @@ API_KEY = os.environ.get("KITE_API_KEY", "").strip()
 #    See instruments.py for a helper that turns "NIFTY25JUN25000CE" into a token.
 # ---------------------------------------------------------------------------
 INSTRUMENTS = [
-    # (256265, "NIFTY 50 index"),       # example index token
-    # (260105, "BANKNIFTY index"),      # example index token
-    # (13568258, "NIFTY 25000 CE"),     # example option token
-    # (13568514, "NIFTY 25000 PE"),     # example option token
+    (256265, "NIFTY 50 index"),
+    (260105, "BANKNIFTY index"),
 ]
 
 # If KITE_OI_TOKENS is set, it overrides the list above (labels become the token).
