@@ -30,6 +30,9 @@ from oi_tracker.token_store import (
 from oi_tracker.routes_fastapi import router as oi_router
 app.include_router(oi_router)
 
+from oi_tracker.routes_oipulse import router as oipulse_router
+app.include_router(oipulse_router)
+
 # ── App-level auth setup ────────────────────────────────────────────────────────────
 
 def _parse_users() -> dict:
