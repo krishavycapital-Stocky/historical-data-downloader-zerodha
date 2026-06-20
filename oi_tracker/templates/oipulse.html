@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OI Pulse — NIFTY</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0e14;--surf:#111720;--surf2:#18202e;--bdr:#1e2d44;
+  --txt:#e0eaf8;--muted:#5a7a9a;
+  --grn:#00d4aa;--blu:#0091ff;--red:#ff4d6d;--ylw:#f5c842;--org:#ff8c42;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:14px;min-height:100vh;padding:0}
+
+/* ── Header ── */
+#header{
+  background:var(--surf);border-bottom:1px solid var(--bdr);
+  padding:14px 24px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;
+}
+#spot-val{font-family:var(--mono);font-size:32px;font-weight:600;color:var(--txt);letter-spacing:-.5px}
+#spot-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px}
+.header-sep{width:1px;height:40px;background:var(--bdr)}
+#hdr-meta{display:flex;flex-direction:column;gap:4px}
+#last-updated{font-family:var(--mono);font-size:12px;color:var(--muted)}
+#countdown{font-family:var(--mono);font-size:12px;color:var(--grn)}
+.toggle-group{display:flex;gap:8px;margin-left:auto}
+.toggle-btn{
+  font-family:var(--mono);font-size:11px;font-weight:500;
+  padding:6px 14px;border-radius:6px;cursor:pointer;
+  border:1px solid var(--bdr);background:var(--surf2);color:var(--muted);
+  transition:all .2s;text-transform:uppercase;letter-spacing:.5px;
+}
+.toggle-btn.active{background:var(--bdr);color:var(--txt);border-color:var(--blu)}
+#error-bar{
+  display:none;background:rgba(255,77,109,.1);border-bottom:1px solid rgba(255,77,109,.3);
+  color:var(--red);font-family:var(--mono);font-size:12px;padding:8px 24px;
+}
+
+/* ── Panels ── */
+#panels{padding:16px 24px;display:flex;flex-direction:column;gap:16px}
+.panel{
+  background:var(--surf);border:1px solid var(--bdr);border-radius:10px;
+  padding:16px 20px 12px;
+}
+.panel-title{
+  font-family:var(--mono);font-size:11px;text-transform:uppercase;
+  letter-spacing:.8px;color:var(--muted);margin-bottom:10px;
+}
+.chart-wrap{position:relative;width:100%;height:220px}
+canvas{width:100%!important;height:100%!important}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div>
+    <div id="spot-val">—</div>
+    <div id="spot-label">NIFTY Spot</div>
+  </div>
+  <div class="header-sep"></div>
+  <div id="hdr-meta">
+    <div id="last-updated">Last updated: —</div>
+    <div id="countdown">Next poll in —</div>
+  </div>
+  <div class="toggle-group">
+    <button class="toggle-btn active" id="btn-bands" onclick="togglePanel('bands')">OI Bands</button>
+    <button class="toggle-btn active" id="btn-cog"   onclick="togglePanel('cog')">COG</button>
+    <button class="toggle-btn active" id="btn-vel"   onclick="togglePanel('vel')">Velocity</button>
+  </div>
+</div>
+<div id="error-bar"></div>
+
+<div id="panels">
+  <div class="panel" id="panel-bands">
+    <div class="panel-title">Panel 1 — OI Bands &amp; Spot</div>
+    <div class="chart-wrap"><canvas id="chart-bands"></canvas></div>
+  </div>
+  <div class="panel" id="panel-cog">
+    <div class="panel-title">Panel 2 — COG Detail</div>
+    <div class="chart-wrap"><canvas id="chart-cog"></canvas></div>
+  </div>
+  <div class="panel" id="panel-vel">
+    <div class="panel-title">Panel 3 — OI Velocity</div>
+    <div class="chart-wrap"><canvas id="chart-vel"></canvas></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script>
+// ── IST today bounds ────────────────────────────────────────────────────────
+function todayISTString() {
+  const now = new Date();
+  // Get date parts in IST
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(now);
+  return parts; // e.g. "2024-11-28"
+}
+
+const todayStr = todayISTString();
+const xMin = new Date(`${todayStr}T09:15:00+05:30`);
+const xMax = new Date(`${todayStr}T15:30:00+05:30`);
+
+// ── Shared axis defaults ────────────────────────────────────────────────────
+const xAxisCfg = {
+  type: 'time',
+  min: xMin,
+  max: xMax,
+  time: {
+    unit: 'minute',
+    stepSize: 30,
+    displayFormats: { minute: 'HH:mm' },
+    tooltipFormat: 'HH:mm:ss',
+  },
+  ticks: { color: '#5a7a9a', font: { family: "'IBM Plex Mono'", size: 10 }, maxRotation: 0 },
+  grid: { color: 'rgba(30,45,68,.5)' },
+};
+
+const tooltipPlugin = {
+  backgroundColor: '#111720',
+  borderColor: '#1e2d44',
+  borderWidth: 1,
+  titleColor: '#5a7a9a',
+  bodyColor: '#e0eaf8',
+  titleFont: { family: "'IBM Plex Mono'", size: 10 },
+  bodyFont: { family: "'IBM Plex Mono'", size: 11 },
+};
+
+const legendCfg = {
+  labels: { color: '#5a7a9a', font: { family: "'IBM Plex Mono'", size: 10 }, boxWidth: 20, padding: 10 },
+};
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function makeDataset(label, color, dash, fill, extra) {
+  return Object.assign({
+    label,
+    borderColor: color,
+    borderWidth: 1.5,
+    borderDash: dash || [],
+    pointRadius: 0,
+    tension: 0.1,
+    fill: fill || false,
+    data: [],
+  }, extra || {});
+}
+
+function yPriceAxis(atm) {
+  const lo = atm ? atm - 200 : undefined;
+  const hi = atm ? atm + 200 : undefined;
+  return {
+    min: lo, max: hi,
+    ticks: {
+      color: '#5a7a9a',
+      font: { family: "'IBM Plex Mono'", size: 10 },
+      stepSize: 50,
+      callback: v => Number.isInteger(v) ? v : null,
+    },
+    grid: { color: 'rgba(30,45,68,.5)' },
+  };
+}
+
+// ── Chart 1: OI Bands ───────────────────────────────────────────────────────
+const ctxBands = document.getElementById('chart-bands').getContext('2d');
+const chartBands = new Chart(ctxBands, {
+  type: 'line',
+  data: {
+    datasets: [
+      makeDataset('Spot',      '#e0eaf8', [],     false),
+      makeDataset('CE Wall',   '#ff4d6d', [5, 4], false),
+      makeDataset('PE Wall',   '#00d4aa', [5, 4], false),
+      makeDataset('Band Mid',  '#f5c842', [],     false),
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, animation: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: { legend: legendCfg, tooltip: tooltipPlugin },
+    scales: {
+      x: xAxisCfg,
+      y: yPriceAxis(null),
+    },
+  },
+});
+
+// ── Chart 2: COG Detail ─────────────────────────────────────────────────────
+const ctxCog = document.getElementById('chart-cog').getContext('2d');
+const chartCog = new Chart(ctxCog, {
+  type: 'line',
+  data: {
+    datasets: [
+      // Index 0: CE COG — fill toward dataset index 1 (PE COG)
+      Object.assign(makeDataset('CE COG', '#0091ff', [8, 4], false), {
+        fill: { target: 1, above: 'rgba(0,145,255,.08)', below: 'rgba(0,145,255,.08)' },
+      }),
+      makeDataset('PE COG',  '#ff8c42', [8, 4], false),
+      makeDataset('COG Mid', '#f5c842', [],     false),
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, animation: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: { legend: legendCfg, tooltip: tooltipPlugin },
+    scales: {
+      x: xAxisCfg,
+      y: yPriceAxis(null),
+    },
+  },
+});
+
+// ── Chart 3: Velocity ───────────────────────────────────────────────────────
+const ctxVel = document.getElementById('chart-vel').getContext('2d');
+const chartVel = new Chart(ctxVel, {
+  type: 'line',
+  data: {
+    datasets: [
+      makeDataset('CE Velocity', '#0091ff', [], false),
+      makeDataset('PE Velocity', '#ff8c42', [], false),
+      // Constant reference lines added as datasets (hidden from legend interaction)
+      Object.assign(makeDataset('Spike (2.0)', 'rgba(90,122,154,.7)', [6, 3], false), { pointRadius: 0 }),
+      Object.assign(makeDataset('Base (1.0)',  'rgba(90,122,154,.4)', [3, 3], false), { pointRadius: 0 }),
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, animation: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: { legend: legendCfg, tooltip: tooltipPlugin },
+    scales: {
+      x: xAxisCfg,
+      y: {
+        min: 0,
+        ticks: { color: '#5a7a9a', font: { family: "'IBM Plex Mono'", size: 10 } },
+        grid: { color: 'rgba(30,45,68,.5)' },
+      },
+    },
+  },
+});
+
+// ── Panel toggle ────────────────────────────────────────────────────────────
+function togglePanel(id) {
+  const panelMap = { bands: 'panel-bands', cog: 'panel-cog', vel: 'panel-vel' };
+  const panel = document.getElementById(panelMap[id]);
+  const btn   = document.getElementById('btn-' + id);
+  const hidden = panel.style.display === 'none';
+  panel.style.display = hidden ? '' : 'none';
+  btn.classList.toggle('active', hidden);
+}
+
+// ── Data rendering ──────────────────────────────────────────────────────────
+let lastATM = null;
+
+function parseTS(iso) {
+  return new Date(iso);
+}
+
+function renderData(result) {
+  const snaps = result.snapshots || [];
+  const status = result.status || {};
+
+  // Error bar
+  const errBar = document.getElementById('error-bar');
+  if (status.error) {
+    errBar.textContent = status.error === 'No token — log in on the main tab first.'
+      ? 'Log in on the main tab first.'
+      : status.error;
+    errBar.style.display = 'block';
+  } else {
+    errBar.style.display = 'none';
+  }
+
+  // Header
+  if (snaps.length > 0) {
+    const last = snaps[snaps.length - 1];
+    document.getElementById('spot-val').textContent =
+      last.spot != null ? last.spot.toFixed(2) : '—';
+    lastATM = last.atm || null;
+  }
+  if (status.last_updated) {
+    const d = new Date(status.last_updated);
+    const hms = d.toLocaleTimeString('en-GB', { timeZone: 'Asia/Kolkata', hour12: false });
+    document.getElementById('last-updated').textContent = `Last updated: ${hms}`;
+  }
+
+  if (!snaps.length) return;
+
+  // ── Build dataset arrays ─────────────────────────────────────────────
+  const times = snaps.map(s => parseTS(s.ts));
+
+  // Panel 1
+  chartBands.data.datasets[0].data = times.map((t, i) => ({ x: t, y: snaps[i].spot }));
+  chartBands.data.datasets[1].data = times.map((t, i) => ({ x: t, y: snaps[i].ce_wall }));
+  chartBands.data.datasets[2].data = times.map((t, i) => ({ x: t, y: snaps[i].pe_wall }));
+  chartBands.data.datasets[3].data = times.map((t, i) => ({ x: t, y: snaps[i].band_mid }));
+
+  // Panel 2
+  chartCog.data.datasets[0].data = times.map((t, i) => ({ x: t, y: snaps[i].ce_cog }));
+  chartCog.data.datasets[1].data = times.map((t, i) => ({ x: t, y: snaps[i].pe_cog }));
+  chartCog.data.datasets[2].data = times.map((t, i) => ({ x: t, y: snaps[i].cog_mid }));
+
+  // Panel 3 — velocity
+  const allVel = snaps.flatMap(s => [s.ce_velocity || 0, s.pe_velocity || 0]);
+  const velMax = Math.max(...allVel, 2.2) * 1.2;
+  chartVel.options.scales.y.max = Math.ceil(velMax * 10) / 10;
+  chartVel.data.datasets[0].data = times.map((t, i) => ({ x: t, y: snaps[i].ce_velocity || 0 }));
+  chartVel.data.datasets[1].data = times.map((t, i) => ({ x: t, y: snaps[i].pe_velocity || 0 }));
+  // Spike and baseline constant lines
+  chartVel.data.datasets[2].data = [{ x: xMin, y: 2.0 }, { x: xMax, y: 2.0 }];
+  chartVel.data.datasets[3].data = [{ x: xMin, y: 1.0 }, { x: xMax, y: 1.0 }];
+
+  // Update y-axis bounds for price charts
+  if (lastATM) {
+    const yLo = lastATM - 200;
+    const yHi = lastATM + 200;
+    chartBands.options.scales.y.min = yLo;
+    chartBands.options.scales.y.max = yHi;
+    chartCog.options.scales.y.min   = yLo;
+    chartCog.options.scales.y.max   = yHi;
+
+    // Gridlines at strike intervals (50 pt) for price charts
+    const strikeTicks = [];
+    for (let v = Math.ceil(yLo / 50) * 50; v <= yHi; v += 50) strikeTicks.push(v);
+    const strikeTickPlugin = {
+      afterBuildTicks(axis) {
+        axis.ticks = strikeTicks.map(v => ({ value: v }));
+      }
+    };
+    // Apply via callback — update tick stepSize instead (simpler)
+    chartBands.options.scales.y.ticks.stepSize = 50;
+    chartCog.options.scales.y.ticks.stepSize   = 50;
+  }
+
+  chartBands.update('none');
+  chartCog.update('none');
+  chartVel.update('none');
+}
+
+// ── Polling loop ─────────────────────────────────────────────────────────────
+const POLL_INTERVAL = 180;
+let countdown = 0;
+let countdownTimer = null;
+
+function startCountdown(seconds) {
+  if (countdownTimer) clearInterval(countdownTimer);
+  countdown = seconds;
+  updateCountdown();
+  countdownTimer = setInterval(() => {
+    countdown = Math.max(0, countdown - 1);
+    updateCountdown();
+  }, 1000);
+}
+
+function updateCountdown() {
+  document.getElementById('countdown').textContent =
+    countdown > 0 ? `Next poll in ${countdown}s` : 'Polling…';
+}
+
+async function fetchSnapshot() {
+  document.getElementById('countdown').textContent = 'Polling…';
+  try {
+    const resp = await fetch('/oipulse/api/snapshot');
+    if (resp.status === 401) {
+      document.getElementById('error-bar').textContent = 'Log in on the main tab first.';
+      document.getElementById('error-bar').style.display = 'block';
+      startCountdown(POLL_INTERVAL);
+      return;
+    }
+    const data = await resp.json();
+    renderData(data);
+  } catch (e) {
+    console.error('OI Pulse fetch error:', e);
+  }
+  startCountdown(POLL_INTERVAL);
+}
+
+// Initial poll on page load, then every 180 s.
+fetchSnapshot();
+setInterval(fetchSnapshot, POLL_INTERVAL * 1000);
+</script>
+</body>
+</html>
