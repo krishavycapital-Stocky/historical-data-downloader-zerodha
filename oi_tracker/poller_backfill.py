@@ -27,7 +27,7 @@ NIFTY_SPOT_TOKEN = poller_pulse.NIFTY_SPOT_TOKEN
 NIFTY_STEP = poller_pulse.NIFTY_STEP
 STRIKE_WINGS = poller_pulse.STRIKE_WINGS
 
-# Max 3 concurrent historical-API requests
+# Max 3 concurrent historical-API requests; each slot held for ~1 s → ≤ 3 req/s aggregate
 _SEM = asyncio.Semaphore(3)
 
 
@@ -41,23 +41,28 @@ def _parse_ts(ts_str: str) -> dt.datetime:
 async def _fetch_hist(client: httpx.AsyncClient, token: str,
                       from_dt: dt.datetime, to_dt: dt.datetime,
                       oi: bool, headers: dict) -> list:
-    """Fetch 3-min candles for one token. Returns [] on any failure."""
+    """Fetch 3-min candles for one token. Returns [] on any failure.
+
+    Holds the semaphore slot for ~1 s so aggregate rate stays ≤ 3 req/s.
+    On HTTP 429 waits 1 s and retries once before giving up.
+    """
     params = {
         "from": from_dt.strftime("%Y-%m-%d %H:%M:%S"),
         "to":   to_dt.strftime("%Y-%m-%d %H:%M:%S"),
         "continuous": 0,
         "oi": int(oi),
     }
+    url = f"{KITE_BASE}/instruments/historical/{token}/3minute"
+
     async with _SEM:
         try:
-            r = await client.get(
-                f"{KITE_BASE}/instruments/historical/{token}/3minute",
-                params=params,
-                headers=headers,
-                timeout=30,
-            )
-            # Brief pause inside the semaphore slot to stay ≤ 3 req/s
-            await asyncio.sleep(0.35)
+            r = await client.get(url, params=params, headers=headers, timeout=30)
+            # Hold the slot for 1 s to keep aggregate rate ≤ 3 req/s
+            await asyncio.sleep(1.0)
+            if r.status_code == 429:
+                log.debug("Backfill: token %s got 429, retrying after 1 s", token)
+                await asyncio.sleep(1.0)
+                r = await client.get(url, params=params, headers=headers, timeout=30)
             if r.status_code != 200:
                 log.debug("Backfill: token %s HTTP %s", token, r.status_code)
                 return []
@@ -67,13 +72,16 @@ async def _fetch_hist(client: httpx.AsyncClient, token: str,
             return []
 
 
-async def backfill_today(nfo_df) -> None:
-    """Rebuild poller_pulse._snapshots from 09:15 IST today up to now."""
+async def backfill_today(nfo_df) -> int:
+    """Rebuild poller_pulse._snapshots from 09:15 IST today up to now.
+
+    Returns the number of snapshots written (0 on any early bail/abort).
+    """
     api_key = token_store.load_api_key()
     access_token = token_store.load_access_token()
     if not api_key or not access_token:
         log.warning("Backfill skipped: no Kite token")
-        return
+        return 0
 
     now_ist = dt.datetime.now(tz=IST)
     today = now_ist.date()
@@ -82,7 +90,7 @@ async def backfill_today(nfo_df) -> None:
                               9, 15, tzinfo=IST)
     if now_ist <= market_open:
         log.info("Backfill skipped: before market open")
-        return
+        return 0
 
     headers = {
         "X-Kite-Version": "3",
@@ -100,7 +108,7 @@ async def backfill_today(nfo_df) -> None:
 
     if not spot_candles:
         log.warning("Backfill: no spot candles — aborting")
-        return
+        return 0
 
     spot_map: dict[dt.datetime, float] = {}
     for c in spot_candles:
@@ -109,7 +117,7 @@ async def backfill_today(nfo_df) -> None:
 
     timestamps = sorted(spot_map.keys())
     if not timestamps:
-        return
+        return 0
 
     # ── b. Strike universe wide enough for ATM±10 at every timestamp ─────
     all_spots = list(spot_map.values())
@@ -125,7 +133,7 @@ async def backfill_today(nfo_df) -> None:
     expiries = poller_pulse._two_nearest_expiries(nfo_df, today)
     if not expiries:
         log.warning("Backfill: no NIFTY expiries found — aborting")
-        return
+        return 0
 
     token_map: dict[str, tuple] = {}   # token -> (expiry, strike, otype)
     for exp_str in expiries:
@@ -135,7 +143,7 @@ async def backfill_today(nfo_df) -> None:
 
     if not token_map:
         log.warning("Backfill: no option tokens in universe — aborting")
-        return
+        return 0
 
     log.info("Backfill: fetching OI history for %d contracts…", len(token_map))
 
@@ -238,21 +246,24 @@ async def backfill_today(nfo_df) -> None:
 
     if not new_snapshots:
         log.warning("Backfill: produced 0 snapshots")
-        return
+        return 0
 
     # ── f. Replace poller_pulse state under its lock ──────────────────────
+    written = 0
     with poller_pulse._LOCK:
         # Guard against midnight rollover: only replace if still today
         if poller_pulse._TODAY_IST == today:
             poller_pulse._snapshots.clear()
             for snap in new_snapshots[-poller_pulse.MAX_SNAPSHOTS:]:
                 poller_pulse._snapshots.append(snap)
+            written = len(poller_pulse._snapshots)
 
             poller_pulse._vel_history.clear()
             for vh in vel_build[-6:]:
                 poller_pulse._vel_history.append(vh)
 
     log.info("Backfill complete: %d snapshots (%s → %s IST)",
-             len(new_snapshots),
+             written,
              timestamps[0].strftime("%H:%M"),
              timestamps[-1].strftime("%H:%M"))
+    return written

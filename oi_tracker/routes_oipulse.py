@@ -33,6 +33,7 @@ _TEMPLATE = os.path.join(os.path.dirname(__file__), "templates", "oipulse.html")
 # Once-per-day backfill state (single async event loop — no lock needed)
 _backfill_done_for: dt.date | None = None
 _backfilling: bool = False
+_backfill_msg: str = ""
 
 
 def _render() -> str:
@@ -48,7 +49,7 @@ def oipulse_tab():
 
 @router.get("/api/snapshot")
 async def api_snapshot():
-    global _backfill_done_for, _backfilling
+    global _backfill_done_for, _backfilling, _backfill_msg
 
     # Lazy import avoids circular dependency (main imports this module at startup).
     import main as _main
@@ -64,17 +65,28 @@ async def api_snapshot():
             and not nfo_df.empty
             and _backfill_done_for != today_ist
             and not _backfilling):
-        _backfill_done_for = today_ist   # mark before creating task (prevents re-entry)
+        # Only set _backfilling=True here; _backfill_done_for is set ONLY on success
         _backfilling = True
+        _backfill_msg = "Backfilling 09:15 → now…"
 
         from .poller_backfill import backfill_today
 
         async def _run_backfill():
-            global _backfilling
+            global _backfill_done_for, _backfilling, _backfill_msg
             try:
-                await backfill_today(nfo_df)
+                count = await backfill_today(nfo_df)
+                if count > 0:
+                    _backfill_done_for = today_ist   # success — don't retry
+                    _backfill_msg = f"Morning backfilled: {count} bars"
+                    log.info("Backfill succeeded: %d bars written", count)
+                else:
+                    # count == 0 means something went wrong; leave _backfill_done_for
+                    # unchanged so the next poll will retry
+                    _backfill_msg = "Backfill failed — will retry"
+                    log.warning("Backfill returned 0 — will retry on next poll")
             except Exception as exc:
-                log.warning("Backfill error: %s", exc)
+                _backfill_msg = "Backfill failed — will retry"
+                log.warning("Backfill error: %s — will retry on next poll", exc)
             finally:
                 _backfilling = False
 
@@ -83,4 +95,5 @@ async def api_snapshot():
     # Return live snapshot immediately; backfilled history appears in later polls.
     result = await poller_pulse.poll_once(nfo_df)
     result["status"]["backfilling"] = _backfilling
+    result["status"]["backfill"] = _backfill_msg
     return JSONResponse(result)

@@ -26,6 +26,7 @@ body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:14p
 #hdr-meta{display:flex;flex-direction:column;gap:4px}
 #last-updated{font-family:var(--mono);font-size:12px;color:var(--muted)}
 #countdown{font-family:var(--mono);font-size:12px;color:var(--grn)}
+#backfill-note{font-family:var(--mono);font-size:11px;color:var(--muted);opacity:.7;display:none}
 .toggle-group{display:flex;gap:8px;margin-left:auto}
 .toggle-btn{
   font-family:var(--mono);font-size:11px;font-weight:500;
@@ -64,6 +65,7 @@ canvas{width:100%!important;height:100%!important}
   <div id="hdr-meta">
     <div id="last-updated">Last updated: —</div>
     <div id="countdown">Next poll in —</div>
+    <div id="backfill-note"></div>
   </div>
   <div class="toggle-group">
     <button class="toggle-btn active" id="btn-bands" onclick="togglePanel('bands')">OI Bands</button>
@@ -283,6 +285,13 @@ function renderData(result) {
     const d = new Date(status.last_updated);
     const hms = d.toLocaleTimeString('en-GB', { timeZone: 'Asia/Kolkata', hour12: false });
     document.getElementById('last-updated').textContent = `Last updated: ${hms}`;
+  }
+  const bfNote = document.getElementById('backfill-note');
+  if (status.backfill) {
+    bfNote.textContent = status.backfill;
+    bfNote.style.display = 'block';
+  } else {
+    bfNote.style.display = 'none';
   }
 
   if (!snaps.length) return;
