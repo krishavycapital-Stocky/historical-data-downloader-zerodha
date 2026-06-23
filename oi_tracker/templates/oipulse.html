@@ -28,6 +28,7 @@ body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:14p
 #countdown{font-family:var(--mono);font-size:12px;color:var(--grn)}
 #backfill-note{font-family:var(--mono);font-size:11px;color:var(--muted);opacity:.7;display:none}
 .toggle-group{display:flex;gap:8px;margin-left:auto}
+.tf-sep{width:1px;height:24px;background:var(--bdr)}
 .toggle-btn{
   font-family:var(--mono);font-size:11px;font-weight:500;
   padding:6px 14px;border-radius:6px;cursor:pointer;
@@ -71,6 +72,14 @@ canvas{width:100%!important;height:100%!important}
     <button class="toggle-btn active" id="btn-bands" onclick="togglePanel('bands')">OI Bands</button>
     <button class="toggle-btn active" id="btn-cog"   onclick="togglePanel('cog')">COG</button>
     <button class="toggle-btn active" id="btn-vel"   onclick="togglePanel('vel')">Velocity</button>
+  </div>
+  <div class="tf-sep"></div>
+  <div class="toggle-group" id="tf-group" style="margin-left:0">
+    <button class="toggle-btn active" id="btn-tf-3"  onclick="selectTf(3)">3m</button>
+    <button class="toggle-btn"        id="btn-tf-15" onclick="selectTf(15)">15m</button>
+    <button class="toggle-btn"        id="btn-tf-30" onclick="selectTf(30)">30m</button>
+    <button class="toggle-btn"        id="btn-tf-45" onclick="selectTf(45)">45m</button>
+    <button class="toggle-btn"        id="btn-tf-60" onclick="selectTf(60)">60m</button>
   </div>
 </div>
 <div id="error-bar"></div>
@@ -242,6 +251,60 @@ const chartVel = new Chart(ctxVel, {
   },
 });
 
+// ── Timeframe resampling ────────────────────────────────────────────────────
+let selectedTf = 3;
+let lastResult = null;
+
+function resample(snaps, tfMin) {
+  if (tfMin <= 3 || snaps.length === 0) return snaps;
+
+  const base0915 = 9 * 60 + 15;
+  const buckets = new Map();
+
+  for (const s of snaps) {
+    const d = new Date(s.ts);
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Kolkata',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }).formatToParts(d);
+    const h = parseInt(parts.find(p => p.type === 'hour').value, 10);
+    const m = parseInt(parts.find(p => p.type === 'minute').value, 10);
+    const minSince = (h * 60 + m) - base0915;
+    const key = Math.floor(minSince / tfMin) * tfMin;
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(s);
+  }
+
+  const out = [];
+  for (const [, bucket] of [...buckets.entries()].sort((a, b) => a[0] - b[0])) {
+    const last = bucket[bucket.length - 1];
+    const mean = key => bucket.reduce((acc, x) => acc + (x[key] || 0), 0) / bucket.length;
+    out.push({
+      ts:           last.ts,
+      spot:         last.spot,
+      atm:          last.atm,
+      ce_wall:      last.ce_wall,
+      pe_wall:      last.pe_wall,
+      band_mid:     last.band_mid,
+      ce_cog:       last.ce_cog,
+      pe_cog:       last.pe_cog,
+      cog_mid:      last.cog_mid,
+      ce_total:     last.ce_total,
+      pe_total:     last.pe_total,
+      ce_velocity:  mean('ce_velocity'),
+      pe_velocity:  mean('pe_velocity'),
+    });
+  }
+  return out;
+}
+
+function selectTf(tf) {
+  selectedTf = tf;
+  document.querySelectorAll('#tf-group .toggle-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-tf-' + tf).classList.add('active');
+  if (lastResult) renderData(lastResult);
+}
+
 // ── Panel toggle ────────────────────────────────────────────────────────────
 function togglePanel(id) {
   const panelMap = { bands: 'panel-bands', cog: 'panel-cog', vel: 'panel-vel' };
@@ -260,7 +323,7 @@ function parseTS(iso) {
 }
 
 function renderData(result) {
-  const snaps = result.snapshots || [];
+  const snaps = resample(result.snapshots || [], selectedTf);
   const status = result.status || {};
 
   // Error bar
@@ -320,27 +383,21 @@ function renderData(result) {
   chartVel.data.datasets[2].data = [{ x: xMin, y: 2.0 }, { x: xMax, y: 2.0 }];
   chartVel.data.datasets[3].data = [{ x: xMin, y: 1.0 }, { x: xMax, y: 1.0 }];
 
-  // Update y-axis bounds for price charts
-  if (lastATM) {
-    const yLo = lastATM - 200;
-    const yHi = lastATM + 200;
-    chartBands.options.scales.y.min = yLo;
-    chartBands.options.scales.y.max = yHi;
-    chartCog.options.scales.y.min   = yLo;
-    chartCog.options.scales.y.max   = yHi;
-
-    // Gridlines at strike intervals (50 pt) for price charts
-    const strikeTicks = [];
-    for (let v = Math.ceil(yLo / 50) * 50; v <= yHi; v += 50) strikeTicks.push(v);
-    const strikeTickPlugin = {
-      afterBuildTicks(axis) {
-        axis.ticks = strikeTicks.map(v => ({ value: v }));
-      }
-    };
-    // Apply via callback — update tick stepSize instead (simpler)
-    chartBands.options.scales.y.ticks.stepSize = 50;
-    chartCog.options.scales.y.ticks.stepSize   = 50;
+  // Auto-fit y-axis for price charts based on actual plotted data
+  function autoFitY(chart, dsIndices) {
+    const vals = [];
+    dsIndices.forEach(i =>
+      chart.data.datasets[i].data.forEach(pt => { if (pt.y != null) vals.push(pt.y); })
+    );
+    if (vals.length === 0) return;
+    const lo = Math.min(...vals);
+    const hi = Math.max(...vals);
+    chart.options.scales.y.min = Math.floor((lo - 25) / 50) * 50;
+    chart.options.scales.y.max = Math.ceil((hi + 25) / 50) * 50;
+    chart.options.scales.y.ticks.stepSize = 50;
   }
+  autoFitY(chartBands, [0, 1, 2, 3]);
+  autoFitY(chartCog,   [0, 1, 2]);
 
   chartBands.update('none');
   chartCog.update('none');
@@ -378,6 +435,7 @@ async function fetchSnapshot() {
       return;
     }
     const data = await resp.json();
+    lastResult = data;
     renderData(data);
   } catch (e) {
     console.error('OI Pulse fetch error:', e);
