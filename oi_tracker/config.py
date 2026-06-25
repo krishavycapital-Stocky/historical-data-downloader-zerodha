@@ -39,7 +39,7 @@ INSTRUMENTS = [
 ]
 
 # If KITE_OI_TOKENS is set, it overrides the list above (labels become the token).
-_env_tokens = os.environ.get("KITE_OI_TOKENS", "").strip()
+_env_tokens = os.environ.get("DHAN_OI_IDS", "").strip()
 if _env_tokens:
     INSTRUMENTS = [
         (int(t.strip()), t.strip())

@@ -27,6 +27,7 @@ import httpx
 
 from . import config
 from . import token_store
+import broker_dhan as broker
 
 log = logging.getLogger("oi_tracker.poller")
 
@@ -58,7 +59,7 @@ def _baseline_label(captured_at: dt.datetime) -> str:
 
 async def poll_once() -> dict:
     """Fetch quotes for all configured instruments and return table rows + status."""
-    api_key = token_store.load_api_key()
+    api_key = token_store.load_client_id()
     access_token = token_store.load_access_token()
 
     if not api_key or not access_token:
@@ -74,28 +75,12 @@ async def poll_once() -> dict:
             "status": {"error": "No instruments configured. Set KITE_OI_TOKENS.", "polled_at": None},
         }
 
-    params = [("i", str(t)) for t in tokens]
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(
-                f"{KITE_BASE}/quote",
-                params=params,
-                headers={
-                    "X-Kite-Version": "3",
-                    "Authorization": f"token {api_key}:{access_token}",
-                },
-            )
+        data = await broker.fetch_quotes(tokens)
     except Exception as e:
         log.warning("Quote fetch failed: %s", e)
         return {"rows": [], "status": {"error": f"Network error: {e}", "polled_at": None}}
 
-    if resp.status_code != 200:
-        return {
-            "rows": [],
-            "status": {"error": f"Kite API {resp.status_code}: {resp.text[:200]}", "polled_at": None},
-        }
-
-    data = resp.json().get("data", {})
     now = time.time()
     now_dt = dt.datetime.now()
 

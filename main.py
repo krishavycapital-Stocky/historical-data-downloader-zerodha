@@ -20,6 +20,8 @@ try:
 except ImportError:
     PARQUET_OK = False
 
+import broker_dhan as broker
+
 app = FastAPI(title="ZetaPull — Historical Data Downloader")
 
 from oi_tracker.token_store import (
@@ -136,13 +138,8 @@ KITE_BASE = "https://api.kite.trade"
 
 _NO_TOKEN_MSG = "Daily Kite token not set yet — the owner needs to refresh it."
 
-def _get_kite_creds() -> tuple:
-    """Return (api_key, access_token) from server-side store. Raises 503 if missing."""
-    api_key      = _KITE_API_KEY or _oi_load_api_key() or ""
-    access_token = _oi_load_token() or ""
-    if not api_key or not access_token:
-        raise HTTPException(status_code=503, detail=_NO_TOKEN_MSG)
-    return api_key, access_token
+def _get_kite_creds():
+    return "", ""
 
 # ── Instrument cache ─────────────────────────────────────────────────────────────────────────────────
 _instrument_df: Optional[pd.DataFrame] = None
@@ -150,65 +147,45 @@ _instrument_last_fetched: Optional[datetime] = None
 _per_exchange_cache: dict = {}
 
 async def _load_all_instruments():
-    global _instrument_df, _instrument_last_fetched
-    now = datetime.now()
-    if _instrument_df is not None and _instrument_last_fetched is not None:
-        if (now - _instrument_last_fetched).total_seconds() < 3600 * 8:
-            return _instrument_df
-    try:
-        async with httpx.AsyncClient(timeout=120) as client:
-            resp = await client.get(
-                "https://api.kite.trade/instruments",
-                headers={"X-Kite-Version": "3"},
-            )
-        if resp.status_code == 200:
-            _instrument_df = pd.read_csv(io.StringIO(resp.text))
-            _instrument_last_fetched = now
-            return _instrument_df
-    except Exception:
-        pass
-    return None
+    return broker.load_scrip_master()
 
-async def _get_exchange_df(exchange: str) -> pd.DataFrame:
-    global _per_exchange_cache
-    cached = _per_exchange_cache.get(exchange)
-    if cached is not None:
-        ts, df = cached
-        if (datetime.now() - ts).total_seconds() < 3600 * 8:
-            return df
-
-    all_df = await _load_all_instruments()
-    if all_df is not None and not all_df.empty:
-        df = all_df[all_df["exchange"] == exchange].copy()
-        if not df.empty:
-            _per_exchange_cache[exchange] = (datetime.now(), df)
-            return df
-
-    api_key, access_token = _get_kite_creds()
-    try:
-        async with httpx.AsyncClient(timeout=120) as client:
-            resp = await client.get(
-                f"{KITE_BASE}/instruments/{exchange}",
-                headers={
-                    "X-Kite-Version": "3",
-                    "Authorization": f"token {api_key}:{access_token}",
-                },
-            )
-        if resp.status_code != 200:
-            raise HTTPException(status_code=resp.status_code,
-                                detail=f"Kite API {resp.status_code}: {resp.text[:300]}")
-        df = pd.read_csv(io.StringIO(resp.text))
-        _per_exchange_cache[exchange] = (datetime.now(), df)
-        return df
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(status_code=504, detail=f"Timeout fetching {exchange} instruments. Try again in 30s.")
+async def _get_exchange_df(exchange: str):
+    df = broker.load_scrip_master()
+    sub = df[df["exchange"] == exchange].copy()
+    if sub.empty:
+        raise HTTPException(status_code=404, detail=f"No instruments for {exchange}")
+    return sub
 
 
 @app.on_event("startup")
 async def startup_event():
+    import logging
+    _log = logging.getLogger("main")
     asyncio.create_task(_load_all_instruments())
+
+    _INDEX_NAMES = {
+        "NIFTY":       "NIFTY 50",
+        "BANKNIFTY":   "NIFTY BANK",
+        "FINNIFTY":    "NIFTY FIN SERVICE",
+        "MIDCPNIFTY":  "NIFTY MID SELECT",
+        "SENSEX":      "SENSEX",
+        "BANKEX":      "BANKEX",
+    }
+    try:
+        master = broker.load_scrip_master()
+        idx_df = master[master["exchange_segment"] == "IDX_I"]
+        skipped = []
+        for key, name in _INDEX_NAMES.items():
+            match = idx_df[idx_df["name"].str.upper() == name.upper()]
+            if match.empty:
+                skipped.append(key)
+            else:
+                SPOT_TOKENS[key] = str(match.iloc[0]["instrument_token"])
+        if skipped:
+            _log.warning("SPOT_TOKENS: could not find Dhan ids for: %s", skipped)
+        _log.info("SPOT_TOKENS after Dhan lookup: %s", SPOT_TOKENS)
+    except Exception as exc:
+        _log.error("SPOT_TOKENS rebuild failed: %s", exc)
 
 
 # ── App login / logout ─────────────────────────────────────────────────────────────────────
@@ -294,23 +271,7 @@ async def generate_token(req: TokenRequest, request: Request):
 
 @app.get("/api/validate-token")
 async def validate_token():
-    """Check the server-side Kite token. No credentials needed from the client."""
-    try:
-        api_key, access_token = _get_kite_creds()
-    except HTTPException:
-        return {"valid": False, "user_name": "", "email": "", "detail": _NO_TOKEN_MSG}
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(
-                f"{KITE_BASE}/user/profile",
-                headers={"X-Kite-Version": "3", "Authorization": f"token {api_key}:{access_token}"},
-            )
-        if resp.status_code == 200:
-            data = resp.json().get("data", {})
-            return {"valid": True, "user_name": data.get("user_name", ""), "email": data.get("email", "")}
-    except Exception:
-        pass
-    return {"valid": False, "user_name": "", "email": ""}
+    return await broker.validate()
 
 
 class SetTokenRequest(BaseModel):
@@ -444,22 +405,7 @@ def _date_chunks(from_date: str, to_date: str, interval: str):
     return chunks
 
 async def _fetch_candles(instrument_token, from_date, to_date, interval, continuous, oi):
-    api_key, access_token = _get_kite_creds()
-    chunks = _date_chunks(from_date, to_date, interval)
-    all_candles = []
-    async with httpx.AsyncClient(timeout=60) as client:
-        for chunk_from, chunk_to in chunks:
-            resp = await client.get(
-                f"{KITE_BASE}/instruments/historical/{instrument_token}/{interval}",
-                params={"from": chunk_from, "to": chunk_to,
-                        "continuous": int(continuous), "oi": int(oi)},
-                headers={"X-Kite-Version": "3",
-                         "Authorization": f"token {api_key}:{access_token}"},
-            )
-            if resp.status_code != 200:
-                raise HTTPException(status_code=resp.status_code, detail=resp.text)
-            all_candles.extend(resp.json()["data"]["candles"])
-    return all_candles
+    return await broker.fetch_candles(instrument_token, interval, from_date, to_date, oi)
 
 def _build_df(candles):
     if not candles:
