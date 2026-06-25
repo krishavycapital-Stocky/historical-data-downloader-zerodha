@@ -128,6 +128,12 @@ def load_access_token(search_dirs=None):
     return None
 
 
+def load_client_id():
+    """Dhan client id from env (set once on Render)."""
+    import os
+    return os.environ.get("DHAN_CLIENT_ID", "").strip() or None
+
+
 def load_api_key():
     """Return the api_key: stored (from the browser session) or env override."""
     with _LOCK:
