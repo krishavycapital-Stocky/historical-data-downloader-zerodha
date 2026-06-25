@@ -104,8 +104,17 @@ def load_scrip_master(force: bool = False) -> pd.DataFrame:
             and (now - _master_at).total_seconds() < 8 * 3600):
         return _master_df
 
-    raw = httpx.get(SCRIP_URL, timeout=120).text          # public CSV, no auth needed
-    src = pd.read_csv(io.StringIO(raw), low_memory=False)
+raw = httpx.get(SCRIP_URL, timeout=120).text          # public CSV, no auth needed
+       _WANT = {
+           "SEM_SMST_SECURITY_ID", "SEM_TRADING_SYMBOL", "SEM_CUSTOM_SYMBOL",
+           "SM_SYMBOL_NAME", "SEM_EXPIRY_DATE", "SEM_STRIKE_PRICE", "SEM_OPTION_TYPE",
+           "SEM_INSTRUMENT_NAME", "SEM_EXCH_INSTRUMENT_TYPE", "SEM_EXM_EXCH_ID",
+           "SEM_SEGMENT", "SEM_LOT_UNITS",
+       }
+       src = pd.read_csv(io.StringIO(raw), usecols=lambda c: c in _WANT, dtype=str)
+       del raw                                                # free the big text blob
+       if "SEM_SEGMENT" in src.columns:                       # keep only equity / F&O / index
+           src = src[src["SEM_SEGMENT"].astype(str).str.upper().isin(["E", "D", "I"])].copy()
 
     def col(*names):
         """Pick the first column that exists (Dhan has renamed a few over time)."""
