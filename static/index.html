@@ -112,8 +112,6 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--grn);}
     <div class="tagline">Dhan Historical Data Downloader</div>
     <!-- owner flow -->
     <div id="ownerKiteBlock">
-      <button class="btn-big grn" onclick="doKiteLogin()">🔐 Login with Dhan →</button>
-      <div class="divider">or paste today's token directly</div>
       <label class="lbl">Access Token (if you already have it)</label>
       <input class="inp" type="text" id="directToken" placeholder="Paste access_token here"/>
       <button class="btn-big blu" onclick="useDirectToken()">Use This Token</button>
@@ -556,17 +554,6 @@ window.addEventListener('load', async function(){
     : 'Daily Dhan token not set yet — ask the owner to refresh it.', 'err');
 });
 
-// ── KITE LOGIN (owner only — URL fetched from server) ──────────────────────────
-async function doKiteLogin(){
-  try {
-    var res = await fetch('/api/kite-login-url');
-    var data = await res.json();
-    if(!res.ok) throw new Error(data.detail||'Failed to get login URL');
-    window.location.href = data.url;
-  } catch(e){
-    showAlert('loginMsg', '✗ '+e.message, 'err');
-  }
-}
 
 async function useDirectToken(){
   var t=document.getElementById('directToken').value.trim();
