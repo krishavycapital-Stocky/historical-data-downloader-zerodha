@@ -18,6 +18,7 @@ import httpx
 
 from . import token_store
 from . import poller_pulse
+import broker_dhan as broker
 
 log = logging.getLogger("oi_tracker.poller_backfill")
 
@@ -31,42 +32,21 @@ STRIKE_WINGS = poller_pulse.STRIKE_WINGS
 _SEM = asyncio.Semaphore(3)
 
 
-def _parse_ts(ts_str: str) -> dt.datetime:
-    ts = dt.datetime.fromisoformat(ts_str)
+def _parse_ts(ts_val) -> dt.datetime:
+    ts = ts_val if isinstance(ts_val, dt.datetime) else dt.datetime.fromisoformat(str(ts_val))
     if ts.tzinfo is None:
         ts = ts.replace(tzinfo=IST)
     return ts
 
 
-async def _fetch_hist(client: httpx.AsyncClient, token: str,
-                      from_dt: dt.datetime, to_dt: dt.datetime,
-                      oi: bool, headers: dict) -> list:
-    """Fetch 3-min candles for one token. Returns [] on any failure.
-
-    Holds the semaphore slot for ~1 s so aggregate rate stays ≤ 3 req/s.
-    On HTTP 429 waits 1 s and retries once before giving up.
-    """
-    params = {
-        "from": from_dt.strftime("%Y-%m-%d %H:%M:%S"),
-        "to":   to_dt.strftime("%Y-%m-%d %H:%M:%S"),
-        "continuous": 0,
-        "oi": int(oi),
-    }
-    url = f"{KITE_BASE}/instruments/historical/{token}/3minute"
-
+async def _fetch_hist(client, token, from_dt, to_dt, oi, headers):
     async with _SEM:
         try:
-            r = await client.get(url, params=params, headers=headers, timeout=30)
-            # Hold the slot for 1 s to keep aggregate rate ≤ 3 req/s
-            await asyncio.sleep(1.0)
-            if r.status_code == 429:
-                log.debug("Backfill: token %s got 429, retrying after 1 s", token)
-                await asyncio.sleep(1.0)
-                r = await client.get(url, params=params, headers=headers, timeout=30)
-            if r.status_code != 200:
-                log.debug("Backfill: token %s HTTP %s", token, r.status_code)
-                return []
-            return r.json()["data"]["candles"]
+            rows = await broker.fetch_candles(
+                token, "3minute",
+                from_dt.strftime("%Y-%m-%d"), to_dt.strftime("%Y-%m-%d"), oi)
+            await asyncio.sleep(0.3)
+            return rows
         except Exception as exc:
             log.debug("Backfill: token %s fetch error: %s", token, exc)
             return []
@@ -77,10 +57,10 @@ async def backfill_today(nfo_df) -> int:
 
     Returns the number of snapshots written (0 on any early bail/abort).
     """
-    api_key = token_store.load_api_key()
+    api_key = token_store.load_client_id()
     access_token = token_store.load_access_token()
     if not api_key or not access_token:
-        log.warning("Backfill skipped: no Kite token")
+        log.warning("Backfill skipped: no Dhan token")
         return 0
 
     now_ist = dt.datetime.now(tz=IST)
@@ -100,9 +80,14 @@ async def backfill_today(nfo_df) -> int:
     log.info("Backfill starting: 09:15 → %s IST", now_ist.strftime("%H:%M"))
 
     # ── a. NIFTY spot 3-min candles ───────────────────────────────────────
+    master = broker.load_scrip_master()
+    nifty_idx = master[(master["exchange_segment"] == "IDX_I") &
+                       (master["name"].str.upper().isin(["NIFTY 50", "NIFTY"]))]
+    spot_token = str(nifty_idx.iloc[0]["instrument_token"]) if not nifty_idx.empty else NIFTY_SPOT_TOKEN
+
     async with httpx.AsyncClient(timeout=30) as spot_client:
         spot_candles = await _fetch_hist(
-            spot_client, NIFTY_SPOT_TOKEN,
+            spot_client, spot_token,
             market_open, now_ist, False, headers
         )
 
