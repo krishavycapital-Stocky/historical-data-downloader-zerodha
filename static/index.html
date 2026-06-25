@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>ZetaPull — Zerodha Historical Data</title>
+<title>ZetaPull — Dhan Historical Data</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -109,10 +109,10 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--grn);}
 <div class="page center-page" id="page-login">
   <div class="box">
     <div class="logo">Zeta<span>Pull</span></div>
-    <div class="tagline">Zerodha Historical Data Downloader</div>
+    <div class="tagline">Dhan Historical Data Downloader</div>
     <!-- owner flow -->
     <div id="ownerKiteBlock">
-      <button class="btn-big grn" onclick="doKiteLogin()">🔐 Login with Zerodha Kite →</button>
+      <button class="btn-big grn" onclick="doKiteLogin()">🔐 Login with Dhan →</button>
       <div class="divider">or paste today's token directly</div>
       <label class="lbl">Access Token (if you already have it)</label>
       <input class="inp" type="text" id="directToken" placeholder="Paste access_token here"/>
@@ -120,7 +120,7 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--grn);}
     </div>
     <!-- non-owner message -->
     <div id="nonOwnerBlock" style="display:none">
-      <div class="alert alert-info" style="margin-bottom:12px;">⏳ Today's Kite token hasn't been set yet. Please ask the owner to refresh the daily token.</div>
+      <div class="alert alert-info" style="margin-bottom:12px;">⏳ Today's Dhan token hasn't been set yet. Please ask the owner to refresh the daily token.</div>
     </div>
     <div id="loginMsg" style="margin-top:12px;"></div>
     <div class="back-link" style="margin-top:20px;" onclick="window.location.href='/logout'">← Sign out of ZetaPull</div>
@@ -134,13 +134,13 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--grn);}
     <p style="color:var(--muted);font-size:13px;margin-bottom:24px;">Daily Token Setup — do this once every morning</p>
     <div class="step-row">
       <div class="step-num done">✓</div>
-      <div><div class="step-title">Logged in to Zerodha Kite</div><div class="step-desc" id="step1desc">Login successful</div></div>
+      <div><div class="step-title">Logged in to Dhan</div><div class="step-desc" id="step1desc">Login successful</div></div>
     </div>
     <div class="step-row">
       <div class="step-num active">2</div>
       <div style="flex:1">
         <div class="step-title">Request Token <span class="autofill-badge" id="autofillBadge">⚡ Auto-filled</span></div>
-        <div class="step-desc">Zerodha sends this after login</div>
+        <div class="step-desc">Dhan sends this after login</div>
         <div class="tok-display" id="reqTokenDisplay">Waiting...</div>
         <input class="inp" type="text" id="reqTokenManual" placeholder="Or paste request_token manually here" style="margin-top:7px;"/>
       </div>
@@ -154,7 +154,7 @@ input[type=checkbox]{width:auto;cursor:pointer;accent-color:var(--grn);}
       </div>
     </div>
     <button class="btn-big grn" id="generateBtn" onclick="generateToken()" style="margin-top:4px;">⚡ Generate Access Token</button>
-    <button class="btn-big" onclick="retryKiteLogin()" style="background:transparent;color:var(--blu);border:1px solid var(--blu);margin-top:8px;">↩ Go back to Kite Login</button>
+    <button class="btn-big" onclick="retryKiteLogin()" style="background:transparent;color:var(--blu);border:1px solid var(--blu);margin-top:8px;">↩ Go back to Dhan Login</button>
     <div id="tokenMsg" style="margin-top:12px;"></div>
     <div class="back-link" onclick="showPage('login')">← Change API credentials</div>
     <div class="back-link" style="margin-top:8px;" onclick="window.location.href='/logout'">← Sign out of ZetaPull</div>
@@ -552,8 +552,8 @@ window.addEventListener('load', async function(){
   // No valid token — send to the "refresh token" page with a message
   showPage('login');
   showAlert('loginMsg', isOwner
-    ? 'No valid Kite token. Please refresh it.'
-    : 'Daily Kite token not set yet — ask the owner to refresh it.', 'err');
+    ? 'No valid Dhan token. Please refresh it.'
+    : 'Daily Dhan token not set yet — ask the owner to refresh it.', 'err');
 });
 
 // ── KITE LOGIN (owner only — URL fetched from server) ──────────────────────────
