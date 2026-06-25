@@ -41,11 +41,16 @@ INSTRUMENTS = [
 # If KITE_OI_TOKENS is set, it overrides the list above (labels become the token).
 _env_tokens = os.environ.get("DHAN_OI_IDS", "").strip()
 if _env_tokens:
-    INSTRUMENTS = [
-        (int(t.strip()), t.strip())
-        for t in _env_tokens.split(",")
-        if t.strip()
-    ]
+       INSTRUMENTS = []
+       for part in _env_tokens.split(","):
+           part = part.strip()
+           if not part:
+               continue
+           if ":" in part:
+               sid, label = part.split(":", 1)
+               INSTRUMENTS.append((int(sid.strip()), label.strip()))
+           else:
+               INSTRUMENTS.append((int(part), part))
 
 # Convenience views used elsewhere
 TOKENS = [tok for tok, _ in INSTRUMENTS]
