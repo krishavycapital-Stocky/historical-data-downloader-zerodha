@@ -48,10 +48,9 @@ if _env_tokens:
             continue
         if ":" in part:
             sid, label = part.split(":", 1)
-            sid, label = sid.strip(), label.strip()
+            INSTRUMENTS.append((int(sid.strip()), label.strip()))
         else:
-            sid = label = part
-        INSTRUMENTS.append((int(sid), label))
+            INSTRUMENTS.append((int(part), part))
 
 # Convenience views used elsewhere
 TOKENS = [tok for tok, _ in INSTRUMENTS]
